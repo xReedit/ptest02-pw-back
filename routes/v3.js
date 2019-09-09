@@ -1,0 +1,28 @@
+// PWA-APP-PEDIDOS
+let express = require("express");
+let routerV3 = express.Router();
+
+const apiPwaAppPedidos = require('../controllers/apiPwa_v1');
+const login = require('../controllers/login');
+const auth = require('../middleware/autentificacion');
+
+routerV3.get('/', function (req, res, next) {
+	res.json({
+		status: "success",
+		message: "API V3",
+		data: {
+			"version_number": "v1.0.0"
+		}
+	})
+});
+
+// PWA-APP PEDIDO //
+// PWA-APP PEDIDO //
+
+
+routerV3.post('/login-usuario-autorizado', login.loggerUsAutorizado);
+routerV3.post('/verificarToken', auth.verificarToken);
+// routerV3.post('/info/getDataSede', apiPwaAppPedidos.getDataSede);
+
+
+module.exports = routerV3;

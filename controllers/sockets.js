@@ -9,38 +9,60 @@ var dataCliente = {
 	idusuario: 1
 }
 
-var objCarta = {}; 
+// hora
+var d = new Date();
+var n = d.toLocaleTimeString();  
 
 module.exports.socketsOn = function(io){ // Success Web Response
+
+	// middleware
+	// io.use((socket, next) => {
+	//   let token = socket.handshake.query.token;
+	//   console.log('token', token);
+	//   // if (isValid(token)) {
+	//     return next();
+	//   // }
+	//   // return next(new Error('authentication error'));
+	// });
+
 	io.on('connection', async function(socket){
+		let dataSocket = socket.handshake.query;
+		console.log('datos socket', socket.handshake.query);
+		// console.log('datos socket JSON', dataSocket);
+		
+		// si viene desde app pedidos
+		dataSocket.isFromApp = dataSocket.isFromApp ? dataSocket.isFromApp : 1;
+		if ( dataSocket.isFromApp === 1 ) {
 
-		// ni bien el cliente se conecta sirve la carta
-		objCarta = await apiPwa.getObjCarta(dataCliente);
+			// ni bien el cliente se conecta sirve la carta
+			objCarta = await apiPwa.getObjCarta(dataCliente);
 
-		// obtener tipos de consumo
-		objTipoConsumo = await apiPwa.getTipoConsumo(dataCliente);
+			// obtener tipos de consumo
+			objTipoConsumo = await apiPwa.getTipoConsumo(dataCliente);
 
-		// obtener reglas de la carta y subtotales
-		objReglasCarta = await apiPwa.getReglasCarta(dataCliente);
+			// obtener reglas de la carta y subtotales
+			objReglasCarta = await apiPwa.getReglasCarta(dataCliente);
 
-		// data del la sede
-		objDataSede = await apiPwa.getDataSede(dataCliente);
+			// data del la sede
+			objDataSede = await apiPwa.getDataSede(dataCliente);
 
-		console.log('tipo consumo', objTipoConsumo)
-		console.log('reglas carta y subtotales', objReglasCarta)
-		console.log('a user connected sokecontroller - servimos la carta', objCarta );		
-		console.log('a user connected sokecontroller - servimos datos de la sede', objDataSede );
+			// console.log('tipo consumo', objTipoConsumo);
+			// console.log('reglas carta y subtotales', objReglasCarta);
+			// console.log('a user connected sokecontroller - servimos la carta', objCarta );		
+			// console.log('a user connected sokecontroller - servimos datos de la sede', objDataSede );
 
-		socket.emit('getLaCarta', objCarta);
-		socket.emit('getTipoConsumo', objTipoConsumo);
-		socket.emit('getReglasCarta', objReglasCarta);
-		socket.emit('getDataSede', objDataSede);
+			socket.emit('getLaCarta', objCarta);
+			socket.emit('getTipoConsumo', objTipoConsumo);
+			socket.emit('getReglasCarta', objReglasCarta);
+			socket.emit('getDataSede', objDataSede);
+
+		}		
 
 		// item modificado
 		socket.on('itemModificado', (item) => {
-			console.log('itemModificado', item);
+			// console.log('itemModificado', item);
 
-			// actualizamos en bd - si un cliente nuevo solicita la carta tendra actualizado
+			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
 			if (item.cantidad != 'ND') {
 				apiPwa.setItemCarta(0, item);
 			}
@@ -48,42 +70,50 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socket.broadcast.emit('itemModificado', item);
 		});
 
+		// nuevo item agregado a la carta - from monitoreo stock
+		socket.on('nuevoItemAddInCarta', (item) => {
+			// console.log('nuevoItemAddInCarta', item);
+			socket.broadcast.emit('nuevoItemAddInCarta', item);
+		});
+
 		// restablecer pedido despues de que se termino el tiempo de espera
 		socket.on('resetPedido', (listPedido) => {
-			console.log('resetPedido ', listPedido);
+			// console.log('resetPedido ', listPedido);
 			// recibe items
 			listPedido.map(item => {				
 				if (item.cantidad != 'ND') {
 					item.cantidad_reset = item.cantidad_seleccionada;					
 					item.cantidad_seleccionada = 0;
-					console.log('items recuperar ', item);
+					// console.log('items recuperar ', item);
 					
 					apiPwa.setItemCarta(1, item);
 					socket.broadcast.emit('itemResetCant', item);
-				}				
+				}
 			});
 		});
 
 		// hay un nuevo pedido - guardar
-		socket.on('nuevoPedido', (dataSend) => {
-			console.log('nuevoPedido ', dataSend.dataPedido);
-			apiPwa.setNuevoPedido(dataCliente, dataSend);
+		socket.on('nuevoPedido', async (dataSend) => {
+			// console.log('nuevoPedido ', dataSend.dataPedido);
+			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
 
 			// para actaluzar vista de caja // control de pedidos
 			socket.broadcast.emit('nuevoPedido', dataSend.dataPedido);
 
 
 			// registrar comanda en print_server_detalle
-			console.log('printerComanda', dataSend.dataPrint);
+			// console.log('printerComanda', rpt);
 			//apiPwa.setPrintComanda(dataCliente, dataSend.dataPrint);
 			// emitimos para print server
-			socket.broadcast.emit('printerComanda', dataSend.dataPrint);
+			socket.broadcast.emit('printerComanda', rpt);
+		});
+
+		// para imprmir solo la comanda desde control pedidos, venta rapida
+		socket.on('printerOnly', (dataSend) => {			
+			dataSend.hora = n;
+			// console.log('printerOnly', dataSend);
+			socket.broadcast.emit('printerOnly', dataSend);
 		});
 		
 	});
-}
-
-
-function getObjCarta () {
-	
 }

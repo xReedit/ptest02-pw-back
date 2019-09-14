@@ -1,9 +1,13 @@
-var express = require("express"); 
+var express = require("express")(); 
 var bodyParser = require('body-parser');
 var cors=require('cors');
 var app = express();
 var config = require('./config');
 var socketsController = require('./controllers/sockets');
+
+var socket = require('socket.io');
+var http = require('http');
+var server = http.createServer(app);
 
 app.use(cors());
 app.use(bodyParser.json()); // soporte para bodies codificados en jsonsupport
@@ -42,8 +46,10 @@ app.use(function(err, req, res, next) {
 
 
 // sockets
-const server = require('http').Server(app);
-const io = require('socket.io')(server);
+
+// const server = require('http').Server(app);
+// const io = require('socket.io')(server);
+var io = socket.listen(server);
 
 socketsController.socketsOn(io);
 

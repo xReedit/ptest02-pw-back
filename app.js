@@ -1,7 +1,11 @@
-var express = require("express"); 
+const http = require('http');
+const express = require("express"); 
+const socketIo = require('socket.io')
+
+var app = express();
 var bodyParser = require('body-parser');
 var cors=require('cors');
-var app = express();
+
 var config = require('./config');
 var socketsController = require('./controllers/sockets');
 
@@ -35,15 +39,16 @@ app.use(function(err, req, res, next) {
 
 
 // sockets
-var server = require('http').Server(app);
+var server = http.createServer(app);
+var io = socketIo(server);
 
 server.listen(config.port, function () {
     console.log('Server is running.. port '+ config.port); 
 });
 
-var io = require('socket.io')(server, {
-  path: '/api-pwa/socket.io'
-});
+// var socketIo = require('socket.io')(server, {
+//   path: '/api-pwa/socket.io'
+// });
 
 socketsController.socketsOn(io);
 

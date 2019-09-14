@@ -48,10 +48,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// data del la sede
 			objDataSede = await apiPwa.getDataSede(dataCliente);
 
-			// console.log('tipo consumo', objTipoConsumo);
-			// console.log('reglas carta y subtotales', objReglasCarta);
-			// console.log('a user connected sokecontroller - servimos la carta', objCarta );		
-			// console.log('a user connected sokecontroller - servimos datos de la sede', objDataSede );
+			console.log('tipo consumo', objTipoConsumo);
+			console.log('reglas carta y subtotales', objReglasCarta);
+			console.log('a user connected sokecontroller - servimos la carta', objCarta );		
+			console.log('a user connected sokecontroller - servimos datos de la sede', objDataSede );
 
 			socket.emit('getLaCarta', objCarta);
 			socket.emit('getTipoConsumo', objTipoConsumo);

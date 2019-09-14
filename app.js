@@ -35,12 +35,13 @@ app.use(function(err, req, res, next) {
 
 
 // sockets
-const server = require('http').Server(app);
+var server = require('http').Server(app);
+
 server.listen(config.port, function () {
     console.log('Server is running.. port '+ config.port); 
 });
 
-const io = require('socket.io')(server, {
+var io = require('socket.io')(server, {
   path: '/api-pwa/socket.io'
 });
 

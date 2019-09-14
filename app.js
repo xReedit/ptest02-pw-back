@@ -35,8 +35,8 @@ app.use(function(err, req, res, next) {
 
 
 // sockets
-var server = require('http').createServer(app);
-server.listen(config.port, function () {
+// var server = require('http').createServer(app);
+var server = app.listen(config.port, function () {
     console.log('Server is running.. port '+ config.port); 
 });
 

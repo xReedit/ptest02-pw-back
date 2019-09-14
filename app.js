@@ -47,7 +47,7 @@ app.use(function(err, req, res, next) {
 
 // sockets
 
-const server = require('http').createServer(app);
+const server = require('http').Server(app);
 const io = require('socket.io').listen(server);
 // var io = socket.listen(server);
 

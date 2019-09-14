@@ -31,7 +31,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		console.log('datos socket JSON', dataSocket);
 		
 		// si viene desde app pedidos
-		dataSocket.isFromApp = dataSocket.isFromApp ? dataSocket.isFromApp : 1;
+		// 1 is from pwa 0 is web
+		const isFromPwa = dataSocket.isFromApp ? dataSocket.isFromApp : 1;
+		console.log('isFromPwa', isFromPwa);
 		if ( dataSocket.isFromApp === 1 ) {
 
 			// ni bien el cliente se conecta sirve la carta

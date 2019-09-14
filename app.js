@@ -40,7 +40,9 @@ app.use(function(err, req, res, next) {
 
 // sockets
 var server = http.createServer(app);
-var io = socketIo(server);
+var io = socketIo(server, {
+  path: '/api-pwa/socket.io'
+});
 
 server.listen(config.port, function () {
     console.log('Server is running.. port '+ config.port); 

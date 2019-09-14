@@ -32,9 +32,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		
 		// si viene desde app pedidos
 		// 1 is from pwa 0 is web
-		const isFromPwa = dataSocket.isFromApp ? dataSocket.isFromApp : 1;
+		const isFromPwa = dataSocket.isFromApp ? dataSocket.isFromApp ? 0 : false : true : true;
 		console.log('isFromPwa', isFromPwa);
-		if ( dataSocket.isFromApp === 1 ) {
+		if ( dataSocket.isFromApp) {
 
 			// ni bien el cliente se conecta sirve la carta
 			objCarta = await apiPwa.getObjCarta(dataCliente);
@@ -74,13 +74,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// nuevo item agregado a la carta - from monitoreo stock
 		socket.on('nuevoItemAddInCarta', (item) => {
-			// console.log('nuevoItemAddInCarta', item);
+			console.log('nuevoItemAddInCarta', item);
 			socket.broadcast.emit('nuevoItemAddInCarta', item);
 		});
 
 		// restablecer pedido despues de que se termino el tiempo de espera
 		socket.on('resetPedido', (listPedido) => {
-			// console.log('resetPedido ', listPedido);
+			console.log('resetPedido ', listPedido);
 			// recibe items
 			listPedido.map(item => {				
 				if (item.cantidad != 'ND') {

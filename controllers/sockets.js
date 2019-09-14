@@ -32,9 +32,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		
 		// si viene desde app pedidos
 		// 1 is from pwa 0 is web
-		const isFromPwa = dataSocket.isFromApp ? dataSocket.isFromApp === 0 ? false : true : true;
+		const isFromPwa = dataSocket.isFromApp ? dataSocket.isFromApp : 1;
 		console.log('isFromPwa', isFromPwa);
-		if ( dataSocket.isFromApp) {
+		// if ( dataSocket.isFromApp === 1 ) {
 
 			// ni bien el cliente se conecta sirve la carta
 			objCarta = await apiPwa.getObjCarta(dataCliente);
@@ -58,7 +58,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socket.emit('getReglasCarta', objReglasCarta);
 			socket.emit('getDataSede', objDataSede);
 
-		}		
+		// }		
 
 		// item modificado
 		socket.on('itemModificado', (item) => {

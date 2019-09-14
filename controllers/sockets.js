@@ -32,7 +32,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		
 		// si viene desde app pedidos
 		// 1 is from pwa 0 is web
-		const isFromPwa = dataSocket.isFromApp ? dataSocket.isFromApp ? 0 : false : true : true;
+		const isFromPwa = dataSocket.isFromApp ? dataSocket.isFromApp === 0 ? false : true : true;
 		console.log('isFromPwa', isFromPwa);
 		if ( dataSocket.isFromApp) {
 

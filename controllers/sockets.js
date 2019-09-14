@@ -28,7 +28,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 	io.on('connection', async function(socket){
 		let dataSocket = socket.handshake.query;
 		console.log('datos socket', socket.handshake.query);
-		// console.log('datos socket JSON', dataSocket);
+		console.log('datos socket JSON', dataSocket);
 		
 		// si viene desde app pedidos
 		dataSocket.isFromApp = dataSocket.isFromApp ? dataSocket.isFromApp : 1;

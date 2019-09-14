@@ -35,13 +35,15 @@ app.use(function(err, req, res, next) {
 
 
 // sockets
-const server = require('http').createServer(app);
-const io = require('socket.io').listen(server);
-
-socketsController.socketsOn(io);
-
+var server = require('http').createServer(app);
 server.listen(config.port, function () {
     console.log('Server is running.. port '+ config.port); 
 });
+
+
+var io = require('socket.io').listen(server);
+
+socketsController.socketsOn(io);
+
 
 module.exports = app;

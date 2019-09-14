@@ -5,12 +5,6 @@ var app = express();
 var config = require('./config');
 var socketsController = require('./controllers/sockets');
 
-var server = app.listen(config.port, function () {
-    console.log('Server is running.. port '+ config.port); 
-});
-
-var io = require('socket.io').listen(server);
-
 app.use(cors());
 app.use(bodyParser.json()); // soporte para bodies codificados en jsonsupport
 app.use(bodyParser.urlencoded({ extended: true })); // soporte para bodies codificados
@@ -41,12 +35,14 @@ app.use(function(err, req, res, next) {
 
 
 // sockets
-// var server = require('http').createServer(app);
-// var server = app.listen(config.port, function () {
-//     console.log('Server is running.. port '+ config.port); 
-// });
+const server = require('http').Server(app);
+server.listen(config.port, function () {
+    console.log('Server is running.. port '+ config.port); 
+});
 
-// var io = require('socket.io').listen(server);
+const io = require('socket.io')(server, {
+  path: '/api-pwa/socket.io'
+});
 
 socketsController.socketsOn(io);
 

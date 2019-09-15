@@ -1,6 +1,6 @@
-// const http = require('http');
+const http = require('http');
 const express = require("express"); 
-// const socketIo = require('socket.io')
+const socketIo = require('socket.io')
 
 var app = express();
 var bodyParser = require('body-parser');
@@ -39,27 +39,19 @@ app.use(function(err, req, res, next) {
 
 
 // sockets
+var server = http.createServer(app);
 
-// var server = http.createServer(app);
-// server.listen(config.port, function () {
-//     console.log('Server is running.. port '+ config.port); 
-// });
-
-// // desarrollo
-// var io = socketIo(server);
-
-// produccion
-// var io = socketIo(server, {
-//   path: '/api-pwa/socket.io'
-// });
-
-const server = require('http').createServer();
-const io = require('socket.io')(server, {
-  path: '/api-pwa/socket.io'
-});
 
 server.listen(config.port, function () {
     console.log('Server is running.. port '+ config.port); 
+});
+
+// desarrollo
+// var io = socketIo(server);
+
+// produccion
+var io = socketIo(server, {
+  path: '/api-pwa/socket.io'
 });
 
 socketsController.socketsOn(io);

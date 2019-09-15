@@ -47,12 +47,12 @@ server.listen(config.port, function () {
 });
 
 // desarrollo
-// var io = socketIo(server);
+var io = socketIo(server);
 
 // produccion
-var io = socketIo(server, {
-  path: '/api-pwa/socket.io'
-});
+// var io = socketIo(server, {
+//   path: '/api-pwa/socket.io'
+// });
 
 socketsController.socketsOn(io);
 

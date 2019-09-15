@@ -25,7 +25,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 	//   // return next(new Error('authentication error'));
 	// });
 
+
 	io.on('connection', async function(socket){
+		console.log('datos socket', socket.id);
 		let dataSocket = socket.handshake.query;
 		console.log('datos socket', socket.handshake.query);
 		console.log('datos socket JSON', dataSocket);
@@ -117,5 +119,15 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socket.broadcast.emit('printerOnly', dataSend);
 		});
 		
+
+		socket.on('disconnect', (reason) => {
+			console.log('disconnect');
+			if (reason === 'io server disconnect') {
+			  // the disconnection was initiated by the server, you need to reconnect manually
+			  console.log('disconnect ok');
+			  socket.connect();			  
+			}
+			  // else the socket will automatically try to reconnect
+		});
 	});
 }

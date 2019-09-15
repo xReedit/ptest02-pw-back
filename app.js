@@ -46,11 +46,13 @@ server.listen(config.port, function () {
     console.log('Server is running.. port '+ config.port); 
 });
 
-var io = socketIo(server);
+// desarrollo
+// var io = socketIo(server);
 
-// var socketIo = require('socket.io')(server, {
-//   path: '/api-pwa/socket.io'
-// });
+// produccion
+var io = socketIo(server, {
+  path: '/api-pwa/socket.io'
+});
 
 socketsController.socketsOn(io);
 

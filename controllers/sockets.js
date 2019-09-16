@@ -60,6 +60,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socket.emit('getReglasCarta', objReglasCarta);
 			socket.emit('getDataSede', objDataSede);
 
+			socket.emit('finishLoadDataInitial');
+
 		// }		
 
 		// item modificado

@@ -26,7 +26,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 	// });
 
 
-	io.once('connection', async function(socket){
+	io.on('connection', async function(socket){
 		console.log('datos socket', socket.id);
 		let dataSocket = socket.handshake.query;
 		console.log('datos socket', socket.handshake.query);

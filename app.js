@@ -41,12 +41,13 @@ app.use(function(err, req, res, next) {
 // sockets
 
 var server = http.createServer(app);
+
+// // desarrollo
+var io = socketIo(server).listen(config.portSocket);
+
 server.listen(config.port, function () {
     console.log('Server is running.. port '+ config.port); 
 });
-
-// // desarrollo
-var io = socketIo(server);
 
 // produccion
 // var io = socketIo(server, {

@@ -79,7 +79,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					_cantItem += item.sumar ? -1 : 1;
 					item.cantidad = _cantItem;		
 
-					const rpt = await apiPwa.setItemCarta(0, item);
+					apiPwa.setItemCarta(0, item);
 					io.emit('itemModificado', item);
 				}, 500);				
 			}

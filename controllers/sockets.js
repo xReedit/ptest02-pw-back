@@ -80,7 +80,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			}
 			
 			// envia la cantidad a todos incluyendo al emisor, para actualizar en objCarta
-			socket.emit('itemModificado', item);
+			io.emit('itemModificado', item);
 		});
 
 		// nuevo item agregado a la carta - from monitoreo stock

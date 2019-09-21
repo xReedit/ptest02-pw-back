@@ -73,15 +73,17 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			
 
 			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
-			if (item.cantidad != 'ND') {
-				setTimeout(() => {
-					var _cantItem = parseFloat(item.cantidad);
-					_cantItem += item.sumar ? -1 : 1;
-					item.cantidad = _cantItem;		
+			if (item.cantidad != 'ND') {				
+				// var _cantItem = parseFloat(item.cantidad);
+				var _cantSumar = item.sumar ? -1 : 1;
+				item.cantidadSumar = _cantSumar;
+				// item.cantidad = _cantItem;		
 
-					apiPwa.setItemCarta(0, item);
-					io.emit('itemModificado', item);
-				}, 500);				
+				const rptCantidad = await apiPwa.setItemCarta(0, item);
+				console.log('cantidad update mysql ', rptCantidad);
+				item.cantidad = rptCantidad[0].cantidad;
+
+				io.emit('itemModificado', item);
 			}
 			
 			// envia la cantidad a todos incluyendo al emisor, para actualizar en objCarta

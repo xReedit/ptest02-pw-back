@@ -68,12 +68,16 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('itemModificado', (item) => {
 			// console.log('itemModificado', item);
 
+			// manejar cantidad/
+			item.cantidad += item.sumar ? 1 : -1;
+
 			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
 			if (item.cantidad != 'ND') {
 				apiPwa.setItemCarta(0, item);
 			}
 			
-			socket.broadcast.emit('itemModificado', item);
+			// envia la cantidad a todos incluyendo al emisor, para actualizar en objCarta
+			socket.emit('itemModificado', item);
 		});
 
 		// nuevo item agregado a la carta - from monitoreo stock

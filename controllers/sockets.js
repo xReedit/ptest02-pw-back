@@ -69,7 +69,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// console.log('itemModificado', item);
 
 			// manejar cantidad/
-			item.cantidad += item.sumar ? 1 : -1;
+			var _cantItem = parseFloat(item.cantidad);
+			_cantItem += item.sumar ? -1 : 1;
+
+			item.cantidad = _cantItem;			
 
 			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
 			if (item.cantidad != 'ND') {

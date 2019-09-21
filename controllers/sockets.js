@@ -65,22 +65,25 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// }		
 
 		// item modificado
-		socket.on('itemModificado', (item) => {
+		socket.on('itemModificado', async function(item) {
 			// console.log('itemModificado', item);
 
 			// manejar cantidad/
-			var _cantItem = parseFloat(item.cantidad);
-			_cantItem += item.sumar ? -1 : 1;
 
-			item.cantidad = _cantItem;			
+			
 
 			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
 			if (item.cantidad != 'ND') {
-				apiPwa.setItemCarta(0, item);
+				var _cantItem = parseFloat(item.cantidad);
+				_cantItem += item.sumar ? -1 : 1;
+				item.cantidad = _cantItem;		
+
+				const rpt = await apiPwa.setItemCarta(0, item);
+				io.emit('itemModificado', item);
 			}
 			
 			// envia la cantidad a todos incluyendo al emisor, para actualizar en objCarta
-			io.emit('itemModificado', item);
+			// io.emit('itemModificado', item);
 		});
 
 		// nuevo item agregado a la carta - from monitoreo stock

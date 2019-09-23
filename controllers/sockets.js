@@ -36,7 +36,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// 1 is from pwa 0 is web
 		const isFromPwa = dataSocket.isFromApp ? dataSocket.isFromApp : 1;
 		console.log('isFromPwa', isFromPwa);
-		// if ( dataSocket.isFromApp === 1 ) {
+		if ( dataSocket.isFromApp = 1 ) {
 
 			// ni bien el cliente se conecta sirve la carta
 			objCarta = await apiPwa.getObjCarta(dataCliente);
@@ -62,7 +62,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			socket.emit('finishLoadDataInitial');
 
-		// }		
+		}		
 
 		// item modificado
 		socket.on('itemModificado', async function(item) {
@@ -73,10 +73,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			
 
 			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
-			if (item.cantidad != 'ND') {				
+			if (item.cantidad != 'ND') {	
+				console.log('item.sumar', item);	
 				// var _cantItem = parseFloat(item.cantidad);
-				var _cantSumar = item.sumar ? -1 : 1;
+				var _cantSumar = item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;
 				item.cantidadSumar = _cantSumar;
+				console.log('item.cantidadSumar', item.cantidadSumar);
 				// item.cantidad = _cantItem;		
 
 				const rptCantidad = await apiPwa.setItemCarta(0, item);
@@ -128,10 +130,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socket.broadcast.emit('printerComanda', rpt);
 		});
 
-		// para imprmir solo la comanda desde control pedidos, venta rapida
+		// no guarda lo que envia el cliente solo notifica que hay un nuevo pedido, para imprimir en patalla o ticketera
+		// para imprmir solo la comanda desde control pedidos, venta rapida, zona despacho
 		socket.on('printerOnly', (dataSend) => {			
 			dataSend.hora = n;
-			// console.log('printerOnly', dataSend);
+			console.log('printerOnly', dataSend);
 			socket.broadcast.emit('printerOnly', dataSend);
 		});
 		

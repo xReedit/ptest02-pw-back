@@ -99,10 +99,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 		// restablecer pedido despues de que se termino el tiempo de espera
-		socket.on('resetPedido', async function(listPedido) {
+		socket.on('resetPedido', (listPedido) => {
 			console.log('resetPedido ', listPedido);
 			// recibe items
-			listPedido.map(item => {				
+			listPedido.map(async (item) => {				
 				if (item.cantidad != 'ND') {
 					item.cantidad_reset = item.cantidad_seleccionada;					
 					item.cantidad_seleccionada = 0;
@@ -110,7 +110,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					
 					const rptCantidad = await apiPwa.setItemCarta(1, item);
 					item.cantidad = rptCantidad;
-					
+
 					socket.broadcast.emit('itemResetCant', item);
 				}
 			});

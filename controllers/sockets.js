@@ -109,7 +109,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					// console.log('items recuperar ', item);
 					
 					const rptCantidad = await apiPwa.setItemCarta(1, item);
-					item.cantidad = rptCantidad;
+					item.cantidad = rptCantidad[0].cantidad;
+
+					console.log('item reset', item);
 
 					socket.broadcast.emit('itemResetCant', item);
 				}

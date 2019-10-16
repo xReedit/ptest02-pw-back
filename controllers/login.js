@@ -64,7 +64,12 @@ const loggerUsAutorizado = async function (req, res) {
                                 // return ReE(res, { usuario: rows[0], error: 'Credenciales Incorrectas' });
                         }
 
-                        rows[0].pass = ':)';
+                        // var p = rows[0].pass;
+                        // console.log('pass ', p);        
+                        var p = rows[0].pass;
+                        p = Buffer.from(p).toString('base64');
+                        console.log('pass ', p);                        
+                        rows[0].pass = p;
                         const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: 14400 });
 
                         return ReS(res, { usuario: rows[0], token: token });

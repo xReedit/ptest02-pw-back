@@ -79,6 +79,36 @@ const setPrintComanda = async function (dataCLiente, dataPrint) {
 }
 module.exports.setPrintComanda = setPrintComanda;
 
+const getLaCuenta = async function (req, res) {
+	const idorg = managerFilter.getInfoToken(req,'idorg');
+	const idsede = managerFilter.getInfoToken(req, 'idsede');
+    const mesa = req.body.mesa;
+
+    console.log('cuenta de mesa: ', mesa);
+	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', ${idorg}, ${idsede});`;
+	console.log('sql ', read_query)
+    emitirRespuestaSP_RES(read_query, res);
+
+    // const read_query = `call procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}')`;
+    // return emitirRespuestaSP(read_query);        
+}
+module.exports.getLaCuenta = getLaCuenta;
+
+function emitirRespuesta_RES(xquery, res) {
+	console.log(xquery);
+	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+	.then(function (rows) {
+		
+		return ReS(res, {
+			data: rows
+		});
+		// return rows;
+	})
+	.catch((err) => {
+		return false;
+	});
+}
+
 
 function emitirRespuesta(xquery, res) {
 	console.log(xquery);

@@ -74,6 +74,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			
 
 			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
+			item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
 			if (item.cantidad != 'ND') {	
 				console.log('item.sumar', item);	
 				// var _cantItem = parseFloat(item.cantidad);
@@ -126,6 +127,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			console.log('resetPedido ', listPedido);
 			// recibe items
 			listPedido.map(async (item) => {				
+				item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
 				if (item.cantidad != 'ND') {
 					item.cantidad_reset = item.cantidad_seleccionada;					
 					item.cantidad_seleccionada = 0;

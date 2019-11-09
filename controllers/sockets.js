@@ -3,11 +3,11 @@ const apiPwa = require('./apiPwa_v1.js');
 
 var onlineUsers = {};
 var onlineCount = 0;
-var dataCliente = {
-	idorg: 1,
-	idsede: 1,
-	idusuario: 1
-}
+// var dataCliente = {
+// 	idorg: 1,
+// 	idsede: 1,
+// 	idusuario: 1
+// }
 
 // hora
 var d = new Date();
@@ -28,15 +28,16 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 	io.on('connection', async function(socket){
 		console.log('datos socket', socket.id);
-		let dataSocket = socket.handshake.query;
-		console.log('datos socket', socket.handshake.query);
+		let dataSocket = socket.handshake.query;		
 		console.log('datos socket JSON', dataSocket);
+
+		const dataCliente = dataSocket;
 		
 		// si viene desde app pedidos
-		// 1 is from pwa 0 is web
-		const isFromPwa = dataSocket.isFromApp ? dataSocket.isFromApp : 1;
+		// 1 is from pwa 0 is web // si es 0 web no da carta
+		const isFromPwa = dataSocket.isFromApp ? parseInt(dataSocket.isFromApp) : 1;
 		console.log('isFromPwa', isFromPwa);
-		if ( dataSocket.isFromApp = 1 ) {
+		if ( dataSocket.isFromApp == 1 ) {
 
 			// ni bien el cliente se conecta sirve la carta
 			objCarta = await apiPwa.getObjCarta(dataCliente);
@@ -50,10 +51,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// data del la sede
 			objDataSede = await apiPwa.getDataSede(dataCliente);
 
-			console.log('tipo consumo', objTipoConsumo);
-			console.log('reglas carta y subtotales', objReglasCarta);
-			console.log('a user connected sokecontroller - servimos la carta', objCarta );		
-			console.log('a user connected sokecontroller - servimos datos de la sede', objDataSede );
+			// console.log('tipo consumo', objTipoConsumo);
+			// console.log('reglas carta y subtotales', objReglasCarta);
+			// console.log('a user connected sokecontroller - servimos la carta', objCarta );		
+			// console.log('a user connected sokecontroller - servimos datos de la sede', objDataSede );
 
 			socket.emit('getLaCarta', objCarta);
 			socket.emit('getTipoConsumo', objTipoConsumo);
@@ -81,9 +82,31 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				console.log('item.cantidadSumar', item.cantidadSumar);
 				// item.cantidad = _cantItem;		
 
+				// console.log('json item ', JSON.stringify(item));
+
 				const rptCantidad = await apiPwa.setItemCarta(0, item);
 				console.log('cantidad update mysql ', rptCantidad);
 				item.cantidad = rptCantidad[0].cantidad;
+
+				// subitems
+				console.log('rptCantidad[0].listSubItems ', rptCantidad[0].listSubItems );
+
+				// console.log('item subitems', item.subitems);
+
+				if ( rptCantidad[0].listSubItems ) {
+					rptCantidad[0].listSubItems.map(subitem => {
+
+						item.subitems.map(s => {							
+							let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
+
+							if ( itemFind ) {
+								itemFind.cantidad = subitem.cantidad;
+							}
+						});
+					});
+				}
+
+				// console.log('itemModificado', item);
 
 				io.emit('itemModificado', item);
 			}
@@ -110,10 +133,32 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					
 					const rptCantidad = await apiPwa.setItemCarta(1, item);
 					item.cantidad = rptCantidad[0].cantidad;
+					console.log('subitems_view ', item.subitems_view);
 
-					console.log('item reset', item);
+					console.log('respuesta reset ', rptCantidad);
 
-					socket.broadcast.emit('itemResetCant', item);
+					// subitems
+					console.log('rptCantidad[0].listSubItems ', rptCantidad[0].listSubItems );
+
+					// console.log('item.subitems', item.subitems);
+
+					if ( rptCantidad[0].listSubItems ) {
+						rptCantidad[0].listSubItems.map(subitem => {
+							// item.subitems.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0].cantidad = subitem.cantidad;
+							item.subitems.map(s => {							
+								let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
+
+								if ( itemFind ) {
+									itemFind.cantidad = subitem.cantidad;
+								}
+							});
+						});
+					}
+
+					// console.log('item reseteado', item);
+
+					// socket.broadcast.emit('itemResetCant', item);
+					io.emit('itemResetCant', item);
 				}
 			});
 		});

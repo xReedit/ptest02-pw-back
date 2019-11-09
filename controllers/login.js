@@ -52,7 +52,7 @@ const loggerUsAutorizado = async function (req, res) {
 
         console.log('passs ', req.body);
 
-        let read_query = "SELECT * FROM `usuario` WHERE `usuario` = '" + usuario + "'";
+        let read_query = "SELECT * FROM `usuario` WHERE `usuario` = '" + usuario + "' and POSITION('A2' IN acc) > 0 and estado = 0";
         console.log(read_query);
 
         sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })
@@ -70,6 +70,9 @@ const loggerUsAutorizado = async function (req, res) {
                         p = Buffer.from(p).toString('base64');
                         console.log('pass ', p);                        
                         rows[0].pass = p;
+
+                        console.log('usuario logueado ', rows[0]);
+                        
                         const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: 14400 });
 
                         return ReS(res, { usuario: rows[0], token: token });

@@ -11,7 +11,7 @@ let mysql_clean = function (string) {
 };
 
 const getObjCarta = async function (dataCLiente) {
-	console.log( 'data cliente', dataCLiente )
+	console.log( 'getObjCarta data cliente', dataCLiente )
 	const idorg = dataCLiente.idorg;
     const idsede = dataCLiente.idsede;           
         

@@ -75,6 +75,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
 			item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
+			item.cantidad = item.cantidad === item.isporcion ? item.cantidad : item.isporcion; // la cantidad viene 999 cuando es nd y la porcion si viene nd
 			if (item.cantidad != 'ND') {	
 				console.log('item.sumar', item);	
 				// var _cantItem = parseFloat(item.cantidad);

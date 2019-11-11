@@ -168,8 +168,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// hay un nuevo pedido - guardar
 		socket.on('nuevoPedido', async (dataSend) => {
-			// console.log('nuevoPedido ', dataSend.dataPedido);
+			console.log('nuevoPedido ', dataSend.dataPedido);
 			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
+
+			console.log('respuesta guardar pedido ', rpt);
 
 			// para actaluzar vista de caja // control de pedidos
 			socket.broadcast.emit('nuevoPedido', dataSend.dataPedido);

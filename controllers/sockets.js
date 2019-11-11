@@ -111,7 +111,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// console.log('itemModificado', item);
 
 				io.emit('itemModificado', item);
-			}
+			} else {
+				io.emit('itemModificado', item);
+			}			
 			
 			// envia la cantidad a todos incluyendo al emisor, para actualizar en objCarta
 			// io.emit('itemModificado', item);
@@ -168,7 +170,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// hay un nuevo pedido - guardar
 		socket.on('nuevoPedido', async (dataSend) => {
-			console.log('nuevoPedido ', dataSend.dataPedido);
+			console.log('nuevoPedido ', dataSend);
 			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
 
 			console.log('respuesta guardar pedido ', rpt);

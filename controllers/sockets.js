@@ -37,6 +37,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// 1 is from pwa 0 is web // si es 0 web no da carta
 		const isFromPwa = dataSocket.isFromApp ? parseInt(dataSocket.isFromApp) : 1;
 		console.log('isFromPwa', isFromPwa);
+
+		// nos conectamos al canal idorg+idsede
+		const chanelConect = 'room'+dataSocket.idorg + dataSocket.idsede;
+		console.log('conectado al room ', chanelConect);
+
+		socket.join(chanelConect);
+
 		if ( dataSocket.isFromApp == 1 ) {
 
 			// ni bien el cliente se conecta sirve la carta
@@ -56,6 +63,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// console.log('a user connected sokecontroller - servimos la carta', objCarta );		
 			// console.log('a user connected sokecontroller - servimos datos de la sede', objDataSede );
 
+			console.log('emitido a ', chanelConect);
 			socket.emit('getLaCarta', objCarta);
 			socket.emit('getTipoConsumo', objTipoConsumo);
 			socket.emit('getReglasCarta', objReglasCarta);
@@ -110,9 +118,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 				// console.log('itemModificado', item);
 
-				io.emit('itemModificado', item);
+				io.to(chanelConect).emit('itemModificado', item);
 			} else {
-				io.emit('itemModificado', item);
+				io.to(chanelConect).emit('itemModificado', item);
 			}			
 			
 			// envia la cantidad a todos incluyendo al emisor, para actualizar en objCarta
@@ -122,7 +130,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// nuevo item agregado a la carta - from monitoreo stock
 		socket.on('nuevoItemAddInCarta', (item) => {
 			console.log('nuevoItemAddInCarta', item);
-			socket.broadcast.emit('nuevoItemAddInCarta', item);
+			socket.broadcast.to(chanelConect).emit('nuevoItemAddInCarta', item);
 		});
 
 		// restablecer pedido despues de que se termino el tiempo de espera
@@ -163,7 +171,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					// console.log('item reseteado', item);
 
 					// socket.broadcast.emit('itemResetCant', item);
-					io.emit('itemResetCant', item);
+					io.to(chanelConect).emit('itemResetCant', item);
 				}
 			});
 		});
@@ -176,14 +184,14 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			console.log('respuesta guardar pedido ', rpt);
 
 			// para actaluzar vista de caja // control de pedidos
-			socket.broadcast.emit('nuevoPedido', dataSend.dataPedido);
+			socket.broadcast.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
 
 
 			// registrar comanda en print_server_detalle
 			// console.log('printerComanda', rpt);
 			//apiPwa.setPrintComanda(dataCliente, dataSend.dataPrint);
 			// emitimos para print server
-			socket.broadcast.emit('printerComanda', rpt);
+			socket.broadcast.to(chanelConect).emit('printerComanda', rpt);
 		});
 
 		// no guarda lo que envia el cliente solo notifica que hay un nuevo pedido, para imprimir en patalla o ticketera
@@ -191,7 +199,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('printerOnly', (dataSend) => {			
 			dataSend.hora = n;
 			console.log('printerOnly', dataSend);
-			socket.broadcast.emit('printerOnly', dataSend);
+			socket.broadcast.to(chanelConect).emit('printerOnly', dataSend);
 		});
 		
 

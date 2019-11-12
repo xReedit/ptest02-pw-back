@@ -11,7 +11,7 @@ let mysql_clean = function (string) {
 };
 
 const getObjCarta = async function (dataCLiente) {
-	console.log( 'getObjCarta data cliente', dataCLiente )
+	// console.log( 'getObjCarta data cliente', dataCLiente )
 	const idorg = dataCLiente.idorg;
     const idsede = dataCLiente.idsede;           
         
@@ -25,7 +25,7 @@ const getDataSede = async function (dataCLiente) {
 	// console.log('getDataSede', req.boyd);
 	// const idorg = req.body.idorg;
  //    const idsede = req.body.idsede;
-	console.log( 'data cliente', dataCLiente )
+	// console.log( 'data cliente', dataCLiente )
 	const idorg = dataCLiente.idorg;
     const idsede = dataCLiente.idsede;           
         
@@ -44,7 +44,7 @@ const getTipoConsumo = async function (dataCLiente) {
 module.exports.getTipoConsumo = getTipoConsumo;
 
 const getReglasCarta = async function (dataCLiente) {
-	console.log( 'data cliente', dataCLiente )
+	// console.log( 'data cliente', dataCLiente )
 	const idorg = dataCLiente.idorg;
     const idsede = dataCLiente.idsede;           
         
@@ -84,9 +84,9 @@ const getLaCuenta = async function (req, res) {
 	const idsede = managerFilter.getInfoToken(req, 'idsede');
     const mesa = req.body.mesa;
 
-    console.log('cuenta de mesa: ', mesa);
+    // console.log('cuenta de mesa: ', mesa);
 	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', ${idorg}, ${idsede});`;
-	console.log('sql ', read_query)
+	// console.log('sql ', read_query)
     emitirRespuestaSP_RES(read_query, res);
 
     // const read_query = `call procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}')`;

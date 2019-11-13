@@ -81,9 +81,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			
 
+			console.log('item', item);
 			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
 			item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
-			item.cantidad = item.cantidad === item.isporcion ? item.cantidad : item.isporcion; // la cantidad viene 999 cuando es nd y la porcion si viene nd
+			item.cantidad = parseInt(item.cantidad) === 999 ? item.isporcion : item.cantidad; // la cantidad viene 999 cuando es nd y la porcion si viene nd
 			if (item.cantidad != 'ND') {	
 				console.log('item.sumar', item);	
 				// var _cantItem = parseFloat(item.cantidad);
@@ -125,6 +126,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			
 			// envia la cantidad a todos incluyendo al emisor, para actualizar en objCarta
 			// io.emit('itemModificado', item);
+		});
+
+		// item modificado desde subitems del monitor de pedidos
+		// solo informa porque ya guarda en la bd desde el cliente
+		socket.on('itemModificadoFromMonitorSubItems', async function(item) {
+			io.to(chanelConect).emit('itemModificado', item);
 		});
 
 		// nuevo item agregado a la carta - from monitoreo stock

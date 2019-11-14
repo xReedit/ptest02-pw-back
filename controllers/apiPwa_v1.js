@@ -94,6 +94,23 @@ const getLaCuenta = async function (req, res) {
 }
 module.exports.getLaCuenta = getLaCuenta;
 
+
+const getConsultaDatosCliente = async function (req, res) {
+	const idorg = managerFilter.getInfoToken(req,'idorg');
+	const idsede = managerFilter.getInfoToken(req, 'idsede');
+    const doc = req.body.documento;
+
+    // console.log('cuenta de mesa: ', mesa);
+	const read_query = `SELECT * FROM cliente where (idorg=${idorg}) AND estado=0 and ruc='${doc}' order by nombres`;
+	// console.log('sql ', read_query)
+    emitirRespuesta_RES(read_query, res);
+
+    // const read_query = `call procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}')`;
+    // return emitirRespuestaSP(read_query);        
+}
+module.exports.getConsultaDatosCliente = getConsultaDatosCliente;
+
+
 function emitirRespuesta_RES(xquery, res) {
 	console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})

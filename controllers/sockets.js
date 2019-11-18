@@ -1,13 +1,15 @@
 const apiPwa = require('./apiPwa_v1.js');
 //const auth = require('../middleware/autentificacion');
 
-var onlineUsers = {};
-var onlineCount = 0;
+// var onlineUsers = {};
+// var onlineCount = 0;
 // var dataCliente = {
 // 	idorg: 1,
 // 	idsede: 1,
 // 	idusuario: 1
 // }
+
+// dataCliente = {};
 
 // hora
 var d = new Date();
@@ -26,7 +28,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 	// });
 
 
-	io.on('connection', async function(socket){
+	io.on('connection', async function(socket) {
 		console.log('datos socket', socket.id);
 		let dataSocket = socket.handshake.query;		
 		console.log('datos socket JSON', dataSocket);
@@ -47,16 +49,16 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		if ( dataSocket.isFromApp == 1 ) {
 
 			// ni bien el cliente se conecta sirve la carta
-			objCarta = await apiPwa.getObjCarta(dataCliente);
+			const objCarta = await apiPwa.getObjCarta(dataCliente);
 
 			// obtener tipos de consumo
-			objTipoConsumo = await apiPwa.getTipoConsumo(dataCliente);
+			const objTipoConsumo = await apiPwa.getTipoConsumo(dataCliente);
 
 			// obtener reglas de la carta y subtotales
-			objReglasCarta = await apiPwa.getReglasCarta(dataCliente);
+			const objReglasCarta = await apiPwa.getReglasCarta(dataCliente);
 
 			// data del la sede
-			objDataSede = await apiPwa.getDataSede(dataCliente);
+			const objDataSede = await apiPwa.getDataSede(dataCliente);
 
 			// console.log('tipo consumo', objTipoConsumo);
 			// console.log('reglas carta y subtotales', objReglasCarta);
@@ -69,9 +71,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socket.emit('getReglasCarta', objReglasCarta);
 			socket.emit('getDataSede', objDataSede);
 
-			socket.emit('finishLoadDataInitial');
+			// socket.emit('finishLoadDataInitial');
 
 		}		
+
+		// para sacar el loader
+		socket.emit('finishLoadDataInitial');
 
 		// item modificado
 		socket.on('itemModificado', async function(item) {
@@ -126,6 +131,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			
 			// envia la cantidad a todos incluyendo al emisor, para actualizar en objCarta
 			// io.emit('itemModificado', item);
+		});
+
+
+		socket.on('getOnlyCarta', async () => {
+			// ni bien el cliente se conecta sirve la carta
+			const objCarta = await apiPwa.getObjCarta(dataCliente);
+			socket.emit('getLaCarta', objCarta);
 		});
 
 		// item modificado desde subitems del monitor de pedidos
@@ -212,6 +224,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		socket.on('disconnect', (reason) => {
 			console.log('disconnect');
+			// socket.broadcast.to(socket.id).emit('disconnect');
 			if (reason === 'io server disconnect') {
 			  // the disconnection was initiated by the server, you need to reconnect manually
 			  console.log('disconnect ok');

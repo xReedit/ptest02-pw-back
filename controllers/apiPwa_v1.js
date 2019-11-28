@@ -101,14 +101,25 @@ const getConsultaDatosCliente = async function (req, res) {
     const doc = req.body.documento;
 
     // console.log('cuenta de mesa: ', mesa);
-	const read_query = `SELECT * FROM cliente where (idorg=${idorg}) AND estado=0 and ruc='${doc}' order by nombres`;
-	// console.log('sql ', read_query)
+	const read_query = `SELECT * FROM cliente where (idorg=${idorg}) AND estado=0 and ruc='${doc}' order by nombres`;	
     emitirRespuesta_RES(read_query, res);
-
-    // const read_query = `call procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}')`;
-    // return emitirRespuestaSP(read_query);        
 }
 module.exports.getConsultaDatosCliente = getConsultaDatosCliente;
+
+// datos al inicio despues de escanear codigo
+const getDataSedeIni = async function (req, res) {	
+	const idsede = req.body.idsede;
+    // console.log('cuenta de mesa: ', mesa);
+	const read_query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit from sede where (idsede=${idsede}) AND estado=0`;	
+    emitirRespuesta_RES(read_query, res);
+}
+module.exports.getDataSedeIni = getDataSedeIni;
+
+const getReglasApp = async function (req, res) {	
+	const read_query = `SELECT * from pwa_reglas_app where estado=0`;	
+    emitirRespuesta_RES(read_query, res);
+}
+module.exports.getReglasApp = getReglasApp;
 
 
 function emitirRespuesta_RES(xquery, res) {

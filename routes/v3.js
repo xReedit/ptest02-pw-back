@@ -19,11 +19,15 @@ routerV3.get('/', function (req, res, next) {
 // PWA-APP PEDIDO //
 // PWA-APP PEDIDO //
 
-
+// para usuario autorizado - colaboradores --->>>
 routerV3.post('/login-usuario-autorizado', login.loggerUsAutorizado);
 routerV3.post('/verificarToken', auth.verificarToken);
 routerV3.post('/pedido/lacuenta', auth.verificarToken, apiPwaAppPedidos.getLaCuenta);
 routerV3.post('/service/consulta-dni-ruc', auth.verificarToken, apiPwaAppPedidos.getConsultaDatosCliente);
+//  para usuario autorizado - colaboradores --->>
+
+routerV3.post('/ini/info-sede', apiPwaAppPedidos.getDataSedeIni);
+routerV3.get('/ini/reglas-app', apiPwaAppPedidos.getReglasApp);
 // routerV3.post('/info/getDataSede', apiPwaAppPedidos.getDataSede);
 
 

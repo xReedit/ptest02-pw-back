@@ -10,6 +10,36 @@ let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
 };
 
+const setClienteConectado = function (dataCLiente) {	
+    const idcliente = dataCLiente.idcliente;
+    const socketid = dataCLiente.socketid;
+    if ( idcliente ) {
+    	const read_query = `insert into cliente_socketid (idcliente, socketid, conectado) values (${idcliente}, '${socketid}', '1')  ON DUPLICATE KEY UPDATE socketid = '${socketid}', conectado='1';`;
+    	return emitirRespuesta(read_query);
+    }    
+}
+module.exports.setClienteConectado = setClienteConectado;
+
+const setClienteDesconectado = function (dataCLiente) {
+    const idcliente = dataCLiente.idcliente;
+    const socketid = dataCLiente.socketid;
+    if ( idcliente ) {
+    	const read_query = `update cliente_socketid set conectado='0' where idcliente = '${idcliente}';`;
+    	return emitirRespuesta(read_query);
+    }    
+}
+module.exports.setClienteDesconectado = setClienteDesconectado;
+
+const getSocketIdCliente = async function (idcliente) {
+	// const idcliente = dataCLiente.idcliente;
+    const read_query = `SELECT socketid from cliente_socketid where (idcliente=${idcliente}`;
+    return emitirRespuesta(read_query);        
+}
+module.exports.getSocketIdCliente = getSocketIdCliente;
+
+
+
+
 const getObjCarta = async function (dataCLiente) {
 	// console.log( 'getObjCarta data cliente', dataCLiente )
 	const idorg = dataCLiente.idorg;
@@ -94,6 +124,26 @@ const getLaCuenta = async function (req, res) {
 }
 module.exports.getLaCuenta = getLaCuenta;
 
+// la cuenta desde el cliente
+const getLaCuentaFromCliente = async function (req, res) {	
+	const idsede = req.body.idsede;
+    const idcliente = req.body.idcliente;
+
+	const read_query = `call procedure_pwa_cuenta_cliente(${idcliente}, ${idsede});`;	
+    emitirRespuestaSP_RES(read_query, res); 
+}
+module.exports.getLaCuentaFromCliente = getLaCuentaFromCliente;
+
+// la cuenta desde el cliente - solo totales
+const getLaCuentaFromClienteTotales = async function (req, res) {	
+	const idsede = req.body.idsede;
+    const idcliente = req.body.idcliente;
+
+	const read_query = `call procedure_pwa_cuenta_cliente_totales(${idcliente}, ${idsede});`;	
+    emitirRespuestaSP_RES(read_query, res); 
+}
+module.exports.getLaCuentaFromClienteTotales = getLaCuentaFromClienteTotales;
+
 
 const getConsultaDatosCliente = async function (req, res) {
 	const idorg = managerFilter.getInfoToken(req,'idorg');
@@ -105,6 +155,8 @@ const getConsultaDatosCliente = async function (req, res) {
     emitirRespuesta_RES(read_query, res);
 }
 module.exports.getConsultaDatosCliente = getConsultaDatosCliente;
+
+
 
 // datos al inicio despues de escanear codigo
 const getDataSedeIni = async function (req, res) {	
@@ -120,6 +172,24 @@ const getReglasApp = async function (req, res) {
     emitirRespuesta_RES(read_query, res);
 }
 module.exports.getReglasApp = getReglasApp;
+
+
+const setRegisterClienteLogin = async function (req, res) {	
+	const idorg = req.body.idorg;
+	const dataLogin = req.body;
+	const read_query = `call procedure_pwa_register_cliente_login(${idorg},'${JSON.stringify(dataLogin)}')`;
+
+    emitirRespuestaSP_RES(read_query, res); 
+}
+module.exports.setRegisterClienteLogin = setRegisterClienteLogin;
+
+const getCalcTimeDespacho = async function (req, res) {	
+	const idsede = req.body.idsede;
+	const read_query = `call procedure_pwa_calc_time_despacho('${idsede}')`;
+
+    emitirRespuestaSP_RES(read_query, res); 
+}
+module.exports.getCalcTimeDespacho = getCalcTimeDespacho;
 
 
 function emitirRespuesta_RES(xquery, res) {
@@ -155,7 +225,7 @@ function emitirRespuesta(xquery, res) {
 
 
 function emitirRespuestaSP(xquery) {
-	// console.log(xquery);
+	console.log(xquery);
 	return sequelize.query(xquery, {		
 		type: sequelize.QueryTypes.SELECT
 	})

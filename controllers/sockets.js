@@ -31,6 +31,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 	io.on('connection', async function(socket) {
 		console.log('datos socket', socket.id);
 		let dataSocket = socket.handshake.query;		
+		dataSocket.socketid = socket.id;
+
 		console.log('datos socket JSON', dataSocket);
 
 		const dataCliente = dataSocket;
@@ -45,6 +47,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		console.log('conectado al room ', chanelConect);
 
 		socket.join(chanelConect);
+
+		// registrar como conectado en cliente_socketid
+		apiPwa.setClienteConectado(dataCliente);
+
 
 		if ( dataSocket.isFromApp == 1 ) {
 
@@ -203,7 +209,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			console.log('respuesta guardar pedido ', rpt);
 
 			// para actaluzar vista de caja // control de pedidos
-			socket.broadcast.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
+			// socket.broadcast.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
+			io.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
 
 
 			// registrar comanda en print_server_detalle
@@ -220,6 +227,20 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			console.log('printerOnly', dataSend);
 			socket.broadcast.to(chanelConect).emit('printerOnly', dataSend);
 		});
+
+		// cuando cancela la cuenta // para usuario cliente
+		// en front-end busca si la cuenta ha sido cancelada en su totalidad y actualiza la cuenta
+		// la notificacion debe ser enviada solo a ese usuario de la cuenta
+		// verificar si el pedido ha sido realizado por un usuario cliente - front-end
+		socket.on('pedido-pagado-cliente', async (idcliente) => {			
+			console.log('pedido-pagado-cliente', idcliente);
+
+			const socketIdCliente = await apiPwa.getSocketIdCliente(idcliente);
+			// buscar socketid por idcliente	
+
+			// emite evento al cliente especifico
+			io.to(socketIdCliente).emit('pedido-pagado-cliente', idcliente);			
+		});
 		
 
 		socket.on('disconnect', (reason) => {
@@ -230,7 +251,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			  console.log('disconnect ok');
 			  socket.connect();			  
 			}
-			  // else the socket will automatically try to reconnect
+
+			// registrar como cliente usuario desconectado
+			apiPwa.setClienteDesconectado(dataCliente);
+			
+			 // else the socket will automatically try to reconnect
 		});
 	});
 }

@@ -232,14 +232,18 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// en front-end busca si la cuenta ha sido cancelada en su totalidad y actualiza la cuenta
 		// la notificacion debe ser enviada solo a ese usuario de la cuenta
 		// verificar si el pedido ha sido realizado por un usuario cliente - front-end
-		socket.on('pedido-pagado-cliente', async (idcliente) => {			
-			console.log('pedido-pagado-cliente', idcliente);
+		socket.on('pedido-pagado-cliente', async (listIdCliente) => {
+			const listIdsClie = listIdCliente.join(',');
+			console.log('pedido-pagado-cliente', listIdsClie);
 
-			const socketIdCliente = await apiPwa.getSocketIdCliente(idcliente);
+			const socketIdCliente = await apiPwa.getSocketIdCliente(listIdsClie);
+			console.log('res list socket id', socketIdCliente);
 			// buscar socketid por idcliente	
 
 			// emite evento al cliente especifico
-			io.to(socketIdCliente).emit('pedido-pagado-cliente', idcliente);			
+			socketIdCliente.map(x => {
+				io.to(x.socketid).emit('pedido-pagado-cliente', x.socketid);
+			});			
 		});
 		
 

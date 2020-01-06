@@ -30,9 +30,9 @@ const setClienteDesconectado = function (dataCLiente) {
 }
 module.exports.setClienteDesconectado = setClienteDesconectado;
 
-const getSocketIdCliente = async function (idcliente) {
+const getSocketIdCliente = async function (listIdCliente) {
 	// const idcliente = dataCLiente.idcliente;
-    const read_query = `SELECT socketid from cliente_socketid where (idcliente=${idcliente}`;
+    const read_query = `SELECT socketid from cliente_socketid where idcliente in (${listIdCliente})`;
     return emitirRespuesta(read_query);        
 }
 module.exports.getSocketIdCliente = getSocketIdCliente;
@@ -190,6 +190,27 @@ const getCalcTimeDespacho = async function (req, res) {
     emitirRespuestaSP_RES(read_query, res); 
 }
 module.exports.getCalcTimeDespacho = getCalcTimeDespacho;
+
+
+// encuesta al terminar de pagar la cuenta // agarra la primer encuesta por los momentos
+const getEncuesta = async function (req, res) {	
+    const idsede = req.body.idsede;
+        
+    const read_query = `SELECT preguntas from encuesta_sede_conf where idsede=${idsede} and estado=0 limit 1`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getEncuesta = getEncuesta;
+
+// opciones de la encuesta, bueno, excelente ...
+const getEncuestaOpRespuesta = async function (req, res) {	
+    const idsede = req.body.idsede;
+        
+    const read_query = `select * from encuesta_respuesta where estado=0`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getEncuestaOpRespuesta = getEncuestaOpRespuesta;
 
 
 function emitirRespuesta_RES(xquery, res) {

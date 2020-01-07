@@ -33,6 +33,7 @@ routerV3.post('/pedido/lacuenta-cliente', apiPwaAppPedidos.getLaCuentaFromClient
 routerV3.post('/pedido/lacuenta-cliente-totales', apiPwaAppPedidos.getLaCuentaFromClienteTotales);
 routerV3.post('/encuesta/la-encuesta', apiPwaAppPedidos.getEncuesta);
 routerV3.post('/encuesta/las-opciones', apiPwaAppPedidos.getEncuestaOpRespuesta);
+routerV3.post('/encuesta/guardar', apiPwaAppPedidos.setEncuestaGuardar);
 
 routerV3.post('/pedido/calc-time-despacho', apiPwaAppPedidos.getCalcTimeDespacho);
 

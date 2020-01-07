@@ -213,6 +213,17 @@ const getEncuestaOpRespuesta = async function (req, res) {
 module.exports.getEncuestaOpRespuesta = getEncuestaOpRespuesta;
 
 
+// guadar encuensta
+const setEncuestaGuardar = async function (req, res) {	
+	const id = req.body.i;
+	const item = req.body.item;
+	const read_query = `call procedure_save_encuesta(${id}, '${JSON.stringify(item)}')`;
+
+    emitirRespuestaSP_RES(read_query, res); 
+}
+module.exports.setEncuestaGuardar = setEncuestaGuardar;
+
+
 function emitirRespuesta_RES(xquery, res) {
 	console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})

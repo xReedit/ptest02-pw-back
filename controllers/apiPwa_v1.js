@@ -167,6 +167,7 @@ const getDataSedeIni = async function (req, res) {
 }
 module.exports.getDataSedeIni = getDataSedeIni;
 
+
 const getReglasApp = async function (req, res) {	
 	const read_query = `SELECT * from pwa_reglas_app where estado=0`;	
     emitirRespuesta_RES(read_query, res);
@@ -223,6 +224,26 @@ const setEncuestaGuardar = async function (req, res) {
 }
 module.exports.setEncuestaGuardar = setEncuestaGuardar;
 
+// sede obtener  pwa_requiere_gps  > si sede requiere geolocalizacion
+const getSedeRequiereGPS = async function (req, res) {	
+    const idsede = req.body.idsede;
+        
+    const read_query = `select pwa_requiere_gps from sede where idsede=${idsede} and estado=0`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getSedeRequiereGPS = getSedeRequiereGPS;
+
+
+// cliente log por dni, buscar
+const getUsuarioClietenByDNI = async function (req, res) {	
+    const numdocumento = req.body.documento;
+        
+    const read_query = `select * from cliente where ruc='${numdocumento}' and estado=0`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getUsuarioClietenByDNI = getUsuarioClietenByDNI;
 
 function emitirRespuesta_RES(xquery, res) {
 	console.log(xquery);

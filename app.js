@@ -43,7 +43,11 @@ app.use(function(err, req, res, next) {
 var server = http.createServer(app);
 
 // // desarrollo
-var io = socketIo(server).listen(config.portSocket);
+var io = socketIo(server, {
+    pingInterval: 10000,
+    pingTimeout: 5000,
+    cookie: false
+}).listen(config.portSocket);
 
 server.listen(config.port, function () {
     console.log('Server is running.. port '+ config.port); 

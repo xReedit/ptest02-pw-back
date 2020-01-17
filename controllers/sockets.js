@@ -261,5 +261,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			
 			 // else the socket will automatically try to reconnect
 		});
+
+
+		// verifica si hay conexion con el servidor
+		socket.on('verificar-conexion', (socketId) => {
+			// responde solo al que solicita la verificacion
+			io.to(socketId).emit('verificar-conexion', true); // responde true si se logra la conexion
+		});
 	});
 }

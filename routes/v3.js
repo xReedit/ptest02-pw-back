@@ -3,6 +3,7 @@ let express = require("express");
 let routerV3 = express.Router();
 
 const apiPwaAppPedidos = require('../controllers/apiPwa_v1');
+const apiPwaAppPedidosPago = require('../controllers/apiPago');
 const login = require('../controllers/login');
 const auth = require('../middleware/autentificacion');
 
@@ -39,10 +40,17 @@ routerV3.post('/encuesta/la-encuesta', apiPwaAppPedidos.getEncuesta);
 routerV3.post('/encuesta/las-opciones', apiPwaAppPedidos.getEncuestaOpRespuesta);
 routerV3.post('/encuesta/guardar', apiPwaAppPedidos.setEncuestaGuardar);
 
-
 routerV3.post('/pedido/calc-time-despacho', apiPwaAppPedidos.getCalcTimeDespacho);
 
 routerV3.post('/ini/register-cliente-login', apiPwaAppPedidos.setRegisterClienteLogin);
+
+
+// pago
+routerV3.get('/transaction/get-purchasenumber', apiPwaAppPedidosPago.getPurchasenumber); // gurdamos datos de la transacion
+// routerV3.post('/pago/set-data-transaction', apiPwaAppPedidos.setDataTransaction); // gurdamos datos de la transacion
+// routerV3.post('/pago/get-data-transaction', apiPwaAppPedidos.getDataTransaction); // obtenemos datos de la transaccion
+
+
 // routerV3.post('/info/getDataSede', apiPwaAppPedidos.getDataSede);
 
 

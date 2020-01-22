@@ -245,6 +245,8 @@ const getUsuarioClietenByDNI = async function (req, res) {
 }
 module.exports.getUsuarioClietenByDNI = getUsuarioClietenByDNI;
 
+
+
 function emitirRespuesta_RES(xquery, res) {
 	console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})

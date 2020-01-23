@@ -268,5 +268,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// responde solo al que solicita la verificacion
 			io.to(socketId).emit('verificar-conexion', true); // responde true si se logra la conexion
 		});
+
+		// notificar pago del cliente para ser visto en control de pedidos
+		socket.on('notificar-pago-pwa', () => {
+			io.to(chanelConect).emit('notificar-pago-pwa', true);			
+		});
 	});
 }

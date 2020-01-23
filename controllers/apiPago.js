@@ -12,9 +12,30 @@ let mysql_clean = function (string) {
 
 const getPurchasenumber = function (req, res) {             
     const read_query = `call procedure_pwa_purchasenumber()`;
-    emitirRespuesta_RES(read_query, res);        
+    emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.getPurchasenumber = getPurchasenumber;
+
+const getEmailClient = function (req, res) {
+	const idcliente = req.body.id;             
+    const read_query = `call procedure_pwa_pago_get_email_client(${idcliente})`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.getEmailClient = getEmailClient;
+
+const setRegistrarPago = function (req, res) {
+	const idcliente = req.body.idcliente;
+	const idorg = req.body.idorg;
+	const idsede = req.body.idsede;
+	const importe = req.body.importe;
+	const objSubTotal = JSON.stringify(req.body.objSubTotal);
+	const objTransaction = JSON.stringify(req.body.objTransaction);
+
+    const read_query = `call procedure_pwa_registrar_pago(${idcliente},${idorg},${idsede},'${importe}','${objTransaction}','${objSubTotal}')`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.setRegistrarPago = setRegistrarPago;
+
 
 
 
@@ -65,5 +86,26 @@ function emitirRespuesta_RES(xquery, res) {
 	})
 	.catch((err) => {
 		return false;
+	});
+}
+
+
+function emitirRespuestaSP_RES(xquery, res) {
+	console.log(xquery);
+	sequelize.query(xquery, {		
+		type: sequelize.QueryTypes.SELECT
+	})
+	.then(function (rows) {
+
+		// convertimos en array ya que viene en object
+		var arr = [];
+		arr = Object.values(rows[0]) ;
+		
+		return ReS(res, {
+			data: arr
+		});
+	})
+	.catch((err) => {
+		return ReE(res, err);
 	});
 }

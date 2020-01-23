@@ -47,6 +47,10 @@ routerV3.post('/ini/register-cliente-login', apiPwaAppPedidos.setRegisterCliente
 
 // pago
 routerV3.get('/transaction/get-purchasenumber', apiPwaAppPedidosPago.getPurchasenumber); // gurdamos datos de la transacion
+routerV3.post('/transaction/get-email-client', apiPwaAppPedidosPago.getEmailClient);
+routerV3.post('/transaction/registrar-pago', apiPwaAppPedidosPago.setRegistrarPago);
+
+
 // routerV3.post('/pago/set-data-transaction', apiPwaAppPedidos.setDataTransaction); // gurdamos datos de la transacion
 // routerV3.post('/pago/get-data-transaction', apiPwaAppPedidos.getDataTransaction); // obtenemos datos de la transaccion
 

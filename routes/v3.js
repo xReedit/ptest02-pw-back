@@ -44,6 +44,10 @@ routerV3.post('/pedido/calc-time-despacho', apiPwaAppPedidos.getCalcTimeDespacho
 
 routerV3.post('/ini/register-cliente-login', apiPwaAppPedidos.setRegisterClienteLogin);
 
+// cliente profile
+routerV3.post('/cliente/perfil', apiPwaAppPedidos.getClientePerfil);
+routerV3.post('/cliente/perfil-save', apiPwaAppPedidos.setClientePerfil);
+
 
 // pago
 routerV3.get('/transaction/get-purchasenumber', apiPwaAppPedidosPago.getPurchasenumber); // gurdamos datos de la transacion

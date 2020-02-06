@@ -246,6 +246,26 @@ const getUsuarioClietenByDNI = async function (req, res) {
 module.exports.getUsuarioClietenByDNI = getUsuarioClietenByDNI;
 
 
+// cliente perfil
+const getClientePerfil = async function (req, res) {	
+    const idcliente = req.body.idcliente;
+        
+    const read_query = `select * from cliente where idcliente='${idcliente}' and estado=0`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getClientePerfil = getClientePerfil;
+
+const setClientePerfil = async function (req, res) {	
+    const idcliente = req.body.idcliente;
+        
+    const read_query = `update cliente set ruc='${req.body.ruc}', email='${req.body.email}', f_nac='${req.body.f_nac}' where idcliente=${idcliente}`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.setClientePerfil = setClientePerfil;
+
+
 
 function emitirRespuesta_RES(xquery, res) {
 	console.log(xquery);

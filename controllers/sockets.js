@@ -271,7 +271,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notificar pago del cliente para ser visto en control de pedidos
 		socket.on('notificar-pago-pwa', (data) => {
-			socket.broadcast.to(chanelConect).emit('notificar-pago-pwa-success', data);
+			console.log('emit notificar-pago-pwa');
+			socket.broadcast.to(chanelConect).emit('notificar-pago-pwa', data);
 		});
 
 		// notifica llamado del cliente solicitando atentcion

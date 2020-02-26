@@ -108,7 +108,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 				const rptCantidad = await apiPwa.setItemCarta(0, item);
 				console.log('cantidad update mysql ', rptCantidad);
+
+				// if ( item.isporcion != 'SP' ) {
 				item.cantidad = rptCantidad[0].cantidad;
+				//}				
 
 				// subitems
 				console.log('rptCantidad[0].listSubItems ', rptCantidad[0].listSubItems );
@@ -126,13 +129,21 @@ module.exports.socketsOn = function(io){ // Success Web Response
 							}
 						});
 					});
+				}			
+
+				const rpt = {
+					item : item,
+					listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,	
+					listSubItems: rptCantidad[0].listSubItems				
 				}
 
-				// console.log('itemModificado', item);
+				console.log('itemModificado', item);		
 
-				io.to(chanelConect).emit('itemModificado', item);
+				io.to(chanelConect).emit('itemModificado', item); 
+				io.to(chanelConect).emit('itemModificado-pwa', rpt); // para no modificar en web
 			} else {
 				io.to(chanelConect).emit('itemModificado', item);
+				io.to(chanelConect).emit('itemModificado-pwa', item);
 			}			
 			
 			// envia la cantidad a todos incluyendo al emisor, para actualizar en objCarta
@@ -164,6 +175,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// recibe items
 			listPedido.map(async (item) => {				
 				item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
+				item.cantidad = parseInt(item.cantidad) === 999 ? item.isporcion : item.cantidad; // la cantidad viene 999 cuando es nd y la porcion si viene nd
 				if (item.cantidad != 'ND') {
 					item.cantidad_reset = item.cantidad_seleccionada;					
 					item.cantidad_seleccionada = 0;
@@ -194,9 +206,15 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					}
 
 					// console.log('item reseteado', item);
+					const rpt = {
+						item : item,
+						listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,
+						listSubItems: rptCantidad[0].listSubItems					
+					}
 
 					// socket.broadcast.emit('itemResetCant', item);
 					io.to(chanelConect).emit('itemResetCant', item);
+					io.to(chanelConect).emit('itemResetCant-pwa', rpt);
 				}
 			});
 		});

@@ -95,7 +95,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			console.log('item', item);
 			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
 			item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
-			item.cantidad = parseInt(item.cantidad) === 999 ? item.isporcion : item.cantidad; // la cantidad viene 999 cuando es nd y la porcion si viene nd
+			
+			// la cantidad viene 999 cuando es nd y la porcion si viene nd
+			// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
+			item.cantidad = parseInt(item.cantidad) >= 999 ? item.isporcion || 'ND' : item.cantidad;
 			if (item.cantidad != 'ND') {	
 				console.log('item.sumar', item);	
 				// var _cantItem = parseFloat(item.cantidad);
@@ -175,11 +178,14 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// recibe items
 			listPedido.map(async (item) => {				
 				item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
-				item.cantidad = parseInt(item.cantidad) === 999 ? item.isporcion : item.cantidad; // la cantidad viene 999 cuando es nd y la porcion si viene nd
+				// item.cantidad = parseInt(item.cantidad) === 999 ? item.isporcion : item.cantidad; // la cantidad viene 999 cuando es nd y la porcion si viene nd
+				// la cantidad viene 999 cuando es nd y la porcion si viene nd
+				// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
+				item.cantidad = parseInt(item.cantidad) >= 999 || parseInt(item.stock_actual) >= 999 ? item.isporcion || 'ND' : item.cantidad;
 				if (item.cantidad != 'ND') {
 					item.cantidad_reset = item.cantidad_seleccionada;					
 					item.cantidad_seleccionada = 0;
-					// console.log('items recuperar ', item);
+					console.log('items recuperar ', item);
 					
 					const rptCantidad = await apiPwa.setItemCarta(1, item);
 					item.cantidad = rptCantidad[0].cantidad;

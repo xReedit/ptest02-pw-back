@@ -265,6 +265,16 @@ const setClientePerfil = async function (req, res) {
 }
 module.exports.setClientePerfil = setClientePerfil;
 
+// guarda direccion de cliente pwa
+const setClienteNewDireccion = async function (req, res) {	
+	// const id = req.body.i;
+	const _data = req.body;
+	const read_query = `call procedure_pwa_guardar_direccion_cliente('${JSON.stringify(_data)}')`;
+
+    emitirRespuestaSP_RES(read_query, res); 
+}
+module.exports.setClienteNewDireccion = setClienteNewDireccion;
+
 
 
 function emitirRespuesta_RES(xquery, res) {

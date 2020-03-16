@@ -304,5 +304,25 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socket.broadcast.to(chanelConect).emit('notificar-cliente-llamado', numMesa);
 		});
 
+
+
+
+		// delivery cliente
+
+		// notifica cambio de estado del pedido
+		socket.on('delivery-pedido-estado', async (idcliente) => {
+			// const listIdsClie = listIdCliente.join(',');
+			console.log('delivery-pedido-estado', idcliente);
+
+			const socketIdCliente = await apiPwa.getSocketIdCliente(idcliente);
+			console.log('delivery-pedido-estado', socketIdCliente);
+			// buscar socketid por idcliente	
+
+			// emite evento al cliente especifico
+			socketIdCliente.map(x => {
+				io.to(x.socketid).emit('delivery-pedido-estado', x.socketid);
+			});			
+		});
+
 	});
 }

@@ -4,6 +4,7 @@ let routerV3 = express.Router();
 
 const apiPwaAppPedidos = require('../controllers/apiPwa_v1');
 const apiPwaAppPedidosPago = require('../controllers/apiPago');
+const apiPwaAppDelivery = require('../controllers/apiDelivery');
 const login = require('../controllers/login');
 const auth = require('../middleware/autentificacion');
 
@@ -47,6 +48,7 @@ routerV3.post('/ini/register-cliente-login', apiPwaAppPedidos.setRegisterCliente
 // cliente profile
 routerV3.post('/cliente/perfil', apiPwaAppPedidos.getClientePerfil);
 routerV3.post('/cliente/perfil-save', apiPwaAppPedidos.setClientePerfil);
+routerV3.post('/cliente/new-direccion', apiPwaAppPedidos.setClienteNewDireccion);
 
 
 // pago
@@ -55,6 +57,13 @@ routerV3.post('/transaction/get-email-client', apiPwaAppPedidosPago.getEmailClie
 routerV3.post('/transaction/registrar-pago', apiPwaAppPedidosPago.setRegistrarPago);
 
 
+// delivery
+routerV3.post('/delivery/get-establecimientos', apiPwaAppDelivery.getEstablecimientos);
+routerV3.post('/delivery/get-direccion-cliente', apiPwaAppDelivery.getDireccionCliente);
+routerV3.post('/delivery/get-mis-pedidos', apiPwaAppDelivery.getMisPedido);
+
+
+	
 // routerV3.post('/pago/set-data-transaction', apiPwaAppPedidos.setDataTransaction); // gurdamos datos de la transacion
 // routerV3.post('/pago/get-data-transaction', apiPwaAppPedidos.getDataTransaction); // obtenemos datos de la transaccion
 

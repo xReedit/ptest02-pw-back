@@ -5,6 +5,7 @@ let routerV3 = express.Router();
 const apiPwaAppPedidos = require('../controllers/apiPwa_v1');
 const apiPwaAppPedidosPago = require('../controllers/apiPago');
 const apiPwaAppDelivery = require('../controllers/apiDelivery');
+const apiPwaSMS = require('../controllers/sendMsj');
 const login = require('../controllers/login');
 const auth = require('../middleware/autentificacion');
 
@@ -61,8 +62,10 @@ routerV3.post('/transaction/registrar-pago', apiPwaAppPedidosPago.setRegistrarPa
 routerV3.post('/delivery/get-establecimientos', apiPwaAppDelivery.getEstablecimientos);
 routerV3.post('/delivery/get-direccion-cliente', apiPwaAppDelivery.getDireccionCliente);
 routerV3.post('/delivery/get-mis-pedidos', apiPwaAppDelivery.getMisPedido);
+routerV3.post('/delivery/verificar-codigo-sms', apiPwaAppDelivery.verificarCodigoSMS);
 
-
+// mensajes
+routerV3.post('/delivery/send-sms-confirmation', auth.verificarTokenSms, apiPwaSMS.sendMsjConfirmacion);
 	
 // routerV3.post('/pago/set-data-transaction', apiPwaAppPedidos.setDataTransaction); // gurdamos datos de la transacion
 // routerV3.post('/pago/get-data-transaction', apiPwaAppPedidos.getDataTransaction); // obtenemos datos de la transaccion

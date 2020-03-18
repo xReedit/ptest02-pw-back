@@ -35,6 +35,15 @@ const getMisPedido = function (req, res) {
 module.exports.getMisPedido = getMisPedido;
 
 
+const verificarCodigoSMS = async function (req, res) {
+	// console.log ('idcliente', req.body);
+	const codigo = req.body.codigo;
+    const read_query = `SELECT idcliente from cliente where pwa_code_verification = ${codigo} and estado = 0`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.verificarCodigoSMS = verificarCodigoSMS;
+
+
 
 
 

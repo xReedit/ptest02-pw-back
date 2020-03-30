@@ -110,12 +110,13 @@ const setPrintComanda = async function (dataCLiente, dataPrint) {
 module.exports.setPrintComanda = setPrintComanda;
 
 const getLaCuenta = async function (req, res) {
-	const idorg = managerFilter.getInfoToken(req,'idorg');
-	const idsede = managerFilter.getInfoToken(req, 'idsede');
+	const idorg = managerFilter.getInfoToken(req,'idorg') || req.body.idorg;
+	const idsede = managerFilter.getInfoToken(req, 'idsede') || req.body.idsede;
     const mesa = req.body.mesa;
+    const idpedido = req.body.idpedido;
 
     // console.log('cuenta de mesa: ', mesa);
-	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', ${idorg}, ${idsede});`;
+	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', ${idpedido}, ${idorg}, ${idsede});`;
 	// console.log('sql ', read_query)
     emitirRespuestaSP_RES(read_query, res);
 

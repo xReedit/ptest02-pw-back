@@ -1,4 +1,5 @@
 const apiPwa = require('./apiPwa_v1.js');
+const apiPwaRepartidor = require('./apiRepartidor.js');
 //const auth = require('../middleware/autentificacion');
 
 // var onlineUsers = {};
@@ -13,7 +14,8 @@ const apiPwa = require('./apiPwa_v1.js');
 
 // hora
 var d = new Date();
-var n = d.toLocaleTimeString();  
+var n = d.toLocaleTimeString(); 
+// var socketMaster; 
 
 module.exports.socketsOn = function(io){ // Success Web Response
 
@@ -36,6 +38,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		console.log('datos socket JSON', dataSocket);
 
 		const dataCliente = dataSocket;
+
+		if (dataCliente.isRepartidor) {
+			// socketMaster = socket; 
+			socketRepartidor(dataCliente,socket);
+			return;
+		}
 		
 		// si viene desde app pedidos
 		// 1 is from pwa 0 is web // si es 0 web no da carta
@@ -227,10 +235,32 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// hay un nuevo pedido - guardar
 		socket.on('nuevoPedido', async (dataSend) => {
-			console.log('nuevoPedido ', dataSend);
+			console.log('nuevoPedido ', dataSend);			
 			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
 
-			console.log('respuesta guardar pedido ', rpt);
+			// console.log('respuesta guardar pedido ', JSON.stringify(rpt[0].idpedido));
+
+
+			// si es delivery app
+			if ( dataSend.isDeliveryAPP ) {
+
+				const _dataPedido = {
+					dataDelivery: dataSend.dataPedido.p_header.arrDatosDelivery,
+					idpedido: rpt[0].idpedido
+				}
+
+				console.log ('datos para enviar repartidor ', JSON.stringify(_dataPedido));
+				// obtener lista de repartidores
+
+				const listRepartidores = await apiPwaRepartidor.getRepartidoreForPedido(_dataPedido);
+
+				// pasamos a funcion que maneja las notificaciones
+				console.log('lista de repartidores', listRepartidores);
+				apiPwaRepartidor.sendPedidoRepartidor(listRepartidores, _dataPedido, io);
+
+
+			}
+
 
 			// para actaluzar vista de caja // control de pedidos
 			// socket.broadcast.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
@@ -325,4 +355,22 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 	});
+
+
+	function socketRepartidor(dataCliente, socket) {
+		console.log('desde func repartatidor', dataCliente);
+
+		// mantener el socket id del repartidor
+		if (dataCliente.firts_socketid) {
+			socket.id = dataCliente.firts_socketid;
+		}
+		
+
+		// registrar como conectado en cliente_socketid
+		apiPwaRepartidor.setRepartidorConectado(dataCliente);
+
+
+		// escuchar respuesta repartidor si acepta
+
+	}
 }

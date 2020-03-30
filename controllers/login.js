@@ -82,3 +82,42 @@ const loggerUsAutorizado = async function (req, res) {
 }
 
 module.exports.loggerUsAutorizado = loggerUsAutorizado;
+
+
+
+const loggerUsAutorizadoRepartidor = async function (req, res) {
+        const usuario = req.body.nomusuario;
+        const pass = req.body.pass;
+
+        console.log('passs ', req.body);
+
+        let read_query = "SELECT * FROM repartidor WHERE usuario = '" + usuario + "' and estado = 0";
+        console.log(read_query);
+
+        sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })
+                .then(function (rows) {
+                        
+                        const result =  pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
+                        if (!result) {
+                                return ReE(res, 'Credenciales Incorrectas.');
+                                // return ReE(res, { usuario: rows[0], error: 'Credenciales Incorrectas' });
+                        }
+
+                        // var p = rows[0].pass;
+                        // console.log('pass ', p);        
+                        var p = rows[0].pass;
+                        p = Buffer.from(p).toString('base64');
+                        console.log('pass ', p);                        
+                        rows[0].pass = p;
+
+                        console.log('usuario logueado ', rows[0]);
+                        
+                        const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: '24h' });
+
+                        return ReS(res, { usuario: rows[0], token: token });
+
+                })
+                .catch((err) => { return ReE(res, err); });
+}
+
+module.exports.loggerUsAutorizadoRepartidor = loggerUsAutorizadoRepartidor;

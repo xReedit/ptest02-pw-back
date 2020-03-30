@@ -5,6 +5,7 @@ let routerV3 = express.Router();
 const apiPwaAppPedidos = require('../controllers/apiPwa_v1');
 const apiPwaAppPedidosPago = require('../controllers/apiPago');
 const apiPwaAppDelivery = require('../controllers/apiDelivery');
+const apiPwaAppRepartidor = require('../controllers/apiRepartidor');
 const apiPwaSMS = require('../controllers/sendMsj');
 const login = require('../controllers/login');
 const auth = require('../middleware/autentificacion');
@@ -57,7 +58,6 @@ routerV3.get('/transaction/get-purchasenumber', apiPwaAppPedidosPago.getPurchase
 routerV3.post('/transaction/get-email-client', apiPwaAppPedidosPago.getEmailClient);
 routerV3.post('/transaction/registrar-pago', apiPwaAppPedidosPago.setRegistrarPago);
 
-
 // delivery
 routerV3.post('/delivery/get-establecimientos', apiPwaAppDelivery.getEstablecimientos);
 routerV3.post('/delivery/get-direccion-cliente', apiPwaAppDelivery.getDireccionCliente);
@@ -66,6 +66,11 @@ routerV3.post('/delivery/verificar-codigo-sms', apiPwaAppDelivery.verificarCodig
 
 // mensajes
 routerV3.post('/delivery/send-sms-confirmation', auth.verificarTokenSms, apiPwaSMS.sendMsjConfirmacion);
+
+// notificaciones push
+// guardar suscripcion
+routerV3.post('/push/suscripcion', apiPwaSMS.pushSuscripcion);
+routerV3.post('/push/send-notification', apiPwaSMS.sendPushNotificaction);
 	
 // routerV3.post('/pago/set-data-transaction', apiPwaAppPedidos.setDataTransaction); // gurdamos datos de la transacion
 // routerV3.post('/pago/get-data-transaction', apiPwaAppPedidos.getDataTransaction); // obtenemos datos de la transaccion
@@ -73,5 +78,17 @@ routerV3.post('/delivery/send-sms-confirmation', auth.verificarTokenSms, apiPwaS
 
 // routerV3.post('/info/getDataSede', apiPwaAppPedidos.getDataSede);
 
+
+
+/// REPARTIDOR
+/// REPARTIDOR
+
+// login 
+routerV3.post('/login-usuario-autorizado-repartidor', login.loggerUsAutorizadoRepartidor);
+
+routerV3.post('/repartidor/push-suscripcion', auth.verificarToken, apiPwaAppRepartidor.pushSuscripcion);
+routerV3.post('/repartidor/set-efectivo-mano', auth.verificarToken, apiPwaAppRepartidor.setEfectivoMano);
+routerV3.post('/repartidor/set-position-now', auth.verificarToken, apiPwaAppRepartidor.setPositionNow);
+routerV3.post('/repartidor/set-asignar-pedido', auth.verificarToken, apiPwaAppRepartidor.setAsignarPedido);
 
 module.exports = routerV3;

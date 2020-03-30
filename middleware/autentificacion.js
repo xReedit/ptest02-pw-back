@@ -17,6 +17,7 @@ exports.verificarToken = function (req, res, next) {
         // next();
 }
 
+
 exports.verificarTokenSms = function (req, res, next) {
         var token = req.headers.authorization; //req.query.token ;
 

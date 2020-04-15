@@ -44,10 +44,21 @@ const verificarCodigoSMS = async function (req, res) {
 module.exports.verificarCodigoSMS = verificarCodigoSMS;
 
 
+const setCalificarServicio = function (req, res) {  
+	const dataCalificacion = req.body.dataCalificacion;	
+    const read_query = `call procedure_pwa_delivery_calificacion('${JSON.stringify(dataCalificacion)}')`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.setCalificarServicio = setCalificarServicio;
 
 
 
-
+const getCategorias = async function (req, res) {
+	// const idcliente = dataCLiente.idcliente;
+    const read_query = `SELECT * from sede_categoria where estado = 0`;
+    return emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getCategorias = getCategorias;
 
 
 

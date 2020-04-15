@@ -1,5 +1,6 @@
 const apiPwa = require('./apiPwa_v1.js');
 const apiPwaRepartidor = require('./apiRepartidor.js');
+const apiPwaComercio = require('./apiComercio.js');
 //const auth = require('../middleware/autentificacion');
 
 // var onlineUsers = {};
@@ -42,6 +43,18 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		if (dataCliente.isRepartidor) {
 			// socketMaster = socket; 
 			socketRepartidor(dataCliente,socket);
+			return;
+		}
+
+		if (dataCliente.isOutCarta === 'true') {
+			// socketMaster = socket; 
+			socketClienteDeliveryEstablecimientos(dataCliente,socket);
+			return;
+		}
+
+		if (dataCliente.isComercio === 'true') {
+			// socketMaster = socket; 
+			socketComercioDelivery(dataCliente,socket);
 			return;
 		}
 		
@@ -245,6 +258,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			if ( dataSend.isDeliveryAPP ) {
 
 				const _dataPedido = {
+					dataItems: dataSend.dataPedido.p_body,
 					dataDelivery: dataSend.dataPedido.p_header.arrDatosDelivery,
 					idpedido: rpt[0].idpedido
 				}
@@ -361,16 +375,84 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		console.log('desde func repartatidor', dataCliente);
 
 		// mantener el socket id del repartidor
-		if (dataCliente.firts_socketid) {
-			socket.id = dataCliente.firts_socketid;
-		}
+		// if (dataCliente.firts_socketid) {
+		// 	dataCliente.socketid = dataCliente.firts_socketid;
+		// 	socket.id = dataCliente.firts_socketid;
+
+			console.log ('sin cambiar socket', socket.id);
+		// }
+		
 		
 
 		// registrar como conectado en cliente_socketid
 		apiPwaRepartidor.setRepartidorConectado(dataCliente);
 
 
-		// escuchar respuesta repartidor si acepta
+		// escuchar estado del pedido // reparitor asignado // en camino //  llego
+		socket.on('repartidor-notifica-estado-pedido', async (dataCliente) => {			
+			// update estado del pedido
+			apiPwaRepartidor.setUpdateEstadoPedido(dataCliente.idpedido, dataCliente.estado);
 
+			const socketIdCliente = await apiPwa.getSocketIdCliente(dataCliente.idcliente);
+			console.log('repartidor-notifica-estado-pedido', socketIdCliente[0].socketid +'  estado: '+dataCliente.estado);
+
+			io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-estado-pedido', dataCliente.estado);	
+		});
+
+		// escuchar ubicacion del repartidor
+		socket.on('repartidor-notifica-ubicacion', async (datosUbicacion) => {
+			const socketIdCliente = await apiPwa.getSocketIdCliente(datosUbicacion.idcliente);
+			console.log('repartidor-notifica-ubicacion', socketIdCliente[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
+			io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas);	
+		});
+
+
+
+		// escuchar posicion gps repartidor
+
+
+	}
+
+	function socketClienteDeliveryEstablecimientos(dataCliente, socket) {
+		console.log('desde func socketClienteDeliveryEstablecimientos', dataCliente);
+
+		// mantener el socket id
+		// if (dataCliente.firts_socketid) {
+		// 	dataCliente.socketid = dataCliente.firts_socketid;
+		// 	socket.id = dataCliente.firts_socketid;
+
+			console.log ('sin cambiar socket', dataCliente);
+		// }
+		
+		// registrar como conectado en cliente_socketid
+		apiPwa.setClienteConectado(dataCliente);
+
+		// escuhar fin del pedido cuando el cliente recibio el pedido y califico el servicio
+		socket.on('repartidor-notifica-fin-pedido', async (dataPedido) => {
+			const socketIdCliente = await apiPwaRepartidor.getSocketIdRepartidor(dataPedido.idrepartidor);
+			console.log('repartidor-notifica-fin-pedido', socketIdCliente[0].socketid);
+
+			// cerrar pedido
+			apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
+			apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
+
+			// notifica al repartidor para que califique cliente
+			io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-fin-pedido', dataPedido.idrepartidor);	
+		});
+
+
+		
+
+	}
+
+
+	// comercio
+	async function socketComercioDelivery(dataCliente, socket) {
+		console.log('desde func socketComercio', dataCliente);
+		apiPwaComercio.setComercioConectado(dataCliente);
+
+		// data del la sede
+		const objDataSede = await apiPwa.getDataSede(dataCliente);
+		socket.emit('getDataSede', objDataSede);
 	}
 }

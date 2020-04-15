@@ -95,8 +95,63 @@ const setAsignarPedido = function (req, res) {
 }
 module.exports.setAsignarPedido = setAsignarPedido;
 
+const setUpdateEstadoPedido = function (idpedido, estado) {  
+    const read_query = `update pedido set pwa_delivery_status = '${estado}' where idpedido = ${idpedido};`;
+    emitirRespuesta(read_query);        
+}
+module.exports.setUpdateEstadoPedido = setUpdateEstadoPedido;
+
+const setUpdateRepartidorOcupado = function (idrepartidor, estado) {  
+    const read_query = `update repartidor set ocupado = ${estado} where idrepartidor = ${idrepartidor};`;
+    emitirRespuesta(read_query);        
+}
+module.exports.setUpdateRepartidorOcupado = setUpdateRepartidorOcupado;
 
 
+
+const getSocketIdRepartidor = async function (listIdRepartidor) {
+	// const idcliente = dataCLiente.idcliente;
+    const read_query = `SELECT socketid from repartidor where idrepartidor in (${listIdRepartidor})`;
+    return emitirRespuesta(read_query);        
+}
+module.exports.getSocketIdRepartidor = getSocketIdRepartidor;
+
+
+
+const getEstadoPedido = async function (req, res) {	
+    const idpedido = req.body.idpedido;
+        
+    const read_query = `select pwa_delivery_status from pedido where idpedido=${idpedido}`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getEstadoPedido = getEstadoPedido;
+
+
+const setFinPedidoEntregado = function (req, res) {
+	const obj = req.body;
+	console.log(JSON.stringify(obj));
+
+    const read_query = `call procedure_pwa_delivery_pedido_entregado('${JSON.stringify(obj)}')`;
+    return emitirRespuestaSP(read_query);        
+}
+module.exports.setFinPedidoEntregado = setFinPedidoEntregado;
+
+const getPedidosEntregadoDia = function (req, res) {
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
+	
+    const read_query = `call procedure_pwa_repartidor_pedido_entregado_dia(${idrepartidor})`;
+    return emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getPedidosEntregadoDia = getPedidosEntregadoDia;
+
+const getPedidosResumenEntregadoDia = function (req, res) {
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
+	
+    const read_query = `call procedure_pwa_repartidor_resumen_entregado_dia(${idrepartidor})`;
+    return emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getPedidosResumenEntregadoDia = getPedidosResumenEntregadoDia;
 
 
 

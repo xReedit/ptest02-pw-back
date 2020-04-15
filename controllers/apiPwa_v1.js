@@ -110,14 +110,13 @@ const setPrintComanda = async function (dataCLiente, dataPrint) {
 module.exports.setPrintComanda = setPrintComanda;
 
 const getLaCuenta = async function (req, res) {
-	const idorg = managerFilter.getInfoToken(req,'idorg') || req.body.idorg;
-	const idsede = managerFilter.getInfoToken(req, 'idsede') || req.body.idsede;
+	const idorg = req.body.idorg || managerFilter.getInfoToken(req,'idorg');
+	const idsede = req.body.idsede || managerFilter.getInfoToken(req, 'idsede');
     const mesa = req.body.mesa;
     const idpedido = req.body.idpedido;
 
     // console.log('cuenta de mesa: ', mesa);
-	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', ${idpedido}, ${idorg}, ${idsede});`;
-	// console.log('sql ', read_query)
+	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', ${idpedido}, ${idorg}, ${idsede});`;	
     emitirRespuestaSP_RES(read_query, res);
 
     // const read_query = `call procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}')`;
@@ -144,6 +143,14 @@ const getLaCuentaFromClienteTotales = async function (req, res) {
     emitirRespuestaSP_RES(read_query, res); 
 }
 module.exports.getLaCuentaFromClienteTotales = getLaCuentaFromClienteTotales;
+
+const getLaCuentaFromPedidoTotales = async function (req, res) {
+    const idpedido = req.body.idpedido;
+
+	const read_query = `call procedure_pwa_cuenta_cliente_totales('', '', ${idpedido});`;	
+    emitirRespuestaSP_RES(read_query, res); 
+}
+module.exports.getLaCuentaFromPedidoTotales = getLaCuentaFromPedidoTotales;
 
 
 const getConsultaDatosCliente = async function (req, res) {
@@ -174,6 +181,12 @@ const getReglasApp = async function (req, res) {
     emitirRespuesta_RES(read_query, res);
 }
 module.exports.getReglasApp = getReglasApp;
+
+const getConsAppDelivery = async function (req, res) {	
+	const read_query = `SELECT value from sys_const where llave in ('DELIVERY_CANTIDAD_ITEMS_ESCALA', 'DELIVERY_COSTO_ITEMS_ESCALA')`;	
+    emitirRespuesta_RES(read_query, res);
+}
+module.exports.getConsAppDelivery = getConsAppDelivery;
 
 
 const setRegisterClienteLogin = async function (req, res) {	

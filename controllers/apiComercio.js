@@ -79,8 +79,8 @@ module.exports.getTipoComprobante = getTipoComprobante;
 
 const getDatosImpresion = async function (req, res) {  
 	const idsede = managerFilter.getInfoToken(req,'idsede');
-    const read_query = `SELECT cp.var_size_font_tall_comanda, cp.ip_print, cp.num_copias, cp.pie_pagina, cp.pie_pagina_comprobante, cp.logo, '' as logo64, s.nombre AS des_sede, s.eslogan, s.mesas, s.ciudad
-		, i.var_margen_iz, i.var_size_font, i.ip, i.papel_size, i.img64, i.idimpresora as ip_print, i.copia_local, i.local
+    const read_query = `SELECT cp.var_size_font_tall_comanda, i.ip as ip_print, cp.num_copias, cp.pie_pagina, cp.pie_pagina_comprobante, cp.logo, '' as logo64, s.nombre AS des_sede, s.eslogan, s.mesas, s.ciudad
+		, i.var_margen_iz, i.var_size_font, i.idimpresora, i.papel_size, i.img64, i.copia_local, i.local
 			FROM conf_print AS cp
             	INNER JOIN sede AS s ON cp.idsede = s.idsede
             	LEFT join conf_print_otros cpo on cpo.idsede = s.idsede and cpo.idtipo_otro = -3
@@ -91,6 +91,36 @@ const getDatosImpresion = async function (req, res) {
     emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getDatosImpresion = getDatosImpresion;			
+
+
+const setPwaFacturado = async function (req) {	
+	const idpedido = req.body.idpedido;	
+
+	const read_query = `update pedido set pwa_facturado = 1 where idpedido = ${idpedido}`;
+	return emitirRespuesta(read_query);
+}
+module.exports.setPwaFacturado = setPwaFacturado;
+
+
+const getTiposPago = function (req, res) {
+    const read_query = `SELECT * from tipo_pago WHERE idtipo_pago in (1,2,5) and estado=0`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getTiposPago = getTiposPago;
+
+
+const setRegistrarPago = function (req, res) {  
+	const idsede = managerFilter.getInfoToken(req,'idsede');
+	const idorg = managerFilter.getInfoToken(req,'idorg');
+	const idpedido = req.body.idpedido;
+	const idcliente = req.body.idcliente;
+	const idtipo_pago = req.body.idtipo_pago;
+	const importe_total = req.body.importe_total;
+	const obj_sutotales = req.body.obj_sutotales;
+    const read_query = `call procedure_pwa_registra_pago_pedido_comercio(${idorg},${idsede},${idpedido},${idcliente},${idtipo_pago},'${importe_total}', '${JSON.stringify(obj_sutotales)}')`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.setRegistrarPago = setRegistrarPago;
 
 
 

@@ -113,9 +113,12 @@ routerV3.get('/repartidor/get-pedidos-resumen-entregados-dia', auth.verificarTok
 routerV3.post('/comercio/set-online', auth.verificarToken, apiPwaAppComercio.setOnline);
 routerV3.get('/comercio/get-pedidos-pendientes', auth.verificarToken, apiPwaAppComercio.getOrdenesPedientes);
 routerV3.post('/comercio/set-estado-pedido', auth.verificarToken, apiPwaAppComercio.setEstadoPedido);
+routerV3.post('/comercio/set-pwa-facturado', auth.verificarToken, apiPwaAppComercio.setPwaFacturado);
 routerV3.post('/comercio/get-comercio-repartidor', auth.verificarToken, apiPwaAppComercio.getComercioRepartidor);
 routerV3.get('/comercio/get-tipo-comprobantes', auth.verificarToken, apiPwaAppComercio.getTipoComprobante);
 routerV3.get('/comercio/get-datos-impresion', auth.verificarToken, apiPwaAppComercio.getDatosImpresion);
+routerV3.get('/comercio/get-tipo-pago', auth.verificarToken, apiPwaAppComercio.getTiposPago);
+routerV3.post('/comercio/set-registrar-pago-pedido-comercio', auth.verificarToken, apiPwaAppComercio.setRegistrarPago);
 
 
 routerV3.post('/consulta/dni-ruc', auth.verificarToken, apiConsultaDniRuc.getConsultaDatosCliente);

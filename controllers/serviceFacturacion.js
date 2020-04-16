@@ -490,10 +490,20 @@ function xImprimirComprobanteAhora(xArrayEncabezado,xArrayCuerpo,xArraySubtotal,
     // let _arrBodyComprobante = xEstructuraItemsJsonComprobante(xArrayCuerpo, xArraySubtotal, true); // cpe = true subtotal + adicional
     // _arrBodyComprobante = xEstructuraItemsAgruparPrintJsonComprobante(_arrBodyComprobante);
 
-    const _arrBodyComprobante = xArrayCuerpo;
+    const _arrBodyComprobante = xEstructuraItemPrint(xArrayCuerpo);
 
     
     xArrayEncabezado.nom_us = '';
+
+    // preparar los arrays segun el formato impresion php
+    let arrEnca = [];
+    arrEnca[0] = xArrayEncabezado;
+    xArrayEncabezado = arrEnca;
+
+    let arrPrint = [];
+    arrPrint[0] = xImpresoraPrint;
+    xImpresoraPrint = arrPrint;
+
 
     const _data = {
         Array_enca: xArrayEncabezado,
@@ -506,6 +516,15 @@ function xImprimirComprobanteAhora(xArrayEncabezado,xArrayCuerpo,xArraySubtotal,
     
     xSendDataPrintServer(_data, 2, 'comprobante');        
     
+}
+
+function xEstructuraItemPrint(xArrayCuerpo) {    
+    xArrayCuerpo[0].items.map((item, index) => {
+        xArrayCuerpo[0][index] = item;
+    });    
+
+    xArrayCuerpo[0].items = null;
+    return xArrayCuerpo;
 }
 
 
@@ -539,7 +558,7 @@ function xSendDataPrintServer(_data, _idprint_server_estructura, _tipo){
     emitirRespuestaSP(read_query);
     
 
-    console.log('xSendDataPrintServer', _data);
+    // console.log('xSendDataPrintServer', _data);
 
 
 

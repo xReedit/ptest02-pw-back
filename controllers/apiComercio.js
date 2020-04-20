@@ -21,10 +21,22 @@ module.exports.setOnline = setOnline;
 
 const getOrdenesPedientes = function (req, res) {  
 	const idsede = managerFilter.getInfoToken(req,'idsede');
-    const read_query = `call procedure_comercio_pedidos_pendientes(${idsede})`;
-    emitirRespuestaSP_RES(read_query, res);        
+	const filtro = req.body.filtro;	
+    // const read_query = `call procedure_comercio_pedidos_pendientes(${idsede})`;
+    const read_query = `SELECT p.*, r.nombre as nom_repartidor, r.apellido as ap_repartidor , r.telefono as telefono_repartidor
+						from pedido p
+						LEFT join repartidor r on p.idrepartidor=r.idrepartidor
+						where p.idsede = 10 and p.is_from_client_pwa=1 and p.cierre=0 and p.pwa_estado in (${filtro});`;    
+    emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getOrdenesPedientes = getOrdenesPedientes;
+
+const getOrdenesByid = function (req, res) {  
+	const idpedido = req.body.idpedido;	
+    const read_query = `SELECT * from pedido where idpedido=${idpedido};`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getOrdenesByid = getOrdenesByid;
 
 
 const setEstadoPedido = function (req, res) {  	
@@ -45,6 +57,11 @@ const setComercioConectado = function (dataCLiente) {
 }
 module.exports.setComercioConectado = setComercioConectado;
 
+const getSocketIdComercio = async function (idsede) {
+    const read_query = `SELECT socketid from sede_socketid where idsede = ${idsede}`;
+    return emitirRespuesta(read_query);        
+}
+module.exports.getSocketIdComercio = getSocketIdComercio;
 
 const pushSuscripcion = async function (req) {	
 	const idsede = managerFilter.getInfoToken(req,'idsede');

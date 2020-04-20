@@ -51,12 +51,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socketClienteDeliveryEstablecimientos(dataCliente,socket);
 			return;
 		}
-
-		if (dataCliente.isComercio === 'true') {
-			// socketMaster = socket; 
-			socketComercioDelivery(dataCliente,socket);
-			return;
-		}
+		
 		
 		// si viene desde app pedidos
 		// 1 is from pwa 0 is web // si es 0 web no da carta
@@ -68,6 +63,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		console.log('conectado al room ', chanelConect);
 
 		socket.join(chanelConect);
+
+
+		if (dataCliente.isComercio === 'true') {
+			// socketMaster = socket; 
+			socketComercioDelivery(dataCliente,socket);
+			return;
+		}
 
 		// registrar como conectado en cliente_socketid
 		apiPwa.setClienteConectado(dataCliente);
@@ -254,23 +256,29 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// console.log('respuesta guardar pedido ', JSON.stringify(rpt[0].idpedido));
 
 
+			dataSend.dataPedido.idpedido = rpt[0].idpedido; // para buscar el pedido en comercio
+
+
 			// si es delivery app
 			if ( dataSend.isDeliveryAPP ) {
 
-				const _dataPedido = {
-					dataItems: dataSend.dataPedido.p_body,
-					dataDelivery: dataSend.dataPedido.p_header.arrDatosDelivery,
-					idpedido: rpt[0].idpedido
-				}
+				// run proceso de busqueda repartidor
+				apiPwaRepartidor.runLoopSearchRepartidor(io);
 
-				console.log ('datos para enviar repartidor ', JSON.stringify(_dataPedido));
-				// obtener lista de repartidores
+			// 	const _dataPedido = {
+			// 		dataItems: dataSend.dataPedido.p_body,
+			// 		dataDelivery: dataSend.dataPedido.p_header.arrDatosDelivery,
+			// 		idpedido: rpt[0].idpedido
+			// 	}				
 
-				const listRepartidores = await apiPwaRepartidor.getRepartidoreForPedido(_dataPedido);
+			// 	console.log ('datos para enviar repartidor ', JSON.stringify(_dataPedido));
+				
+			// 	// obtener lista de repartidores
+			// 	const listRepartidores = await apiPwaRepartidor.getRepartidoreForPedido(_dataPedido);
 
-				// pasamos a funcion que maneja las notificaciones
-				console.log('lista de repartidores', listRepartidores);
-				apiPwaRepartidor.sendPedidoRepartidor(listRepartidores, _dataPedido, io);
+			// 	// pasamos a funcion que maneja las notificaciones
+			// 	console.log('lista de repartidores', listRepartidores);
+			// 	apiPwaRepartidor.sendPedidoRepartidor(listRepartidores, _dataPedido, io);
 
 
 			}
@@ -371,7 +379,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 	});
 
 
-	function socketRepartidor(dataCliente, socket) {
+	async function socketRepartidor(dataCliente, socket) {
 		console.log('desde func repartatidor', dataCliente);
 
 		// mantener el socket id del repartidor
@@ -385,7 +393,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		
 
 		// registrar como conectado en cliente_socketid
-		apiPwaRepartidor.setRepartidorConectado(dataCliente);
+		apiPwaRepartidor.setRepartidorConectado(dataCliente);		
+
+		// ver si tenemos un pedido pendiente de aceptar
+		const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataCliente.idrepartidor);
+		socket.emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
+
 
 
 		// escuchar estado del pedido // reparitor asignado // en camino //  llego
@@ -407,8 +420,34 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 
+		// reasignar pedido // enviar a otro repartidor
+		// socket.on('repartidor-declina-pedido', async (_dataPedido) => {
 
-		// escuchar posicion gps repartidor
+		// 	// obtener lista de repartidores
+		// 	const listRepartidores = await apiPwaRepartidor.getRepartidoreForPedido(_dataPedido);
+
+		// 	// pasamos a funcion que maneja las notificaciones
+		// 	console.log('repartidor-declina-pedido enviar a', listRepartidores[_dataPedido.num_reasignado]);
+		// 	apiPwaRepartidor.sendPedidoRepartidor(listRepartidores, _dataPedido, io);
+		// });		
+
+
+		/// repartidor - comunicacion con el comercio 
+		/// repartidor - comunicacion con el comercio
+
+
+		// dataPedido = { idpedido, idsede, datosRepartidor }
+		socket.on('repartidor-acepta-pedido', async (dataPedido) => {
+
+			// buscamos socketid de comercio para notificar
+			const socketidComercio = await apiPwaComercio.getSocketIdComercio(dataPedido.idsede);
+			console.log('repartidor-notifica-a-comercio-pedido-aceptado', socketidComercio +'  pedido: '+ dataPedido.idpedido);
+
+			io.to(socketidComercio[0].socketid).emit('repartidor-notifica-a-comercio-pedido-aceptado', dataPedido);	
+
+
+
+		})
 
 
 	}

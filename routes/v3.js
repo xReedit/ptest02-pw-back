@@ -106,12 +106,15 @@ routerV3.post('/repartidor/set-fin-pedido-entregado', auth.verificarToken, apiPw
 routerV3.get('/repartidor/get-pedidos-entregados-dia', auth.verificarToken, apiPwaAppRepartidor.getPedidosEntregadoDia);
 routerV3.get('/repartidor/get-pedidos-resumen-entregados-dia', auth.verificarToken, apiPwaAppRepartidor.getPedidosResumenEntregadoDia);
 
+routerV3.get('/repartidor/ruc-proceso-buscar-repartidor', apiPwaAppRepartidor.runLoopPrueba);
+
 
 
 /// COMERCIO
 /// COMERCIO
 routerV3.post('/comercio/set-online', auth.verificarToken, apiPwaAppComercio.setOnline);
-routerV3.get('/comercio/get-pedidos-pendientes', auth.verificarToken, apiPwaAppComercio.getOrdenesPedientes);
+routerV3.post('/comercio/get-pedidos-pendientes', auth.verificarToken, apiPwaAppComercio.getOrdenesPedientes);
+routerV3.post('/comercio/get-pedido-by-id', auth.verificarToken, apiPwaAppComercio.getOrdenesByid);
 routerV3.post('/comercio/set-estado-pedido', auth.verificarToken, apiPwaAppComercio.setEstadoPedido);
 routerV3.post('/comercio/set-pwa-facturado', auth.verificarToken, apiPwaAppComercio.setPwaFacturado);
 routerV3.post('/comercio/get-comercio-repartidor', auth.verificarToken, apiPwaAppComercio.getComercioRepartidor);

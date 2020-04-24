@@ -376,6 +376,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			});			
 		});
 
+
 	});
 
 
@@ -412,11 +413,20 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-estado-pedido', dataCliente.estado);	
 		});
 
-		// escuchar ubicacion del repartidor
+		// escuchar ubicacion del repartidor al cliente
 		socket.on('repartidor-notifica-ubicacion', async (datosUbicacion) => {
-			const socketIdCliente = await apiPwa.getSocketIdCliente(datosUbicacion.idcliente);
-			console.log('repartidor-notifica-ubicacion', socketIdCliente[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
-			io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas);	
+			// notifica a cliente
+			if ( datosUbicacion.idcliente ) {
+				const socketIdCliente = await apiPwa.getSocketIdCliente(datosUbicacion.idcliente);
+				console.log('repartidor-notifica-ubicacion ==> al cliente', socketIdCliente[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
+				io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas);					
+			}			
+
+			// notifica a comercio
+			const socketIdComercio = await apiPwaComercio.getSocketIdComercio(datosUbicacion.idsede);
+			console.log('repartidor-notifica-ubicacion ==> al comercio', socketIdComercio[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
+			io.to(socketIdComercio[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion);	
+
 		});
 
 
@@ -447,7 +457,19 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 
-		})
+		});
+
+
+		// repartidor propio
+		socket.on('repartidor-propio-notifica-fin-pedido', async (dataPedido) => {
+			console.log('repartidor-propio-notifica-fin-pedido', dataPedido);
+			apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
+
+			// para que el comercio actualice el marker
+			// notifica a comercio			
+			const socketidComercio = await apiPwaComercio.getSocketIdComercio(dataPedido.datosComercio.idsede);
+			io.to(socketidComercio[0].socketid).emit('repartidor-propio-notifica-fin-pedido', dataPedido);
+		});
 
 
 	}
@@ -476,8 +498,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
 
 			// notifica al repartidor para que califique cliente
-			io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-fin-pedido', dataPedido.idrepartidor);	
-		});
+			io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-fin-pedido', dataPedido);	
+		});		
+
+
 
 
 		
@@ -493,5 +517,15 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// data del la sede
 		const objDataSede = await apiPwa.getDataSede(dataCliente);
 		socket.emit('getDataSede', objDataSede);
+
+		// notifica al pedido que tiene un pedido asignado desde el comercio
+		socket.on('set-repartidor-pedido-asigna-comercio', async (dataPedido) => {
+			console.log('set-repartidor-pedido-asigna-comercio', dataPedido);
+			const socketIdRepartidor = await apiPwaRepartidor.getSocketIdRepartidor(dataPedido.idrepartidor);
+			io.to(socketIdRepartidor[0].socketid).emit('set-repartidor-pedido-asigna-comercio', dataPedido);				
+
+			// notificacion push nuevo pedido
+			apiPwaRepartidor.sendOnlyNotificaPush(socketIdRepartidor[0].key_suscripcion_push, 0);
+		})
 	}
 }

@@ -61,8 +61,8 @@ const getRepartidoreForPedido = async function (dataPedido) {
 module.exports.getRepartidoreForPedido = getRepartidoreForPedido;
 
 // dataPedido es el registro de la tabla pedido
-const getRepartidoreForPedidoFromInterval = async function (es_latitude, es_longitude) {		                  
-    const read_query = `call procedure_delivery_get_repartidor(${es_latitude}, ${es_longitude})`;
+const getRepartidoreForPedidoFromInterval = async function (es_latitude, es_longitude, efectivoPagar) {		                  
+    const read_query = `call procedure_delivery_get_repartidor(${es_latitude}, ${es_longitude}, ${efectivoPagar})`;
     return emitirRespuestaSP(read_query);        
 }
 module.exports.getRepartidoreForPedidoFromInterval = getRepartidoreForPedidoFromInterval;
@@ -118,18 +118,18 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 	}
 
 	// enviamos push notificaction
-	const notification = {
-		"notification": {
-		        "notification": {
-		            "title": "Nuevo Pedido",
-		            "body": `${firtsRepartidor.nombre} te llego un pedido.`,
-		            "icon": "./favicon.ico",
-		            "lang": "es",
-		            "vibrate": [100, 50, 100]
-		        }
-		    }
-		}	
-	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, notification);
+	// const notification = {
+	// 	"notification": {
+	// 	        "notification": {
+	// 	            "title": "Nuevo Pedido",
+	// 	            "body": `${firtsRepartidor.nombre} te llego un pedido.`,
+	// 	            "icon": "./favicon.ico",
+	// 	            "lang": "es",
+	// 	            "vibrate": [100, 50, 100]
+	// 	        }
+	// 	    }
+	// 	}	
+	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0);
 
 	// enviamos el socket
 	console.log('socket enviado a repartidor', firtsRepartidor);
@@ -137,6 +137,12 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 
 }
 module.exports.sendPedidoRepartidor = sendPedidoRepartidor;
+
+
+const sendOnlyNotificaPush = function (key_suscripcion_push, tipo_msjs) {
+	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, tipo_msjs);
+}
+module.exports.sendOnlyNotificaPush = sendOnlyNotificaPush;
 
 // enviar pedido al primer repartidor de lista
 // const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
@@ -184,7 +190,8 @@ const setAsignarPedido = function (req, res) {
 module.exports.setAsignarPedido = setAsignarPedido;
 
 const setUpdateEstadoPedido = function (idpedido, estado) {  
-    const read_query = `update pedido set pwa_delivery_status = '${estado}' where idpedido = ${idpedido};`;
+	const savePwaEstado = estado === 4 ? ", pwa_estado = 'E' " : '';
+    const read_query = `update pedido set pwa_delivery_status = '${estado}' ${savePwaEstado} where idpedido = ${idpedido};`;
     emitirRespuesta(read_query);        
 }
 module.exports.setUpdateEstadoPedido = setUpdateEstadoPedido;
@@ -199,7 +206,7 @@ module.exports.setUpdateRepartidorOcupado = setUpdateRepartidorOcupado;
 
 const getSocketIdRepartidor = async function (listIdRepartidor) {
 	// const idcliente = dataCLiente.idcliente;
-    const read_query = `SELECT socketid from repartidor where idrepartidor in (${listIdRepartidor})`;
+    const read_query = `SELECT socketid, pwa_code_verification as key_suscripcion_push from repartidor where idrepartidor in (${listIdRepartidor})`;
     return emitirRespuesta(read_query);        
 }
 module.exports.getSocketIdRepartidor = getSocketIdRepartidor;
@@ -220,7 +227,7 @@ const setFinPedidoEntregado = function (req, res) {
 	console.log(JSON.stringify(obj));
 
     const read_query = `call procedure_pwa_delivery_pedido_entregado('${JSON.stringify(obj)}')`;
-    return emitirRespuestaSP(read_query);        
+    return emitirRespuesta_RES(read_query, res);        
 }
 module.exports.setFinPedidoEntregado = setFinPedidoEntregado;
 
@@ -250,7 +257,12 @@ module.exports.getPedidoPendienteAceptar = getPedidoPendienteAceptar;
 
 
 
-
+const getPropioPedidos = function (req, res) {
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
+    const read_query = `SELECT * from  pedido where idrepartidor=${idrepartidor} and (fecha = DATE_FORMAT(now(), '%d/%m/%Y')  or cierre=0)`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getPropioPedidos = getPropioPedidos;
 
 
 
@@ -277,12 +289,20 @@ async function colocarPedidoEnRepartidor(io) {
 	if (listPedidos.length > 0) {
 		listPedidos.map(async p => {
 			console.log('pedido procesar', p);
-			p.json_datos_delivery = JSON.parse(p.json_datos_delivery);
+			p.json_datos_delivery = JSON.parse(p.json_datos_delivery);			
+
+			// cantidad en efectivo a  pagar (efectivo o yape)
+			const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;	
+			const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
+
+			console.log('_cantidadEfectivoPagar', _cantidadEfectivoPagar);
+			
+
 
 			// const _pJson = JSON.parse(JSON.stringify(p));		
 			console.log('pedido procesar json', p);
 			// lista de repartidores			
-			const listRepartidores = await getRepartidoreForPedidoFromInterval(p.latitude, p.longitude);
+			const listRepartidores = await getRepartidoreForPedidoFromInterval(p.latitude, p.longitude, _cantidadEfectivoPagar);
 
 			// enviamos
 			sendPedidoRepartidor(listRepartidores, p, io);
@@ -319,8 +339,17 @@ const runLoopPrueba = async function (req, res) {
 	console.log ( 'listPedidos listPedidos.lenght', listPedidos.length );
 	listPedidos.map(async p => {
 
-		console.log('pedido procesar', p);
+		p.json_datos_delivery = JSON.parse(p.json_datos_delivery);
+		// console.log('pedido procesar', p);
 		console.log('p.latitude', p.latitude);
+
+		const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;			
+
+		console.log('_dataJson.arrDatosDelivery.metodoPago.idtipo_pago', _dataJson.metodoPago.idtipo_pago)		
+
+		const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
+
+			console.log('_cantidadEfectivoPagar', _cantidadEfectivoPagar);
 	})
 }
 module.exports.runLoopPrueba = runLoopPrueba;

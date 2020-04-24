@@ -109,9 +109,26 @@ module.exports.sendPushNotificaction = sendPushNotificaction;
 
 
 // envia notificacion push a repartidor de que tiene un pedido
-const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, payload) {
+const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_msj) {
 	// const key_suscripcion_push = Repartidor.key_suscripcion_push;	
 	// const notificationPayload = payload;
+	let payload;
+	switch (tipo_msj) {
+      case 0: // notifica a repartidor nuevo pedido
+      payload = {
+		"notification": {
+		        "notification": {
+		            "title": "Nuevo Pedido",
+		            "body": `${firtsRepartidor.nombre} te llego un pedido.`,
+		            "icon": "./favicon.ico",
+		            "lang": "es",
+		            "vibrate": [100, 50, 100]
+		        }
+		    }
+		}       
+        break;
+    }	
+
 	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
 
 	console.log('notificationPayload', payload);

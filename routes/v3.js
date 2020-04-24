@@ -105,6 +105,8 @@ routerV3.post('/repartidor/get-estado-pedido', auth.verificarToken, apiPwaAppRep
 routerV3.post('/repartidor/set-fin-pedido-entregado', auth.verificarToken, apiPwaAppRepartidor.setFinPedidoEntregado);
 routerV3.get('/repartidor/get-pedidos-entregados-dia', auth.verificarToken, apiPwaAppRepartidor.getPedidosEntregadoDia);
 routerV3.get('/repartidor/get-pedidos-resumen-entregados-dia', auth.verificarToken, apiPwaAppRepartidor.getPedidosResumenEntregadoDia);
+routerV3.get('/repartidor/get-repartidor-propio-mis-pedidos', auth.verificarToken, apiPwaAppRepartidor.getPropioPedidos);
+
 
 routerV3.get('/repartidor/ruc-proceso-buscar-repartidor', apiPwaAppRepartidor.runLoopPrueba);
 
@@ -117,11 +119,17 @@ routerV3.post('/comercio/get-pedidos-pendientes', auth.verificarToken, apiPwaApp
 routerV3.post('/comercio/get-pedido-by-id', auth.verificarToken, apiPwaAppComercio.getOrdenesByid);
 routerV3.post('/comercio/set-estado-pedido', auth.verificarToken, apiPwaAppComercio.setEstadoPedido);
 routerV3.post('/comercio/set-pwa-facturado', auth.verificarToken, apiPwaAppComercio.setPwaFacturado);
-routerV3.post('/comercio/get-comercio-repartidor', auth.verificarToken, apiPwaAppComercio.getComercioRepartidor);
+routerV3.get('/comercio/get-comercio-repartidor', auth.verificarToken, apiPwaAppComercio.getComercioRepartidor);
 routerV3.get('/comercio/get-tipo-comprobantes', auth.verificarToken, apiPwaAppComercio.getTipoComprobante);
 routerV3.get('/comercio/get-datos-impresion', auth.verificarToken, apiPwaAppComercio.getDatosImpresion);
 routerV3.get('/comercio/get-tipo-pago', auth.verificarToken, apiPwaAppComercio.getTiposPago);
 routerV3.post('/comercio/set-registrar-pago-pedido-comercio', auth.verificarToken, apiPwaAppComercio.setRegistrarPago);
+routerV3.post('/comercio/set-repartidor-to-pedido', auth.verificarToken, apiPwaAppComercio.setRepartidorToPedido);
+
+
+// comercio registro
+routerV3.get('/comercio/get-categoria-registro', apiPwaAppComercio.getCategoriasComercio);
+routerV3.post('/comercio/registro-solicitud-comercio', apiPwaAppComercio.setRegistroSolicitud);
 
 
 routerV3.post('/consulta/dni-ruc', auth.verificarToken, apiConsultaDniRuc.getConsultaDatosCliente);

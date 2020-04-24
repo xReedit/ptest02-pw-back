@@ -74,7 +74,7 @@ module.exports.pushSuscripcion = pushSuscripcion;
 
 const getComercioRepartidor = function (req, res) {  
 	const idsede = managerFilter.getInfoToken(req,'idsede');
-    const read_query = `SELECT * from usuario where idsede = ${idsede} and estado = 0`;
+    const read_query = `SELECT * from repartidor where idsede_suscrito = ${idsede} and estado = 0`;
     emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getComercioRepartidor = getComercioRepartidor;
@@ -139,6 +139,55 @@ const setRegistrarPago = function (req, res) {
 }
 module.exports.setRegistrarPago = setRegistrarPago;
 
+const setRepartidorToPedido = async function (req) {	
+	const idrepartidor = req.body.idrepartidor;	
+	const idpedido = req.body.idpedido;	
+
+	const read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido = ${idpedido}`;
+	return emitirRespuesta(read_query);
+}
+module.exports.setRepartidorToPedido = setRepartidorToPedido;
+
+
+
+// registro de comercio
+const getCategoriasComercio = function (req, res) {
+    const read_query = `
+    	SELECT (
+			CAST(CONCAT('[',GROUP_CONCAT(JSON_OBJECT(
+				'id', res.idsede_categoria,
+				'descripcion', res.descripcion,
+				'items', res.arritems
+			)),']') as json)
+		) as rpt FROM 
+		(				
+		SELECT sc.idsede_categoria, sc.descripcion,
+			CAST(CONCAT('[',
+						GROUP_CONCAT(
+							JSON_OBJECT(
+								'id', ssc.idsede_subcategoria,
+								'descripcion', ssc.descripcion
+							) ORDER by ssc.descripcion), ']') as json) as arritems
+		FROM sede_categoria AS sc
+							INNER JOIN sede_subcategoria ssc on sc.idsede_categoria = ssc.idsede_categoria
+						WHERE sc.estado=0 AND ssc.estado=0
+						GROUP by sc.idsede_categoria
+						ORDER BY sc.descripcion
+		) as res
+    `;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getCategoriasComercio = getCategoriasComercio;
+
+
+const setRegistroSolicitud = function (req, res) {	
+	const dateNow = new Date().toLocaleString();
+	const _comercio = req.body.comercio     
+    const read_query = `insert into comercio_pre_registro (fecha, nom_comercio, info) 
+    										values ('${dateNow}', '${_comercio.nombre}', '${JSON.stringify(_comercio)}')`;
+    emitirRespuesta_RES(read_query, res); 
+}
+module.exports.setRegistroSolicitud = setRegistroSolicitud;
 
 
 function emitirRespuesta(xquery, res) {

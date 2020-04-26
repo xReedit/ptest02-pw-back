@@ -23,10 +23,23 @@ const getOrdenesPedientes = function (req, res) {
 	const idsede = managerFilter.getInfoToken(req,'idsede');
 	const filtro = req.body.filtro;	
     // const read_query = `call procedure_comercio_pedidos_pendientes(${idsede})`;
-    const read_query = `SELECT p.*, r.nombre as nom_repartidor, r.apellido as ap_repartidor , r.telefono as telefono_repartidor
+    const read_query = `SELECT p.*, p.pwa_delivery_tiempo_atendido as tiempo, r.nombre as nom_repartidor, r.apellido as ap_repartidor , r.telefono as telefono_repartidor
+    						,r.position_now as position_now_repartidor
+    						, ( 
+    							SELECT
+								CAST(CONCAT('[',
+											GROUP_CONCAT(
+												JSON_OBJECT(
+													'idtipo_pago', tp.idtipo_pago,
+													'descripcion', tp.descripcion
+												)), ']') as json) as arritems
+								FROM registro_pago_detalle AS rp
+												INNER JOIN tipo_pago tp on tp.idtipo_pago= rp.idtipo_pago
+											WHERE rp.idregistro_pago = p.idregistro_pago
+    							) as metodoPagoRegistro
 						from pedido p
 						LEFT join repartidor r on p.idrepartidor=r.idrepartidor
-						where p.idsede = 10 and p.is_from_client_pwa=1 and p.cierre=0 and p.pwa_estado in (${filtro});`;    
+						where p.idsede = ${idsede} and p.is_from_client_pwa=1 and p.cierre=0 and p.pwa_estado in (${filtro});`;    
     emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getOrdenesPedientes = getOrdenesPedientes;
@@ -72,12 +85,13 @@ const pushSuscripcion = async function (req) {
 }
 module.exports.pushSuscripcion = pushSuscripcion;
 
-const getComercioRepartidor = function (req, res) {  
+const getComercioRepartidorSuscrito = function (req, res) {  
 	const idsede = managerFilter.getInfoToken(req,'idsede');
     const read_query = `SELECT * from repartidor where idsede_suscrito = ${idsede} and estado = 0`;
     emitirRespuesta_RES(read_query, res);        
 }
-module.exports.getComercioRepartidor = getComercioRepartidor;
+module.exports.getComercioRepartidorSuscrito = getComercioRepartidorSuscrito;
+
 
 
 const getTipoComprobante = function (req, res) {  

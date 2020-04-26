@@ -119,7 +119,7 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 		"notification": {
 		        "notification": {
 		            "title": "Nuevo Pedido",
-		            "body": `${firtsRepartidor.nombre} te llego un pedido.`,
+		            "body": `Te llego un pedido.`,
 		            "icon": "./favicon.ico",
 		            "lang": "es",
 		            "vibrate": [100, 50, 100]

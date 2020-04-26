@@ -119,7 +119,7 @@ routerV3.post('/comercio/get-pedidos-pendientes', auth.verificarToken, apiPwaApp
 routerV3.post('/comercio/get-pedido-by-id', auth.verificarToken, apiPwaAppComercio.getOrdenesByid);
 routerV3.post('/comercio/set-estado-pedido', auth.verificarToken, apiPwaAppComercio.setEstadoPedido);
 routerV3.post('/comercio/set-pwa-facturado', auth.verificarToken, apiPwaAppComercio.setPwaFacturado);
-routerV3.get('/comercio/get-comercio-repartidor', auth.verificarToken, apiPwaAppComercio.getComercioRepartidor);
+routerV3.get('/comercio/get-comercio-repartidor-suscrito', auth.verificarToken, apiPwaAppComercio.getComercioRepartidorSuscrito);
 routerV3.get('/comercio/get-tipo-comprobantes', auth.verificarToken, apiPwaAppComercio.getTipoComprobante);
 routerV3.get('/comercio/get-datos-impresion', auth.verificarToken, apiPwaAppComercio.getDatosImpresion);
 routerV3.get('/comercio/get-tipo-pago', auth.verificarToken, apiPwaAppComercio.getTiposPago);

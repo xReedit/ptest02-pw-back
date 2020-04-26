@@ -43,7 +43,8 @@ module.exports.pushSuscripcion = pushSuscripcion;
 
 const setPositionNow = function (req, res) {  
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
-	const pos = req.body.pos;    setEfectivoMano       
+	const pos = req.body.pos;
+	
 	
     const read_query = `update repartidor set position_now = '${JSON.stringify(pos)}' where idrepartidor = ${idrepartidor}`;
     emitirRespuesta_RES(read_query, res);        
@@ -189,8 +190,8 @@ const setAsignarPedido = function (req, res) {
 }
 module.exports.setAsignarPedido = setAsignarPedido;
 
-const setUpdateEstadoPedido = function (idpedido, estado) {  
-	const savePwaEstado = estado === 4 ? ", pwa_estado = 'E' " : '';
+const setUpdateEstadoPedido = function (idpedido, estado, tiempo = null) {
+	const savePwaEstado = estado === 4 ? ", pwa_estado = 'E' " : '';	
     const read_query = `update pedido set pwa_delivery_status = '${estado}' ${savePwaEstado} where idpedido = ${idpedido};`;
     emitirRespuesta(read_query);        
 }

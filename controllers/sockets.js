@@ -259,8 +259,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			dataSend.dataPedido.idpedido = rpt[0].idpedido; // para buscar el pedido en comercio
 
 
-			// si es delivery app
-			if ( dataSend.isDeliveryAPP ) {
+			// si es delivery app // dataSend.isClienteRecogeLocal si el cliente recoge el pedido en el local
+			if ( dataSend.isDeliveryAPP && !dataSend.isClienteRecogeLocal ) {
 
 				// run proceso de busqueda repartidor
 				apiPwaRepartidor.runLoopSearchRepartidor(io);

@@ -10,9 +10,10 @@ let mysql_clean = function (string) {
 };
 
 const getEstablecimientos = function (req, res) {  
-	const idsede_categoria = req.body.idsede_categoria;           
-	const codigo_postal = req.body.codigo_postal;           
-    const read_query = `call procedure_pwa_delivery_establecimientos(${idsede_categoria}, ${codigo_postal})`;
+	const idsede_categoria = req.body.idsede_categoria || 0;           
+	const codigo_postal = req.body.codigo_postal || 0;           
+	const idsede = req.body.idsede || 0;
+    const read_query = `call procedure_pwa_delivery_establecimientos(${idsede_categoria}, ${codigo_postal}, ${idsede})`;
     emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.getEstablecimientos = getEstablecimientos;

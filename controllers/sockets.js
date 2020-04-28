@@ -72,7 +72,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		}
 
 		// registrar como conectado en cliente_socketid
-		apiPwa.setClienteConectado(dataCliente);
+		if (dataCliente.iscliente === 'true') {
+			apiPwa.setClienteConectado(dataCliente);
+		}		
 
 
 		if ( dataSocket.isFromApp == 1 ) {

@@ -57,7 +57,8 @@ module.exports.setCalificarServicio = setCalificarServicio;
 const getCategorias = async function (req, res) {
 	// const idcliente = dataCLiente.idcliente;
     const read_query = `call procedure_delivery_get_categorias()`;
-    emitirRespuestaSP_RES(read_query, res);        
+    emitirRespuestaSP_RES(read_query, res);   
+    // return emitirRespuestaSP(read_query);      
 }
 module.exports.getCategorias = getCategorias;
 

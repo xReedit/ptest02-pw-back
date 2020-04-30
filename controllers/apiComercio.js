@@ -166,30 +166,8 @@ module.exports.setRepartidorToPedido = setRepartidorToPedido;
 
 // registro de comercio
 const getCategoriasComercio = function (req, res) {
-    const read_query = `
-    	SELECT (
-			CAST(CONCAT('[',GROUP_CONCAT(JSON_OBJECT(
-				'id', res.idsede_categoria,
-				'descripcion', res.descripcion,
-				'items', res.arritems
-			)),']') as json)
-		) as rpt FROM 
-		(				
-		SELECT sc.idsede_categoria, sc.descripcion,
-			CAST(CONCAT('[',
-						GROUP_CONCAT(
-							JSON_OBJECT(
-								'id', ssc.idsede_subcategoria,
-								'descripcion', ssc.descripcion
-							) ORDER by ssc.descripcion), ']') as json) as arritems
-		FROM sede_categoria AS sc
-							INNER JOIN sede_subcategoria ssc on sc.idsede_categoria = ssc.idsede_categoria
-						WHERE sc.estado=0 AND ssc.estado=0
-						GROUP by sc.idsede_categoria
-						ORDER BY sc.descripcion
-		) as res
-    `;
-    emitirRespuesta_RES(read_query, res);        
+    const read_query = `call procedure_pwa_get_all_categorias()`;
+    emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.getCategoriasComercio = getCategoriasComercio;
 

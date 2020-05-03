@@ -68,11 +68,15 @@ const getRepartidoreForPedidoFromInterval = async function (es_latitude, es_long
 }
 module.exports.getRepartidoreForPedidoFromInterval = getRepartidoreForPedidoFromInterval;
 
-const getPedidosEsperaRepartidor = async function () {	
+
+
+const getPedidosEsperaRepartidor = async function (idsede) {	
+    
+	// LIMIT 1 busca repartidor para el primer pedido primero
     const read_query = `SELECT p.*, s.longitude, s.latitude
 	from pedido p 
 		inner join  sede s on p.idsede = s.idsede
-	where p.is_from_client_pwa =1 and pwa_is_delivery = 1 and COALESCE(idrepartidor, 0) = 0  and s.pwa_delivery_servicio_propio = 0;`;
+	where p.idsede=${idsede} and p.is_from_client_pwa = 1 and pwa_is_delivery = 1 and COALESCE(idrepartidor, 0) = 0  and s.pwa_delivery_servicio_propio = 0 LIMIT 1;`;
 	
 	return emitirRespuesta(read_query);  
 	// const read_query = `call procedure_delivery_pedidos_pendientes()`;
@@ -275,10 +279,10 @@ module.exports.getPropioPedidos = getPropioPedidos;
 // esto por que el socket no es seguro
 
 
-async function colocarPedidoEnRepartidor(io) {
+async function colocarPedidoEnRepartidor(io, idsede) {
 
 	// traer lista de pedidos que estan sin repartidor
-	let listPedidos =  await getPedidosEsperaRepartidor();
+	let listPedidos =  await getPedidosEsperaRepartidor(idsede);
 	listPedidos = JSON.parse(JSON.stringify(listPedidos));
 	// listPedidos = listPedidos.data;
 	// console.log ( 'listPedidos', listPedidos.data );
@@ -301,7 +305,7 @@ async function colocarPedidoEnRepartidor(io) {
 
 
 			// const _pJson = JSON.parse(JSON.stringify(p));		
-			console.log('pedido procesar json', p);
+			// console.log('pedido procesar json', p);
 			// lista de repartidores			
 			const listRepartidores = await getRepartidoreForPedidoFromInterval(p.latitude, p.longitude, _cantidadEfectivoPagar);
 
@@ -320,10 +324,10 @@ async function colocarPedidoEnRepartidor(io) {
 	
 }
 
-const runLoopSearchRepartidor = async function (io) {
+const runLoopSearchRepartidor = async function (io, idsede) {
 	if ( intervalBucaRepartidor === null ) {
-		colocarPedidoEnRepartidor(io);
-		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io), 15000);
+		colocarPedidoEnRepartidor(io, idsede);
+		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 15000);
 	}
 }
 module.exports.runLoopSearchRepartidor = runLoopSearchRepartidor;

@@ -265,7 +265,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			if ( dataSend.isDeliveryAPP && !dataSend.isClienteRecogeLocal ) {
 
 				// run proceso de busqueda repartidor
-				apiPwaRepartidor.runLoopSearchRepartidor(io);
+				apiPwaRepartidor.runLoopSearchRepartidor(io, dataCliente.idsede);
 
 			// 	const _dataPedido = {
 			// 		dataItems: dataSend.dataPedido.p_body,

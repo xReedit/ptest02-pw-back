@@ -412,9 +412,12 @@ function onlyUpdateQuery(xquery, res) {
 	// .catch((err) => {
 	// 	return false;
 	// });
-	return ReS(res, {
-		 susccess: true
-		});	
+	// return ReS(res, {
+	// 	 susccess: true
+	// 	});	
+	res.json({
+        susccess: true        
+    });
 }
 
 

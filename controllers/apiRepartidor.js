@@ -403,15 +403,18 @@ function emitirRespuestaSP(xquery) {
 function onlyUpdateQuery(xquery, res) {
 	console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
-	.then(function (rows) {
+	// .then(function (rows) {
 		
-		return ReS(res, {
+	// 	return ReS(res, {
+	// 	 susccess: true
+	// 	});		
+	// })
+	// .catch((err) => {
+	// 	return false;
+	// });
+	return ReS(res, {
 		 susccess: true
-		});		
-	})
-	.catch((err) => {
-		return false;
-	});
+		});	
 }
 
 

@@ -42,7 +42,7 @@ const pushSuscripcion = function (req, res) {
 	const idrepartidor = 1; // managerFilter.getInfoToken(req,'idrepartidor');
 	const suscripcion = req.body.suscripcion;	
 
-	const read_query = `update repartidor set key_suscripcion_push = '${JSON.stringify(suscripcion)}' where idrepartidor = ${idrepartidor}`;
+	const read_query = `update repartidor set pwa_code_verification = '${JSON.stringify(suscripcion)}' where idrepartidor = ${idrepartidor}`;
 	return emitirRespuesta(read_query);
 }
 module.exports.pushSuscripcion = pushSuscripcion;

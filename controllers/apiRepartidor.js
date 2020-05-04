@@ -402,7 +402,7 @@ function emitirRespuestaSP(xquery) {
 
 function onlyUpdateQuery(xquery, res) {
 	console.log(xquery);
-	sequelize.query(xquery)
+	sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (result) {
 		
 		return ReS(res, {

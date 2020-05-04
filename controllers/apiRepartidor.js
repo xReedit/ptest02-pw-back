@@ -34,7 +34,7 @@ const setEfectivoMano = function (req, res) {
 	console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	
     const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
-    onlyUpdateQuery(read_query, res);
+    return onlyUpdateQuery(read_query, res);
 }
 module.exports.setEfectivoMano = setEfectivoMano;
 

@@ -22,7 +22,7 @@ const setRepartidorConectado = function (dataCLiente) {
 }
 module.exports.setRepartidorConectado = setRepartidorConectado;
 
-const setEfectivoMano = function (req, res) {  
+const setEfectivoMano = async function (req, res) {
 	// console.log('llego a funcion setEfectivoMano');
 	// console.log('llego a funcion setEfectivoMano req', req);
 	// console.log('llego a funcion setEfectivoMano req usuariotoken', req.usuariotoken);
@@ -38,7 +38,7 @@ const setEfectivoMano = function (req, res) {
 }
 module.exports.setEfectivoMano = setEfectivoMano;
 
-const pushSuscripcion = async function (req) {	
+const pushSuscripcion = function (req, res) {
 	const idrepartidor = 1; // managerFilter.getInfoToken(req,'idrepartidor');
 	const suscripcion = req.body.suscripcion;	
 
@@ -47,7 +47,7 @@ const pushSuscripcion = async function (req) {
 }
 module.exports.pushSuscripcion = pushSuscripcion;
 
-const setPositionNow = function (req, res) {  
+const setPositionNow = async function (req, res) {
 	const idrepartidor = 1; //managerFilter.getInfoToken(req,'idrepartidor');
 	const pos = req.body.pos;
 	

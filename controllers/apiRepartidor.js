@@ -34,7 +34,7 @@ const setEfectivoMano = function (req, res) {
 	console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	
     const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
-    return onlyUpdateQuery(read_query, res);
+    onlyUpdateQuery(read_query, res);
 }
 module.exports.setEfectivoMano = setEfectivoMano;
 
@@ -402,22 +402,24 @@ function emitirRespuestaSP(xquery) {
 
 function onlyUpdateQuery(xquery, res) {
 	console.log(xquery);
-	sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
-	// .then(function (rows) {
+	sequelize.query(xquery)
+	.then(function (result) {
 		
-	// 	return ReS(res, {
-	// 	 susccess: true
-	// 	});		
-	// })
-	// .catch((err) => {
-	// 	return false;
-	// });
+		return ReS(res, {
+		 susccess: true
+		});		
+	})
+	.catch((err) => {
+		return false;
+	});
+
 	// return ReS(res, {
 	// 	 susccess: true
 	// 	});	
-	res.json({
-        susccess: true        
-    });
+	// res.json(result)
+	// res.json({
+ //        susccess: true        
+ //    });
 }
 
 

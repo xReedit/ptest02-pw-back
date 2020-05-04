@@ -27,14 +27,14 @@ const setEfectivoMano = async function (req, res) {
 	// console.log('llego a funcion setEfectivoMano req', req);
 	// console.log('llego a funcion setEfectivoMano req usuariotoken', req.usuariotoken);
 
-	const idrepartidor = 1; // managerFilter.getInfoToken(req,'idrepartidor');
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	const efectivo = req.body.efectivo;      
 	const online = req.body.online;     
 
 	console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	
     const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
-    emitirRespuesta_RES(read_query, res);        
+    return emitirRespuesta_RES(read_query, res);        
 }
 module.exports.setEfectivoMano = setEfectivoMano;
 

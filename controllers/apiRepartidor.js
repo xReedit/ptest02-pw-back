@@ -191,7 +191,7 @@ module.exports.sendOnlyNotificaPush = sendOnlyNotificaPush;
 
 
 const setAsignarPedido = function (req, res) {  
-	const idrepartidor = 1; // managerFilter.getInfoToken(req,'idrepartidor');
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	const idpedido = req.body.idpedido;           
 	
     const read_query = `update pedido set idrepartidor = '${idrepartidor}' where idpedido = ${idpedido}; update repartidor set ocupado=1 where idrepartidor = ${idrepartidor};
@@ -243,7 +243,7 @@ const setFinPedidoEntregado = function (req, res) {
 module.exports.setFinPedidoEntregado = setFinPedidoEntregado;
 
 const getPedidosEntregadoDia = function (req, res) {
-	const idrepartidor = 1; // managerFilter.getInfoToken(req,'idrepartidor');
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	
     const read_query = `call procedure_pwa_repartidor_pedido_entregado_dia(${idrepartidor})`;
     return emitirRespuesta_RES(read_query, res);        
@@ -251,7 +251,7 @@ const getPedidosEntregadoDia = function (req, res) {
 module.exports.getPedidosEntregadoDia = getPedidosEntregadoDia;
 
 const getPedidosResumenEntregadoDia = function (req, res) {
-	const idrepartidor = 1; // managerFilter.getInfoToken(req,'idrepartidor');
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	
     const read_query = `call procedure_pwa_repartidor_resumen_entregado_dia(${idrepartidor})`;
     return emitirRespuesta_RES(read_query, res);        
@@ -269,7 +269,7 @@ module.exports.getPedidoPendienteAceptar = getPedidoPendienteAceptar;
 
 
 const getPropioPedidos = function (req, res) {
-	const idrepartidor = 1; //managerFilter.getInfoToken(req,'idrepartidor');
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
     const read_query = `SELECT * from  pedido where idrepartidor=${idrepartidor} and (fecha = DATE_FORMAT(now(), '%d/%m/%Y')  or cierre=0)`;
     emitirRespuesta_RES(read_query, res);        
 }

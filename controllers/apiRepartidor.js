@@ -22,7 +22,7 @@ const setRepartidorConectado = function (dataCLiente) {
 }
 module.exports.setRepartidorConectado = setRepartidorConectado;
 
-const setEfectivoMano = async function (req, res) {
+const setEfectivoMano = function (req, res) {
 	// console.log('llego a funcion setEfectivoMano');
 	// console.log('llego a funcion setEfectivoMano req', req);
 	// console.log('llego a funcion setEfectivoMano req usuariotoken', req.usuariotoken);
@@ -34,16 +34,16 @@ const setEfectivoMano = async function (req, res) {
 	console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	
     const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
-    return emitirRespuesta(read_query);
+    onlyUpdateQuery(read_query, res);
 }
 module.exports.setEfectivoMano = setEfectivoMano;
 
 const pushSuscripcion = function (req, res) {
-	const idrepartidor = 1; // managerFilter.getInfoToken(req,'idrepartidor');
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	const suscripcion = req.body.suscripcion;	
 
 	const read_query = `update repartidor set pwa_code_verification = '${JSON.stringify(suscripcion)}' where idrepartidor = ${idrepartidor}`;
-	return emitirRespuesta(read_query);
+	onlyUpdateQuery(read_query, res);
 }
 module.exports.pushSuscripcion = pushSuscripcion;
 
@@ -398,6 +398,22 @@ function emitirRespuestaSP(xquery) {
 		return false;
 	});
 }
+
+
+function onlyUpdateQuery(xquery, res) {
+	console.log(xquery);
+	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+	.then(function (rows) {
+		
+		return ReS(res, {
+		 susccess: true
+		});		
+	})
+	.catch((err) => {
+		return false;
+	});
+}
+
 
 
 

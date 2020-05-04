@@ -34,7 +34,7 @@ const setEfectivoMano = function (req, res) {
 	console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	
     const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
-    return onlyUpdateQuery(read_query, res);
+    emitirRespuestaSP_RES(read_query, res);
 }
 module.exports.setEfectivoMano = setEfectivoMano;
 
@@ -43,7 +43,7 @@ const pushSuscripcion = function (req, res) {
 	const suscripcion = req.body.suscripcion;	
 
 	const read_query = `update repartidor set pwa_code_verification = '${JSON.stringify(suscripcion)}' where idrepartidor = ${idrepartidor}`;
-	onlyUpdateQuery(read_query, res);
+	emitirRespuestaSP_RES(read_query, res);
 }
 module.exports.pushSuscripcion = pushSuscripcion;
 

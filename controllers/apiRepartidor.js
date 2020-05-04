@@ -474,3 +474,24 @@ function emitirRespuesta_RES(xquery, res) {
 		return false;
 	});
 }
+
+
+function emitirRespuestaSP_RES(xquery, res) {
+	console.log(xquery);
+	sequelize.query(xquery, {		
+		type: sequelize.QueryTypes.SELECT
+	})
+	.then(function (rows) {
+
+		// convertimos en array ya que viene en object
+		var arr = [];
+		arr = Object.values(rows[0]) ;
+		
+		return ReS(res, {
+			data: arr
+		});
+	})
+	.catch((err) => {
+		return ReE(res, err);
+	});
+}

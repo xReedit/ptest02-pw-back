@@ -150,8 +150,10 @@ module.exports.sendPushNotificactionOneRepartidor = sendPushNotificactionOneRepa
 // envia notificacion push a repartidor de que tiene un pedido
 const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 	console.log('push test');
-	const key_suscripcion_push = req.body.codigo_postal;
+	const key_suscripcion_push = req.body.key_suscripcion_push;
 	const tipo_msj = 0;	
+
+	console.log('push key_push', key_suscripcion_push);
 	// const key_suscripcion_push = Repartidor.key_suscripcion_push;	
 	// const notificationPayload = payload;
 	let payload;
@@ -175,8 +177,8 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 
 	console.log('notificationPayload', payload);
 	
-    Promise.all(webpush.sendNotification
-		(key_suscripcion_push, JSON.stringify(payload) ))
+    Promise.all(webpush.sendNotification(
+    	key_suscripcion_push, JSON.stringify(payload) ))
 		.then(() => 
 			res.status(200).json({message: 'mensaje enviado con exito'})
 		)
@@ -185,6 +187,14 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
            	res.sendStatus(500);
         });
 
+
+ // Promise.all(allSubscriptions.map(sub => webpush.sendNotification(
+ //        sub, JSON.stringify(notificationPayload) )))
+ //        .then(() => res.status(200).json({message: 'Newsletter sent successfully.'}))
+ //        .catch(err => {
+ //            console.error("Error sending notification, reason: ", err);
+ //            res.sendStatus(500);
+ //        });
 
 }
 module.exports.sendPushNotificactionOneRepartidorTEST = sendPushNotificactionOneRepartidorTEST;

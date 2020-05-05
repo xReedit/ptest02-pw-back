@@ -151,27 +151,34 @@ module.exports.sendPushNotificactionOneRepartidor = sendPushNotificactionOneRepa
 const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 	console.log('push test');
 	const key_suscripcion_push = req.body.key_suscripcion_push;
+	const _payload = req.body.payload || null;
 	const tipo_msj = 0;	
 
 	console.log('push key_push', key_suscripcion_push);
 	// const key_suscripcion_push = Repartidor.key_suscripcion_push;	
 	// const notificationPayload = payload;
-	let payload;
-	switch (tipo_msj) {
-      case 0: // notifica a repartidor nuevo pedido
-      payload = {
-		"notification": {
-		        // "notification": {
-		            "title": "Nuevo Pedido",
-		            "body": `Te llego un pedido.`,
-		            "icon": "./favicon.ico",
-		            "lang": "es",
-		            "vibrate": [100, 50, 100]
-		        }
-		    // }
-		}       
-        break;
-    }	
+	let payload;	
+	if ( !_payload ) {
+		switch (tipo_msj) {
+	      case 0: // notifica a repartidor nuevo pedido
+	      payload = {
+			"notification": {
+			        // "notification": {
+			            "title": "Nuevo Pedido",
+			            "body": `Te llego un pedido.`,
+			            "icon": "./favicon.ico",
+			            "lang": "es",
+			            "vibrate": [100, 50, 100]
+			        }
+			    // }
+			}       
+	        break;
+	    }
+	} else {
+		payload = _payload;
+	}
+
+	
 
 	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
 

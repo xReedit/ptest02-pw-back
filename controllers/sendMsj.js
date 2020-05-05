@@ -134,7 +134,14 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 	console.log('notificationPayload', payload);
 	
     webpush.sendNotification
-		 (key_suscripcion_push, JSON.stringify(payload) );
+		(key_suscripcion_push, JSON.stringify(payload) )
+		.then(() => res.status(200).json({message: 'mensaje enviado con exito'}))
+        .catch(err => {
+           	console.error("Error sending notification, reason: ", err);
+           	res.sendStatus(500);
+        });
+
+	// res.json(payload)
 }
 module.exports.sendPushNotificactionOneRepartidor = sendPushNotificactionOneRepartidor;
 
@@ -152,14 +159,14 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
       case 0: // notifica a repartidor nuevo pedido
       payload = {
 		"notification": {
-		        "notification": {
+		        // "notification": {
 		            "title": "Nuevo Pedido",
 		            "body": `Te llego un pedido.`,
 		            "icon": "./favicon.ico",
 		            "lang": "es",
 		            "vibrate": [100, 50, 100]
 		        }
-		    }
+		    // }
 		}       
         break;
     }	
@@ -169,7 +176,16 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 	console.log('notificationPayload', payload);
 	
     webpush.sendNotification
-		 (key_suscripcion_push, JSON.stringify(payload) );
+		(key_suscripcion_push, JSON.stringify(payload) )
+		.then(() => 
+			res.status(200).json({message: 'mensaje enviado con exito'})
+		)
+        .catch(err => {
+           	console.error("Error sending notification, reason: ", err);
+           	res.sendStatus(500);
+        });
+
+
 }
 module.exports.sendPushNotificactionOneRepartidorTEST = sendPushNotificactionOneRepartidorTEST;
 

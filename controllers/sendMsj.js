@@ -139,6 +139,41 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 module.exports.sendPushNotificactionOneRepartidor = sendPushNotificactionOneRepartidor;
 
 
+// TEST
+// envia notificacion push a repartidor de que tiene un pedido
+const sendPushNotificactionOneRepartidorTEST = function (req, res) {
+	console.log('push test');
+	const key_suscripcion_push = req.body.codigo_postal;
+	const tipo_msj = 0;	
+	// const key_suscripcion_push = Repartidor.key_suscripcion_push;	
+	// const notificationPayload = payload;
+	let payload;
+	switch (tipo_msj) {
+      case 0: // notifica a repartidor nuevo pedido
+      payload = {
+		"notification": {
+		        "notification": {
+		            "title": "Nuevo Pedido",
+		            "body": `Te llego un pedido.`,
+		            "icon": "./favicon.ico",
+		            "lang": "es",
+		            "vibrate": [100, 50, 100]
+		        }
+		    }
+		}       
+        break;
+    }	
+
+	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
+
+	console.log('notificationPayload', payload);
+	
+    webpush.sendNotification
+		 (key_suscripcion_push, JSON.stringify(payload) );
+}
+module.exports.sendPushNotificactionOneRepartidorTEST = sendPushNotificactionOneRepartidorTEST;
+
+
 function emitirRespuestaSP(xquery) {
 	console.log(xquery);
 	return sequelize.query(xquery, {		

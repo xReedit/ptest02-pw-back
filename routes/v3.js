@@ -77,11 +77,12 @@ routerV3.get('/delivery/get-categorias', apiPwaAppDelivery.getCategorias);
 // mensajes
 routerV3.post('/delivery/verificar-codigo-sms', apiPwaAppDelivery.verificarCodigoSMS);
 routerV3.post('/delivery/send-sms-confirmation', auth.verificarTokenSms, apiPwaSMS.sendMsjConfirmacion);
+routerV3.post('/delivery/send-push-test', apiPwaSMS.sendMsjConfirmacion);
 
 // notificaciones push
 // guardar suscripcion
 routerV3.post('/push/suscripcion', apiPwaSMS.pushSuscripcion);
-routerV3.post('/push/send-notification', apiPwaSMS.sendPushNotificaction);
+routerV3.post('/push/send-notification', apiPwaSMS.sendPushNotificactionOneRepartidorTEST);
 	
 // routerV3.post('/pago/set-data-transaction', apiPwaAppPedidos.setDataTransaction); // gurdamos datos de la transacion
 // routerV3.post('/pago/get-data-transaction', apiPwaAppPedidos.getDataTransaction); // obtenemos datos de la transaccion

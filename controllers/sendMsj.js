@@ -175,8 +175,8 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 
 	console.log('notificationPayload', payload);
 	
-    webpush.sendNotification
-		(key_suscripcion_push, JSON.stringify(payload) )
+    Promise.all(webpush.sendNotification
+		(key_suscripcion_push, JSON.stringify(payload) ))
 		.then(() => 
 			res.status(200).json({message: 'mensaje enviado con exito'})
 		)

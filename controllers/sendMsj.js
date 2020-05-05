@@ -92,15 +92,23 @@ const sendPushNotificaction = function (req, res) {
 		console.log(allSubscriptions);
 		res.json(allSubscriptions);
 
-		 Promise.all(
-		 allSubscriptions.map(sub => 
-		 	webpush.sendNotification
-		 	(sub.key_suscripcion_push, JSON.stringify(notificationPayload) )))
-	        .then(() => res.status(200).json({message: 'Newsletter sent successfully.'}))
-	        .catch(err => {
-	            console.error("Error sending notification, reason: ", err);
-	            res.sendStatus(500);
-        });
+		 // Promise.all(
+		 // allSubscriptions.map(sub => 
+		 // 	webpush.sendNotification
+		 // 	(sub.key_suscripcion_push, JSON.stringify(notificationPayload) )))
+	  //       .then(() => res.status(200).json({message: 'Newsletter sent successfully.'}))
+	  //       .catch(err => {
+	  //           console.error("Error sending notification, reason: ", err);
+	  //           res.sendStatus(500);
+   //      });
+
+	    Promise.all(allSubscriptions.map(sub => webpush.sendNotification(
+        sub, JSON.stringify(notificationPayload) )))
+        .then(() => res.status(200).json({message: 'Newsletter sent successfully.'}))
+        .catch(err => {
+            console.error("Error sending notification, reason: ", err);
+            res.sendStatus(500);
+        });	       
 	});
 	// console.log('listUsuarios send notificacion', listUsuarios);
 }
@@ -117,13 +125,13 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
       case 0: // notifica a repartidor nuevo pedido
       payload = {
 		"notification": {
-		        "notification": {
+		        // "notification": {
 		            "title": "Nuevo Pedido",
 		            "body": `Te llego un pedido.`,
 		            "icon": "./favicon.ico",
 		            "lang": "es",
-		            "vibrate": [100, 50, 100]
-		        }
+		            "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]
+		        // }
 		    }
 		}       
         break;
@@ -132,10 +140,12 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
 
 	console.log('notificationPayload', payload);
-	
-    webpush.sendNotification
-		(key_suscripcion_push, JSON.stringify(payload) )
-		.then(() => res.status(200).json({message: 'mensaje enviado con exito'}))
+
+    webpush.sendNotification(
+    	key_suscripcion_push, JSON.stringify(payload) )
+		.then(() => 
+			res.status(200).json({message: 'mensaje enviado con exito'})
+		)
         .catch(err => {
            	console.error("Error sending notification, reason: ", err);
            	res.sendStatus(500);
@@ -168,7 +178,7 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 			            "body": `Te llego un pedido.`,
 			            "icon": "./favicon.ico",
 			            "lang": "es",
-			            "vibrate": [100, 50, 100]
+			            "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]
 			        }
 			    // }
 			}       
@@ -194,15 +204,6 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
            	console.error("Error sending notification, reason: ", err);
            	res.sendStatus(500);
         });
-
-
- // Promise.all(allSubscriptions.map(sub => webpush.sendNotification(
- //        sub, JSON.stringify(notificationPayload) )))
- //        .then(() => res.status(200).json({message: 'Newsletter sent successfully.'}))
- //        .catch(err => {
- //            console.error("Error sending notification, reason: ", err);
- //            res.sendStatus(500);
- //        });
 
 }
 module.exports.sendPushNotificactionOneRepartidorTEST = sendPushNotificactionOneRepartidorTEST;

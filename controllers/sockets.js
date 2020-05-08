@@ -260,6 +260,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			dataSend.dataPedido.idpedido = rpt[0].idpedido; // para buscar el pedido en comercio
 
+			// devuele del idpedido a quien envio el pedido // lo ja desde el procedure
+			// io.to(dataSend.socketid).emit('get-lastid-pedido', dataSend.dataPedido.idpedido);
+
 
 			// si es delivery app // dataSend.isClienteRecogeLocal si el cliente recoge el pedido en el local
 			if ( dataSend.isDeliveryAPP && !dataSend.isClienteRecogeLocal ) {
@@ -466,6 +469,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('repartidor-propio-notifica-fin-pedido', async (dataPedido) => {
 			console.log('repartidor-propio-notifica-fin-pedido', dataPedido);
 			apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
+			apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
 
 			// para que el comercio actualice el marker
 			// notifica a comercio			

@@ -55,7 +55,13 @@ module.exports.getOrdenesByid = getOrdenesByid;
 const setEstadoPedido = function (req, res) {  	
 	const estado = req.body.estado;	
 	const idpedido = req.body.idpedido;
-    const read_query = `update pedido set pwa_estado = '${estado}' where idpedido = ${idpedido}`;
+
+	// estado E entrega al cliente // si el cliente recoge en comercio
+	const savePwaEstado = estado === 'E' ? ", pwa_delivery_status = 4 " : '';
+	// guarda el tiempo si finaliza el pedido desde el comercio
+	const saveTimeAtencion = estado === 'E' ? `, pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now())` : '';
+
+    const read_query = `update pedido set pwa_estado = '${estado}' ${savePwaEstado} ${saveTimeAtencion} where idpedido = ${idpedido}`;
     emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.setEstadoPedido = setEstadoPedido;
@@ -140,7 +146,7 @@ const getTiposPago = function (req, res) {
 module.exports.getTiposPago = getTiposPago;
 
 
-const setRegistrarPago = function (req, res) {  
+const setRegistrarPago = function (req, res) {
 	const idsede = managerFilter.getInfoToken(req,'idsede');
 	const idorg = managerFilter.getInfoToken(req,'idorg');
 	const idpedido = req.body.idpedido;
@@ -180,6 +186,16 @@ const setRegistroSolicitud = function (req, res) {
     emitirRespuesta_RES(read_query, res); 
 }
 module.exports.setRegistroSolicitud = setRegistroSolicitud;
+
+
+
+// registro de comercio
+const getDataCierreCaja = function (req, res) {
+	const idsede = managerFilter.getInfoToken(req,'idsede');
+    const read_query = `call procedure_delivery_data_cierre_caja(${idsede})`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.getDataCierreCaja = getDataCierreCaja;
 
 
 function emitirRespuesta(xquery, res) {

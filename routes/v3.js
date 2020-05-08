@@ -126,6 +126,7 @@ routerV3.get('/comercio/get-datos-impresion', auth.verificarToken, apiPwaAppCome
 routerV3.get('/comercio/get-tipo-pago', auth.verificarToken, apiPwaAppComercio.getTiposPago);
 routerV3.post('/comercio/set-registrar-pago-pedido-comercio', auth.verificarToken, apiPwaAppComercio.setRegistrarPago);
 routerV3.post('/comercio/set-repartidor-to-pedido', auth.verificarToken, apiPwaAppComercio.setRepartidorToPedido);
+routerV3.get('/comercio/get-data-cierre-caja', auth.verificarToken, apiPwaAppComercio.getDataCierreCaja);
 
 
 // comercio registro

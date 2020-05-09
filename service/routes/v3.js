@@ -99,7 +99,7 @@ routerV3.post('/push/send-notification', apiPwaSMS.sendPushNotificaction);
 routerV3.post('/login-usuario-autorizado-repartidor', login.loggerUsAutorizadoRepartidor);
 
 routerV3.post('/repartidor/push-suscripcion', auth.verificarToken, apiPwaAppRepartidor.pushSuscripcion);
-routerV3.put('/repartidor/set-efectivo-mano', auth.verificarToken, apiPwaAppRepartidor.setEfectivoMano);
+routerV3.post('/repartidor/set-efectivo-mano', auth.verificarToken, apiPwaAppRepartidor.setEfectivoMano);
 routerV3.post('/repartidor/set-position-now', auth.verificarToken, apiPwaAppRepartidor.setPositionNow);
 routerV3.post('/repartidor/set-asignar-pedido', auth.verificarToken, apiPwaAppRepartidor.setAsignarPedido);
 routerV3.post('/repartidor/get-estado-pedido', auth.verificarToken, apiPwaAppRepartidor.getEstadoPedido);

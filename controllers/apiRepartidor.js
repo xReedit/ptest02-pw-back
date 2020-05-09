@@ -34,7 +34,7 @@ const setEfectivoMano = function (req, res) {
 	console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	
     const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
-    emitirRespuestaSP_RES(read_query, res);
+    execSqlQueryNoReturn(read_query);
 }
 module.exports.setEfectivoMano = setEfectivoMano;
 
@@ -456,6 +456,24 @@ function emitirRespuestaData(xquery) {
 		return false;
 	});
 }
+
+function execSqlQueryNoReturn(xquery) {
+	console.log(xquery);
+	sequelize.query(xquery)
+	// .then(function (rows) {
+		
+	// 	// return ReS(res, {
+	// 	// 	data: rows
+	// 	// });
+	// 	return {
+	// 		data: rows
+	// 	};
+	// })
+	// .catch((err) => {
+	// 	return false;
+	// });
+}
+
 
 
 

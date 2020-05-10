@@ -113,9 +113,9 @@ routerV3.get('/repartidor/ruc-proceso-buscar-repartidor', apiPwaAppRepartidor.ru
 
 // repartidor pruebas
 	// get sin token
-	routerV3.post('/repartidor/get-sin-token', apiPwaAppRepartidor.getSinToken);
+	routerV3.get('/repartidor/get-sin-token', apiPwaAppRepartidor.getSinToken);
 	// get con token
-	routerV3.post('/repartidor/get-con-token', auth.verificarToken, apiPwaAppRepartidor.getConToken);
+	routerV3.get('/repartidor/get-con-token', auth.verificarToken, apiPwaAppRepartidor.getConToken);
 	// put sin token
 	routerV3.post('/repartidor/put-sin-token', apiPwaAppRepartidor.putSinToken);
 	// put con token

@@ -15,7 +15,7 @@ const getSinToken = async function (req, res) {
         
     const read_query = `select * from repartidor where idrepartidor=1 and estado=0`;
     // return emitirRespuestaSP(read_query);      
-    emitirRespuesta_RES(read_query, res);  
+    emitirRespuestaSP_RES(read_query, res);  
 }
 module.exports.getSinToken = getSinToken;
 
@@ -32,5 +32,26 @@ function emitirRespuesta_RES(xquery, res) {
 	})
 	.catch((err) => {
 		return false;
+	});
+}
+
+
+function emitirRespuestaSP_RES(xquery, res) {
+	console.log(xquery);
+	sequelize.query(xquery, {		
+		type: sequelize.QueryTypes.SELECT
+	})
+	.then(function (rows) {
+
+		// convertimos en array ya que viene en object
+		var arr = [];
+		arr = Object.values(rows[0]) ;
+		
+		return ReS(res, {
+			data: arr
+		});
+	})
+	.catch((err) => {
+		return ReE(res, err);
 	});
 }

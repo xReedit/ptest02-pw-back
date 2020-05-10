@@ -99,7 +99,7 @@ routerV3.post('/push/send-notification', apiPwaSMS.sendPushNotificaction);
 routerV3.post('/login-usuario-autorizado-repartidor', login.loggerUsAutorizadoRepartidor);
 
 routerV3.post('/repartidor/push-suscripcion', auth.verificarToken, apiPwaAppRepartidor.pushSuscripcion);
-routerV3.post('/repartidor/set-efectivo-mano', apiPwaAppRepartidor.setEfectivoMano);
+routerV3.post('/repartidor/set-efectivo-mano', auth.verificarToken, apiPwaAppRepartidor.setEfectivoMano);
 routerV3.post('/repartidor/set-position-now', auth.verificarToken, apiPwaAppRepartidor.setPositionNow);
 routerV3.post('/repartidor/set-asignar-pedido', auth.verificarToken, apiPwaAppRepartidor.setAsignarPedido);
 routerV3.post('/repartidor/get-estado-pedido', auth.verificarToken, apiPwaAppRepartidor.getEstadoPedido);
@@ -111,6 +111,15 @@ routerV3.get('/repartidor/get-repartidor-propio-mis-pedidos', auth.verificarToke
 
 routerV3.get('/repartidor/ruc-proceso-buscar-repartidor', apiPwaAppRepartidor.runLoopPrueba);
 
+// repartidor pruebas
+	// get sin token
+	routerV3.post('/repartidor/get-sin-token', apiPwaAppRepartidor.getSinToken);
+	// get con token
+	routerV3.post('/repartidor/get-con-token', auth.verificarToken, apiPwaAppRepartidor.getConToken);
+	// put sin token
+	routerV3.post('/repartidor/put-sin-token', apiPwaAppRepartidor.putSinToken);
+	// put con token
+	routerV3.post('/repartidor/put-con-token', auth.verificarToken, apiPwaAppRepartidor.putSinToken);
 
 
 /// COMERCIO

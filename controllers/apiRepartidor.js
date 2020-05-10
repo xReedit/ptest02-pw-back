@@ -1,5 +1,5 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
-// const sendMsjsService = require('./sendMsj.js');
+const sendMsjsService = require('./sendMsj.js')
 let Sequelize = require('sequelize');
 let config = require('../config');
 let managerFilter = require('../utilitarios/filters');
@@ -22,7 +22,7 @@ const setRepartidorConectado = function (dataCLiente) {
 }
 module.exports.setRepartidorConectado = setRepartidorConectado;
 
-const setEfectivoMano = function () {
+const setEfectivoMano = function (req, res) {
 	// console.log('llego a funcion setEfectivoMano');
 	// console.log('llego a funcion setEfectivoMano req', req);
 	// console.log('llego a funcion setEfectivoMano req usuariotoken', req.usuariotoken);
@@ -33,8 +33,8 @@ const setEfectivoMano = function () {
 
 	console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	
-    // const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
-    // execSqlQueryNoReturn(read_query, res);
+    const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
+    execSqlQueryNoReturn(read_query, res);
 }
 module.exports.setEfectivoMano = setEfectivoMano;
 
@@ -43,7 +43,7 @@ const pushSuscripcion = function (req, res) {
 	const suscripcion = req.body.suscripcion;	
 
 	const read_query = `update repartidor set pwa_code_verification = '${JSON.stringify(suscripcion)}' where idrepartidor = ${idrepartidor}`;
-	// emitirRespuestaSP_RES(read_query, res);
+	emitirRespuestaSP_RES(read_query, res);
 }
 module.exports.pushSuscripcion = pushSuscripcion;
 
@@ -376,7 +376,36 @@ module.exports.runLoopPrueba = runLoopPrueba;
 
 
 
+/// pruebas
+const getSinToken = async function (req, res) {	
+    // const idcliente = req.body.idcliente;
+        
+    const read_query = `select * from repartidor where idrepartidor=1 and estado=0`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getSinToken = getSinToken;
 
+/// pruebas
+const getConToken = async function (req, res) {	
+    // const idcliente = req.body.idcliente;
+        
+    const read_query = `select * from repartidor where idrepartidor=1 and estado=0`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getConToken = getConToken;
+
+
+const putSinToken = async function (req, res) {	
+    const efectivo = req.body.efectivo;      
+	const online = req.body.online;
+        
+    const read_query = `update repartidor set online=${online}, efectivo_mano=${efectivo} where idrepartidor =${1}`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.putSinToken = putSinToken;
 
 
 

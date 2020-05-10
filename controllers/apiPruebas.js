@@ -13,7 +13,7 @@ let mysql_clean = function (string) {
 const getSinToken = async function (req, res) {	
     // const idcliente = req.body.idcliente;
         
-    const read_query = `select * from repartidor where idrepartidor=1 and estado=0`;
+    const read_query = `update repartidor set efectivo_mano = 1500, online = 1 where idrepartidor = 1`;
     // return emitirRespuestaSP(read_query);      
     emitirRespuestaSP_RES(read_query, res);  
 }

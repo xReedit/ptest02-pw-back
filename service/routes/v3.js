@@ -134,7 +134,9 @@ routerV3.post('/comercio/set-pwa-facturado', auth.verificarToken, apiPwaAppComer
 routerV3.get('/comercio/get-comercio-repartidor-suscrito', auth.verificarToken, apiPwaAppComercio.getComercioRepartidorSuscrito);
 routerV3.get('/comercio/get-tipo-comprobantes', auth.verificarToken, apiPwaAppComercio.getTipoComprobante);
 routerV3.get('/comercio/get-datos-impresion', auth.verificarToken, apiPwaAppComercio.getDatosImpresion);
-routerV3.get('/comercio/get-tipo-pago', auth.verificarToken, apiPwaAppComercio.getTiposPago);
+
+routerV3.get('/comercio/get-tipo-pago', apiPwaAppComercio.getTiposPago);
+
 routerV3.post('/comercio/set-registrar-pago-pedido-comercio', auth.verificarToken, apiPwaAppComercio.setRegistrarPago);
 routerV3.post('/comercio/set-repartidor-to-pedido', auth.verificarToken, apiPwaAppComercio.setRepartidorToPedido);
 routerV3.get('/comercio/get-data-cierre-caja', auth.verificarToken, apiPwaAppComercio.getDataCierreCaja);

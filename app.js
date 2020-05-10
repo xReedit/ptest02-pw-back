@@ -23,10 +23,8 @@ var socketsController = require('./controllers/sockets');
 //     }
 // }
 // _config.application.cors.server
-app.use(cors({
-    origin: '*', 
-    allowedHeaders: [ 'Accept-Version', 'Authorization', 'Credentials', 'Content-Type' ]
-}));
+app.use(cors());
+app.options('*', cors());
 
 
 

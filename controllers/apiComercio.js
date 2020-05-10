@@ -198,6 +198,25 @@ const getDataCierreCaja = function (req, res) {
 module.exports.getDataCierreCaja = getDataCierreCaja;
 
 
+
+
+/// pruebas
+const getSinToken = async function (req, res) {	
+    // const idcliente = req.body.idcliente;
+        
+    const read_query = `select * from repartidor where idrepartidor=1 and estado=0`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuestaSP_RES(read_query, res);  
+}
+module.exports.getSinToken = getSinToken;
+
+// registro de comercio
+const getProcedure = function (req, res) {
+    const read_query = `call procedure_pwa_get_all_categorias()`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.getProcedure = getProcedure;
+
 function emitirRespuesta(xquery, res) {
 	console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})

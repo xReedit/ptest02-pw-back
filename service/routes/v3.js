@@ -117,7 +117,7 @@ routerV3.get('/repartidor/ruc-proceso-buscar-repartidor', apiPwaAppRepartidor.ru
 // routerV3.get('/pruebas/get-sin-token', apiPwaPruebas.getSinToken);
 routerV3.get('/pruebas/get-sin-token', apiPwaPruebas.getCategoriasComercio);
 // get con token
-routerV3.get('/repartidor/get-con-token', auth.verificarToken, apiPwaAppRepartidor.getConToken);
+routerV3.get('/pruebas/get-con-token', auth.verificarToken, apiPwaPruebas.getProcedure);
 // put sin token
 routerV3.post('/repartidor/put-sin-token', apiPwaAppRepartidor.putSinToken);
 // put con token
@@ -135,7 +135,7 @@ routerV3.get('/comercio/get-comercio-repartidor-suscrito', auth.verificarToken, 
 routerV3.get('/comercio/get-tipo-comprobantes', auth.verificarToken, apiPwaAppComercio.getTipoComprobante);
 routerV3.get('/comercio/get-datos-impresion', auth.verificarToken, apiPwaAppComercio.getDatosImpresion);
 
-routerV3.get('/comercio/get-tipo-pago', apiPwaAppComercio.getTiposPago);
+routerV3.get('/comercio/get-tipo-pago', auth.verificarToken, apiPwaAppComercio.getTiposPago);
 
 routerV3.post('/comercio/set-registrar-pago-pedido-comercio', auth.verificarToken, apiPwaAppComercio.setRegistrarPago);
 routerV3.post('/comercio/set-repartidor-to-pedido', auth.verificarToken, apiPwaAppComercio.setRepartidorToPedido);

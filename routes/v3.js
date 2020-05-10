@@ -124,7 +124,7 @@ routerV3.get('/pruebas/get-con-select-sin-token', apiPwaPruebas.getSinToken);
 // put sin token
 routerV3.post('/repartidor/put-sin-token', apiPwaAppRepartidor.getSinToken);
 // put con token
-routerV3.post('/repartidor/put-con-token', auth.verificarToken, apiPwaAppRepartidor.putSinToken);
+routerV3.post('/pruebas/put-con-token', auth.verificarToken, apiPwaPruebas.getSinToken);
 
 
 

@@ -13,8 +13,17 @@ let mysql_clean = function (string) {
 const getSinToken = async function (req, res) {	
     // const idcliente = req.body.idcliente;
         
-    const read_query = `update repartidor set efectivo_mano = 1500, online = 1 where idrepartidor = 1`;
+    // const read_query = `update repartidor set efectivo_mano = 1500, online = 1 where idrepartidor = 1`;
     // return emitirRespuestaSP(read_query);      
+
+    const idrepartidor = 1; //managerFilter.getInfoToken(req,'idrepartidor');
+	const efectivo = req.body.efectivo;      
+	const online = req.body.online;     
+
+	console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
+	
+    const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
+    
     emitirRespuestaSP_RES(read_query, res);  
 }
 module.exports.getSinToken = getSinToken;

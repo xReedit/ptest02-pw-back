@@ -17,8 +17,8 @@ const getSinToken = async function (req, res) {
     // return emitirRespuestaSP(read_query);      
 
     const idrepartidor = 1; //managerFilter.getInfoToken(req,'idrepartidor');
-	const efectivo = req.body.efectivo;      
-	const online = req.body.online;     
+	// const efectivo = req.body.efectivo;      
+	// const online = req.body.online;     
 
 	console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	

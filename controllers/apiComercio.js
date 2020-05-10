@@ -201,7 +201,7 @@ module.exports.getDataCierreCaja = getDataCierreCaja;
 
 
 /// pruebas
-const getSinToken = async function (req, res) {	
+const getSinToken = function (req, res) {	
     // const idcliente = req.body.idcliente;
         
     const read_query = `select * from repartidor where idrepartidor=1 and estado=0`;
@@ -216,6 +216,9 @@ const getProcedure = function (req, res) {
     emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.getProcedure = getProcedure;
+
+
+
 
 function emitirRespuesta(xquery, res) {
 	console.log(xquery);

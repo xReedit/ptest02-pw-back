@@ -9,19 +9,38 @@ var cors=require('cors');
 var config = require('./config');
 var socketsController = require('./controllers/sockets');
 
-app.use(cors());
+
+const _config = {
+    application: {
+        cors: {
+            server: [
+                {
+                    origin: "*", //servidor que deseas que consuma o (*) en caso que sea acceso libre
+                    credentials: true
+                }
+            ]
+        }
+    }
+}
+
+app.use(cors(
+    _config.application.cors.server
+));
+
+
+
 app.use(bodyParser.json()); // soporte para bodies codificados en jsonsupport
 app.use(bodyParser.urlencoded({ extended: true })); // soporte para bodies codificados
 
 
-// Configurar cabeceras y cors
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Authorization, X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-    res.header('Allow', 'GET, POST, OPTIONS, PUT, DELETE');
-    next();
-});
+// // Configurar cabeceras y cors
+// app.use((req, res, next) => {
+//     res.header('Access-Control-Allow-Origin', '*');
+//     res.header('Access-Control-Allow-Headers', 'Authorization, X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method');
+//     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+//     res.header('Allow', 'GET, POST, OPTIONS, PUT, DELETE');
+//     next();
+// });
 
 
 // para pwa-app-pedidos

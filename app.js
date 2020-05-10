@@ -23,8 +23,8 @@ var socketsController = require('./controllers/sockets');
 //     }
 // }
 // _config.application.cors.server
-app.use(cors());
-app.options('*', cors());
+app.use(cors({ origin: true, credentials: true  }));
+// app.options('*', cors());
 
 
 

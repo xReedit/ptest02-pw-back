@@ -10,22 +10,20 @@ var config = require('./config');
 var socketsController = require('./controllers/sockets');
 
 
-const _config = {
-    application: {
-        cors: {
-            server: [
-                {
-                    origin: "*", //servidor que deseas que consuma o (*) en caso que sea acceso libre
-                    credentials: true
-                }
-            ]
-        }
-    }
-}
-
-app.use(cors(
-    _config.application.cors.server
-));
+// const _config = {
+//     application: {
+//         cors: {
+//             server: [
+//                 {
+//                     origin: "*", //servidor que deseas que consuma o (*) en caso que sea acceso libre
+//                     credentials: true
+//                 }
+//             ]
+//         }
+//     }
+// }
+// _config.application.cors.server
+app.use(cors());
 
 
 

@@ -1,7 +1,7 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
 const config = require('../config');
 const webpush = require('web-push');
-
+let Sequelize = require('sequelize');
 
 webpush.setVapidDetails(
   'mailto:papaya.restobar@gmail.com',
@@ -9,7 +9,6 @@ webpush.setVapidDetails(
   config.privateKeyVapid
 );
 
-let Sequelize = require('sequelize');
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
 // sms mensaje de confirmacion de telefono

@@ -112,7 +112,7 @@ const loggerUsAutorizadoRepartidor = async function (req, res) {
 
                         console.log('usuario logueado ', rows[0]);
                         
-                        const token = jwt.sign({ idrepartidor:rows[0].idrepartidor , usuario: rows[0] }, SEED, { expiresIn: '24h' });
+                        const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: '24h' });
 
                         return ReS(res, { usuario: rows[0], token: token });
 

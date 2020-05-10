@@ -172,7 +172,8 @@ module.exports.setRepartidorToPedido = setRepartidorToPedido;
 
 // registro de comercio
 const getCategoriasComercio = function (req, res) {
-    const read_query = `call procedure_pwa_get_all_categorias()`;
+    // const read_query = `call procedure_pwa_get_all_categorias()`;
+    const read_query = `select * from repartidor where idrepartidor=1 and estado=0`;
     emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.getCategoriasComercio = getCategoriasComercio;

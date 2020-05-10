@@ -22,7 +22,7 @@ const setRepartidorConectado = function (dataCLiente) {
 }
 module.exports.setRepartidorConectado = setRepartidorConectado;
 
-const setEfectivoMano = function (req, res) {
+const setEfectivoMano = function () {
 	// console.log('llego a funcion setEfectivoMano');
 	// console.log('llego a funcion setEfectivoMano req', req);
 	// console.log('llego a funcion setEfectivoMano req usuariotoken', req.usuariotoken);

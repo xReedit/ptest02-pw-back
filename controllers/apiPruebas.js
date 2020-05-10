@@ -22,8 +22,8 @@ const getSinToken = async function (req, res) {
 
 	console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	
-    const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
-    
+    const read_query = `update repartidor set efectivo_mano = 1, online = 1 where idrepartidor = 1`;
+
     emitirRespuestaSP_RES(read_query, res);  
 }
 module.exports.getSinToken = getSinToken;

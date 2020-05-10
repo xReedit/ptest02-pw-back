@@ -147,7 +147,7 @@ routerV3.get('/comercio/get-data-cierre-caja', auth.verificarToken, apiPwaAppCom
 
 
 // comercio registro
-routerV3.get('/comercio/get-categoria-registro', apiPwaAppComercio.getCategoriasComercio);
+routerV3.get('/comercio/get-categoria-registro', auth.verificarToken, apiPwaAppComercio.getCategoriasComercio);
 routerV3.post('/comercio/registro-solicitud-comercio', apiPwaAppComercio.setRegistroSolicitud);
 
 

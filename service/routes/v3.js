@@ -6,6 +6,7 @@ const apiPwaAppPedidos = require('../controllers/apiPwa_v1');
 const apiPwaAppPedidosPago = require('../controllers/apiPago');
 const apiPwaAppDelivery = require('../controllers/apiDelivery');
 const apiPwaAppRepartidor = require('../controllers/apiRepartidor');
+const apiPwaPruebas = require('../controllers/apiPruebas');
 const apiPwaAppComercio = require('../controllers/apiComercio');
 const apiConsultaDniRuc = require('../controllers/apiConsultaDniRuc');
 const apiServiceFacturacion = require('../controllers/serviceFacturacion');
@@ -113,7 +114,7 @@ routerV3.get('/repartidor/ruc-proceso-buscar-repartidor', apiPwaAppRepartidor.ru
 
 // repartidor pruebas
 // get sin token
-routerV3.get('/repartidor/get-sin-token', apiPwaAppRepartidor.getSinToken);
+routerV3.get('/repartidor/get-sin-token', apiPwaPruebas.getSinToken);
 // get con token
 routerV3.get('/repartidor/get-con-token', auth.verificarToken, apiPwaAppRepartidor.getConToken);
 // put sin token

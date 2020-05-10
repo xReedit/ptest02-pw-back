@@ -120,7 +120,7 @@ routerV3.get('/pruebas/get-categorias-pruebas', apiPwaAppComercio.getCategoriasC
 // get con token
 routerV3.get('/pruebas/get-con-token', auth.verificarToken, apiPwaAppComercio.getProcedure);
 // get con select sin token
-routerV3.get('/pruebas/get-con-select-sin-token', apiPwaPruebas.getSinToken);
+routerV3.put('/pruebas/get-con-select-sin-token', apiPwaPruebas.getSinToken);
 // put sin token
 routerV3.post('/repartidor/put-sin-token', apiPwaAppRepartidor.getSinToken);
 // put con token

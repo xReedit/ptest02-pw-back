@@ -115,11 +115,13 @@ routerV3.get('/repartidor/ruc-proceso-buscar-repartidor', apiPwaAppRepartidor.ru
 // repartidor pruebas
 // get sin token
 // routerV3.get('/pruebas/get-sin-token', apiPwaPruebas.getSinToken);
-routerV3.get('/pruebas/get-sin-token', apiPwaPruebas.getCategoriasComercio);
+routerV3.get('/pruebas/get-sin-token', apiPwaPruebas.getProcedure);
 // get con token
 routerV3.get('/pruebas/get-con-token', auth.verificarToken, apiPwaPruebas.getProcedure);
+// get con select sin token
+routerV3.get('/pruebas/get-con-select-sin-token', apiPwaPruebas.getSinToken);
 // put sin token
-routerV3.post('/repartidor/put-sin-token', apiPwaAppRepartidor.putSinToken);
+routerV3.post('/repartidor/put-sin-token', apiPwaAppRepartidor.getSinToken);
 // put con token
 routerV3.post('/repartidor/put-con-token', auth.verificarToken, apiPwaAppRepartidor.putSinToken);
 

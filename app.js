@@ -10,23 +10,7 @@ var config = require('./config');
 var socketsController = require('./controllers/sockets');
 
 
-// const _config = {
-//     application: {
-//         cors: {
-//             server: [
-//                 {
-//                     origin: "*", //servidor que deseas que consuma o (*) en caso que sea acceso libre
-//                     credentials: true
-//                 }
-//             ]
-//         }
-//     }
-// }
-// _config.application.cors.server
 app.use(cors());
-// app.options('*', cors());
-
-
 
 app.use(bodyParser.json()); // soporte para bodies codificados en jsonsupport
 app.use(bodyParser.urlencoded({ extended: true })); // soporte para bodies codificados

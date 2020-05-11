@@ -49,10 +49,18 @@ module.exports.logger = logger;
 const loggerUsAutorizado = async function (req, res) {
         const usuario = req.body.nomusuario;
         const pass = req.body.pass;
+        const op = req.body.op || 0;
 
         console.log('passs ', req.body);
 
-        let read_query = "SELECT * FROM `usuario` WHERE `usuario` = '" + usuario + "' and POSITION('A2' IN acc) > 0 and estado = 0";
+        let read_query = '';
+        if (op === 0) { // usuario 1 repartidor
+                read_query = "SELECT * FROM `usuario` WHERE `usuario` = '" + usuario + "' and POSITION('A2' IN acc) > 0 and estado = 0";       
+        } else {
+                read_query = "SELECT * FROM repartidor WHERE usuario = '" + usuario + "' and estado = 0";    
+        }
+        // let read_query = "SELECT * FROM `usuario` WHERE `usuario` = '" + usuario + "' and POSITION('A2' IN acc) > 0 and estado = 0";
+        
         console.log(read_query);
 
         sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })

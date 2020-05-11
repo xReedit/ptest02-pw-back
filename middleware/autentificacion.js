@@ -11,6 +11,7 @@ exports.verificarToken = function (req, res, next) {
                         return ReE(res, 'Token incorrecto.', 401);                                
                 }
 
+                console.log('decode', decode);
                 req.usuariotoken = decode.usuario;                
                 next();
         });

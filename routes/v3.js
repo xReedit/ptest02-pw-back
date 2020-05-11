@@ -29,6 +29,9 @@ routerV3.get('/', function (req, res, next) {
 
 // para usuario autorizado - colaboradores --->>>
 routerV3.post('/login-usuario-autorizado', login.loggerUsAutorizado);
+// login repartidor
+routerV3.post('/login-usuario-autorizado-repartidor', login.loggerUsAutorizadoRepartidor);
+
 routerV3.post('/verificarToken', auth.verificarToken);
 routerV3.post('/pedido/lacuenta', auth.verificarToken, apiPwaAppPedidos.getLaCuenta);
 routerV3.post('/pedido/lacuenta-zona-delivery', apiPwaAppPedidos.getLaCuenta);
@@ -96,8 +99,8 @@ routerV3.post('/push/send-notification', apiPwaSMS.sendPushNotificaction);
 /// REPARTIDOR
 /// REPARTIDOR
 
-// login 
-routerV3.post('/login-usuario-autorizado-repartidor', login.loggerUsAutorizadoRepartidor);
+// login repartidor
+// routerV3.post('/login-usuario-autorizado-repartidor', login.loggerUsAutorizadoRepartidor);
 
 routerV3.post('/repartidor/push-suscripcion', auth.verificarToken, apiPwaAppRepartidor.pushSuscripcion);
 routerV3.post('/repartidor/set-efectivo-mano', auth.verificarToken, apiPwaAppRepartidor.setEfectivoMano);

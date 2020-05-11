@@ -275,6 +275,13 @@ const getPropioPedidos = function (req, res) {
 }
 module.exports.getPropioPedidos = getPropioPedidos;
 
+const getInfo = function (req, res) {
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
+    const read_query = `SELECT * from  repartidor where idrepartidor=${idrepartidor}`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getInfo = getInfo;
+
 
 
 // PROCESO LOAR PEDIDOS PENDIENTES

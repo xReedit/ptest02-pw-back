@@ -194,12 +194,12 @@ const setAsignarPedido = function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	const idpedido = req.body.idpedido;           
 	
-    // const read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido = ${idpedido}; update repartidor set ocupado=1 where idrepartidor = ${idrepartidor};
-    // 					update repartidor set flag_paso_pedido=0, pedido_por_aceptar=null where flag_paso_pedido=${idpedido}`;
+    const read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido = ${idpedido}; update repartidor set ocupado=1 where idrepartidor = ${idrepartidor};
+    					update repartidor set flag_paso_pedido=0, pedido_por_aceptar=null where flag_paso_pedido=${idpedido}`;
 
-	const read_query = `call procedure_delivery_asignar_pedido(${idrepartidor}, ${idpedido})`;    					
-    // emitirRespuesta_RES(read_query, res);     
-    return emitirRespuesta_RES(read_query, res);   
+	// const read_query = `call procedure_delivery_asignar_pedido(${idrepartidor}, ${idpedido})`;    					
+    emitirRespuesta_RES(read_query, res);     
+    // return emitirRespuesta_RES(read_query, res);   
 }
 module.exports.setAsignarPedido = setAsignarPedido;
 

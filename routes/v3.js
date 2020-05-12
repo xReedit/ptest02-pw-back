@@ -45,7 +45,7 @@ routerV3.post('/pedido/lacuenta-cliente-totales', apiPwaAppPedidos.getLaCuentaFr
 routerV3.post('/pedido/lacuenta-pedido-totales', apiPwaAppPedidos.getLaCuentaFromPedidoTotales);
 routerV3.get('/pedido/get-const-delivery-items-escala', apiPwaAppPedidos.getConsAppDelivery);
 
-routerV3.post('/service/consulta-dni-ruc', apiPwaAppPedidos.getConsultaDatosCliente);
+routerV3.post('/service/consulta-dni-ruc', auth.verificarToken, apiPwaAppPedidos.getConsultaDatosCliente);
 
 
 routerV3.post('/encuesta/la-encuesta', apiPwaAppPedidos.getEncuesta);

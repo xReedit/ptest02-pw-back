@@ -98,7 +98,7 @@ routerV3.post('/push/send-notification', apiPwaSMS.sendPushNotificaction);
 
 // login repartidor
 routerV3.post('/login-usuario-autorizado-repartidor', login.loggerUsAutorizadoRepartidor);
-routerV3.get('/repartidor/get-info', auth.verificarToken, apiPwaAppRepartidor.getInfo);
+routerV3.post('/repartidor/get-info', auth.verificarToken, apiPwaAppRepartidor.getInfo);
 
 routerV3.post('/repartidor/push-suscripcion', auth.verificarToken, apiPwaAppRepartidor.pushSuscripcion);
 routerV3.post('/repartidor/set-efectivo-mano', auth.verificarToken, apiPwaAppRepartidor.setEfectivoMano);

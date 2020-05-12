@@ -272,7 +272,7 @@ module.exports.getPedidoPendienteAceptar = getPedidoPendienteAceptar;
 
 
 const getPropioPedidos = function (req, res) {
-	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
+	const idrepartidor = req.body.idrepartidor; // managerFilter.getInfoToken(req,'idrepartidor');
     const read_query = `SELECT * from  pedido where idrepartidor=${idrepartidor} and (fecha = DATE_FORMAT(now(), '%d/%m/%Y')  or cierre=0)`;
     emitirRespuesta_RES(read_query, res);        
 }

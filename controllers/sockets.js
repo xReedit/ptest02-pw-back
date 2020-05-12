@@ -454,6 +454,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// dataPedido = { idpedido, idsede, datosRepartidor }
 		socket.on('repartidor-acepta-pedido', async (dataPedido) => {
 
+			
+
 			// buscamos socketid de comercio para notificar
 			const socketidComercio = await apiPwaComercio.getSocketIdComercio(dataPedido.idsede);
 			console.log('repartidor-notifica-a-comercio-pedido-aceptado', socketidComercio +'  pedido: '+ dataPedido);

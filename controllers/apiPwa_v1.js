@@ -190,9 +190,9 @@ module.exports.getConsAppDelivery = getConsAppDelivery;
 
 
 const setRegisterClienteLogin = async function (req, res) {	
-	const idorg = req.body.idorg;
+	// const idorg = req.body.idorg;
 	const dataLogin = req.body;
-	const read_query = `call procedure_pwa_register_cliente_login(${idorg},'${JSON.stringify(dataLogin)}')`;
+	const read_query = `call procedure_pwa_register_cliente_login('${JSON.stringify(dataLogin)}')`;
 
     emitirRespuestaSP_RES(read_query, res); 
 }

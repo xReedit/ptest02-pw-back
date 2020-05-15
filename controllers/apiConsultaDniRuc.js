@@ -26,6 +26,7 @@ const getConsultaDatosCliente = async function (req, res) {
     const response = await emitirRespuesta(read_query);
 
     console.log('response dni', response);
+    console.log('response dni length', response.length);
 
 
     if ( response.length === 0 ) {    	
@@ -100,13 +101,14 @@ async function xGetFindDniRuc(valor, servicio, callback) {
 	var token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.BX0t4nmgikjpVjZUTSJaj06R3i2Wn-dRwlAMntb_drI";
 	var label_num = servicio === "dni" ? "ndni" : "ruc"; 
 	var _url_servicio;
+	servicio = servicio.toLowerCase();
 				
 						
 				xValidarToken(token, (t)=> {
 
 					_url_servicio = url_service+servicio+"/api/service.php?"+label_num+"="+valor+"&token="+token;
 
-					// console.log('url', _url_servicio);
+					console.log('url', _url_servicio);
 								
 					var nombres='', direccion='', telefono='';
 					var num_doc = valor;

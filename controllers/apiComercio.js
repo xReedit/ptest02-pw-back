@@ -87,7 +87,8 @@ const pushSuscripcion = async function (req) {
 	const suscripcion = req.body.suscripcion;	
 
 	const read_query = `update sede_socketid set key_suscripcion_push = '${JSON.stringify(suscripcion)}' where idsede = ${idsede}`;
-	return emitirRespuesta(read_query);
+	// return emitirRespuestaSP_RES(read_query);
+	emitirRespuestaSP_RES(read_query, res);
 }
 module.exports.pushSuscripcion = pushSuscripcion;
 
@@ -159,12 +160,13 @@ const setRegistrarPago = function (req, res) {
 }
 module.exports.setRegistrarPago = setRegistrarPago;
 
-const setRepartidorToPedido = async function (req) {	
+const setRepartidorToPedido = async function (req, res) {	
 	const idrepartidor = req.body.idrepartidor;	
 	const idpedido = req.body.idpedido;	
 
 	const read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido = ${idpedido}`;
-	return emitirRespuesta(read_query);
+	// return emitirRespuesta(read_query);
+	emitirRespuestaSP_RES(read_query, res);
 }
 module.exports.setRepartidorToPedido = setRepartidorToPedido;
 
@@ -198,6 +200,19 @@ const getDataCierreCaja = function (req, res) {
 module.exports.getDataCierreCaja = getDataCierreCaja;
 
 
+const getMisRepartidores = function (req, res) {
+	const idsede = managerFilter.getInfoToken(req,'idsede');
+    const read_query = `SELECT * from repartidor WHERE idsede_suscrito = ${idsede} and estado=0`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getMisRepartidores = getMisRepartidores;
+
+const setRegistrarRepartidor = function (req, res) {
+	const dataRepartidor = req.body.repartidor;
+    const read_query = `call procedure_registrar_repartidor_sede('${JSON.stringify(dataRepartidor)}')`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.setRegistrarRepartidor = setRegistrarRepartidor;
 
 
 /// pruebas

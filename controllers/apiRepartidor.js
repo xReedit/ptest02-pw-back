@@ -70,7 +70,7 @@ module.exports.getRepartidoreForPedido = getRepartidoreForPedido;
 // dataPedido es el registro de la tabla pedido
 const getRepartidoreForPedidoFromInterval = async function (es_latitude, es_longitude, efectivoPagar) {		                  
     const read_query = `call procedure_delivery_get_repartidor(${es_latitude}, ${es_longitude}, ${efectivoPagar})`;
-    return emitirRespuestaSP(read_query);        
+    return await emitirRespuestaSP(read_query);        
 }
 module.exports.getRepartidoreForPedidoFromInterval = getRepartidoreForPedidoFromInterval;
 
@@ -79,14 +79,19 @@ module.exports.getRepartidoreForPedidoFromInterval = getRepartidoreForPedidoFrom
 const getPedidosEsperaRepartidor = async function (idsede) {	
     
 	// LIMIT 1 busca repartidor para el primer pedido primero
-    const read_query = `SELECT p.*, s.longitude, s.latitude
+    /*const read_query = `SELECT p.*, s.longitude, s.latitude
 	from pedido p 
 		inner join  sede s on p.idsede = s.idsede
 	where p.idsede=${idsede} and p.is_from_client_pwa = 1 and pwa_is_delivery = 1 and COALESCE(idrepartidor, 0) = 0  and s.pwa_delivery_servicio_propio = 0 LIMIT 1;`;
+	*/
 	
-	return emitirRespuesta(read_query);  
-	// const read_query = `call procedure_delivery_pedidos_pendientes()`;
- 	// return emitirRespuestaData(read_query);        
+	// return emitirRespuesta(read_query);  
+	const read_query = `call procedure_delivery_pedidos_pendientes()`;
+ 	const response = await emitirRespuestaSP(read_query);        
+ 	console.log('pedidos response', response);
+ 	console.log('pedidos pendiente', response.data);
+ 	return response;
+ 	 	
 
 
 }
@@ -118,14 +123,14 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 		firtsRepartidor = listRepartidores[0];
 		dataPedido.num_reasignado = 0;
 
-		// resetea los contadores
-		const read_query = `update pedido set num_reasignaciones = 0 where idpedido = ${dataPedido.idpedido}; 
-							update repartidor set flag_paso_pedido=0, pedido_por_aceptar=null where flag_paso_pedido=${dataPedido.idpedido};`;
+		// resetea los contadores para empezar nuevamente
+		// update pedido set num_reasignaciones = 0 where idpedido = ${dataPedido.idpedido}; 
+		const read_query = `update repartidor set flag_paso_pedido=0, pedido_por_aceptar=null where flag_paso_pedido=${dataPedido.idpedido};`;
     	return emitirRespuestaSP(read_query); 
 	} else {
 
 		const read_query = `call procedure_delivery_set_pedido_repartidor(${dataPedido.idpedido}, ${firtsRepartidor.idrepartidor}, '${JSON.stringify(dataPedido)}')`;
-		emitirRespuestaSP(read_query);
+		const res_call = await emitirRespuestaSP(read_query);
 	}
 
 	// enviamos push notificaction
@@ -146,6 +151,8 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 	console.log('socket enviado a repartidor', firtsRepartidor);
 	io.to(firtsRepartidor.socketid).emit('repartidor-nuevo-pedido', [firtsRepartidor, dataPedido]);
 
+	// para finalizar async
+	return true;
 }
 module.exports.sendPedidoRepartidor = sendPedidoRepartidor;
 
@@ -221,7 +228,7 @@ module.exports.setUpdateRepartidorOcupado = setUpdateRepartidorOcupado;
 const getSocketIdRepartidor = async function (listIdRepartidor) {
 	// const idcliente = dataCLiente.idcliente;
     const read_query = `SELECT socketid, pwa_code_verification as key_suscripcion_push from repartidor where idrepartidor in (${listIdRepartidor})`;
-    return emitirRespuesta(read_query);        
+    return await emitirRespuesta(read_query);        
 }
 module.exports.getSocketIdRepartidor = getSocketIdRepartidor;
 
@@ -308,9 +315,11 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 	console.log ( 'listPedidos listPedidos.lenght', listPedidos.length );
 
 	if (listPedidos.length > 0) {
-		listPedidos.map(async p => {
+		// listPedidos.map(async p => {
+		for (let index = 0; index < listPedidos.length; index++) {
+			const p = listPedidos[index];
 			console.log('pedido procesar', p);
-			p.json_datos_delivery = JSON.parse(p.json_datos_delivery);			
+			p.json_datos_delivery = typeof p.json_datos_delivery === 'string' ? JSON.parse(p.json_datos_delivery) : p.json_datos_delivery;			
 
 			// cantidad en efectivo a  pagar (efectivo o yape)
 			const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;	
@@ -326,21 +335,29 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 			const listRepartidores = await getRepartidoreForPedidoFromInterval(p.latitude, p.longitude, _cantidadEfectivoPagar);
 
 			// enviamos
-			sendPedidoRepartidor(listRepartidores, p, io);
-		});
-	} else {
+			const response_ok = await sendPedidoRepartidor(listRepartidores, p, io);
+			console.log('response_ok', response_ok);
+		}
+		// });
+	} 
 
-		console.log('fin del proceso')
-		clearInterval(intervalBucaRepartidor);
-		intervalBucaRepartidor=null;
-	}	
+	// proceso no termina se queda activo esperando pedidos
+	// else {
+
+	// 	console.log('fin del proceso')
+	// 	clearInterval(intervalBucaRepartidor);
+	// 	intervalBucaRepartidor=null;
+	// }	
 
 	// colocamos en la tabla repartidor el pedido
 
 	
 }
 
+// el proceso se activa al primer pedido que recibe y se mantiene activo eseprando
+// pedidos
 const runLoopSearchRepartidor = async function (io, idsede) {
+
 	if ( intervalBucaRepartidor === null ) {
 		colocarPedidoEnRepartidor(io, idsede);
 		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 15000);
@@ -385,37 +402,6 @@ module.exports.runLoopPrueba = runLoopPrueba;
 
 
 
-
-/// pruebas
-const getSinToken = async function (req, res) {	
-    // const idcliente = req.body.idcliente;
-        
-    const read_query = `select * from repartidor where idrepartidor=1 and estado=0`;
-    // return emitirRespuestaSP(read_query);      
-    emitirRespuesta_RES(read_query, res);  
-}
-module.exports.getSinToken = getSinToken;
-
-/// pruebas
-const getConToken = async function (req, res) {	
-    // const idcliente = req.body.idcliente;
-        
-    const read_query = `select * from repartidor where idrepartidor=1 and estado=0`;
-    // return emitirRespuestaSP(read_query);      
-    emitirRespuesta_RES(read_query, res);  
-}
-module.exports.getConToken = getConToken;
-
-
-const putSinToken = async function (req, res) {	
-    const efectivo = req.body.efectivo;      
-	const online = req.body.online;
-        
-    const read_query = `update repartidor set online=${online}, efectivo_mano=${efectivo} where idrepartidor =${1}`;
-    // return emitirRespuestaSP(read_query);      
-    emitirRespuesta_RES(read_query, res);  
-}
-module.exports.putSinToken = putSinToken;
 
 
 

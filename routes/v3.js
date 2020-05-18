@@ -151,6 +151,7 @@ routerV3.post('/service/facturacion-e', auth.verificarToken, apiServiceFacturaci
 //// MONITOR ///
 routerV3.get('/monitor/get-pedidos', auth.verificarToken, apiPwaAppMonitor.getPedidos);
 routerV3.get('/monitor/get-repartidores', auth.verificarToken, apiPwaAppMonitor.getRepartidores);
+routerV3.get('/monitor/get-clientes', auth.verificarToken, apiPwaAppMonitor.getCientes);
 //// MONITOR ///
 
 module.exports = routerV3;

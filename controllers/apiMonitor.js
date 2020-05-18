@@ -23,6 +23,36 @@ const getRepartidores = function (req, res) {
 }
 module.exports.getRepartidores = getRepartidores;
 
+const getCientes = async function (req, res) {	
+    const read_query = `SELECT * from cliente where pwa_id != '' order by idcliente desc`;    
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getCientes = getCientes;
+
+
+
+
+
+
+
+
+function emitirRespuesta_RES(xquery, res) {
+	console.log(xquery);
+	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+	.then(function (rows) {
+		
+		return ReS(res, {
+			data: rows
+		});
+		// return rows;
+	})
+	.catch((err) => {
+		return false;
+	});
+}
+
+
+
 function emitirRespuestaSP_RES(xquery, res) {
 	console.log(xquery);
 	sequelize.query(xquery, {		

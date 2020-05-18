@@ -265,11 +265,17 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 			// si es delivery app // dataSend.isClienteRecogeLocal si el cliente recoge el pedido en el local
-			if ( dataSend.isDeliveryAPP && !dataSend.isClienteRecogeLocal ) {
+			if ( dataSend.isDeliveryAPP ) {
 
-				// run proceso de busqueda repartidor
-				apiPwaRepartidor.runLoopSearchRepartidor(io, dataCliente.idsede);
+				if ( !dataSend.isClienteRecogeLocal ) {
+					// run proceso de busqueda repartidor
+					apiPwaRepartidor.runLoopSearchRepartidor(io, dataCliente.idsede);
+				}				
 
+
+				// notificamos push al comercio
+				const socketIdComercio = await apiPwaComercio.getSocketIdComercio(dataCliente.idsede);
+				apiPwaComercio.sendOnlyNotificaPush(socketIdComercio[0].key_suscripcion_push, 0);				
 			// 	const _dataPedido = {
 			// 		dataItems: dataSend.dataPedido.p_body,
 			// 		dataDelivery: dataSend.dataPedido.p_header.arrDatosDelivery,
@@ -290,7 +296,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 			// para actaluzar vista de caja // control de pedidos
-			// socket.broadcast.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
+			// socket.broadcast.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);			
+
 			io.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
 
 
@@ -525,6 +532,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// data del la sede
 		const objDataSede = await apiPwa.getDataSede(dataCliente);
 		socket.emit('getDataSede', objDataSede);
+
+
+		// traer ordenes pendientes
+		// const objPedidosPendientes = await apiPwaComercio.getOrdenesPedientesSocket(dataCliente);		
+		// socket.emit('get-comercio-pedidos-pendientes', null);
 
 		// notifica al pedido que tiene un pedido asignado desde el comercio
 		socket.on('set-repartidor-pedido-asigna-comercio', async (dataPedido) => {

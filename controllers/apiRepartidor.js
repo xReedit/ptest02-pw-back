@@ -1,5 +1,5 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
-const sendMsjsService = require('./sendMsj.js')
+const sendMsjsService = require('./sendMsj.js');
 let Sequelize = require('sequelize');
 let config = require('../config');
 let managerFilter = require('../utilitarios/filters');
@@ -360,7 +360,7 @@ const runLoopSearchRepartidor = async function (io, idsede) {
 
 	if ( intervalBucaRepartidor === null ) {
 		colocarPedidoEnRepartidor(io, idsede);
-		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 15000);
+		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
 	}
 }
 module.exports.runLoopSearchRepartidor = runLoopSearchRepartidor;

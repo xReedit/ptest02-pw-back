@@ -118,6 +118,7 @@ routerV3.get('/repartidor/ruc-proceso-buscar-repartidor', apiPwaAppRepartidor.ru
 /// COMERCIO
 /// COMERCIO
 routerV3.post('/comercio/set-online', auth.verificarToken, apiPwaAppComercio.setOnline);
+routerV3.post('/comercio/push-suscripcion', auth.verificarToken, apiPwaAppComercio.pushSuscripcion);
 routerV3.post('/comercio/get-pedidos-pendientes', auth.verificarToken, apiPwaAppComercio.getOrdenesPedientes);
 routerV3.post('/comercio/get-pedido-by-id', auth.verificarToken, apiPwaAppComercio.getOrdenesByid);
 routerV3.post('/comercio/set-estado-pedido', auth.verificarToken, apiPwaAppComercio.setEstadoPedido);

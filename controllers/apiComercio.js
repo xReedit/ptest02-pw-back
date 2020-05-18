@@ -1,4 +1,5 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
+const sendMsjsService = require('./sendMsj.js');
 let Sequelize = require('sequelize');
 let config = require('../config');
 let managerFilter = require('../utilitarios/filters');
@@ -77,12 +78,13 @@ const setComercioConectado = function (dataCLiente) {
 module.exports.setComercioConectado = setComercioConectado;
 
 const getSocketIdComercio = async function (idsede) {
-    const read_query = `SELECT socketid from sede_socketid where idsede = ${idsede}`;
+    const read_query = `SELECT socketid, key_suscripcion_push from sede_socketid where idsede = ${idsede}`;
     return emitirRespuesta(read_query);        
 }
 module.exports.getSocketIdComercio = getSocketIdComercio;
 
 const pushSuscripcion = async function (req) {	
+	console.log('============================ pushSuscripcion ========');
 	const idsede = managerFilter.getInfoToken(req,'idsede');
 	const suscripcion = req.body.suscripcion;	
 
@@ -233,7 +235,10 @@ const getProcedure = function (req, res) {
 module.exports.getProcedure = getProcedure;
 
 
-
+const sendOnlyNotificaPush = function (key_suscripcion_push, tipo_msjs) {
+	sendMsjsService.sendPushNotificactionOneRepartidor(key_suscripcion_push, tipo_msjs);
+}
+module.exports.sendOnlyNotificaPush = sendOnlyNotificaPush;
 
 function emitirRespuesta(xquery, res) {
 	console.log(xquery);

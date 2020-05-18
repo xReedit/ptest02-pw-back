@@ -8,6 +8,8 @@ const apiPwaAppDelivery = require('../controllers/apiDelivery');
 const apiPwaAppRepartidor = require('../controllers/apiRepartidor');
 // const apiPwaPruebas = require('../controllers/apiPruebas');
 const apiPwaAppComercio = require('../controllers/apiComercio');
+const apiPwaAppMonitor = require('../controllers/apiMonitor');
+
 const apiConsultaDniRuc = require('../controllers/apiConsultaDniRuc');
 const apiServiceFacturacion = require('../controllers/serviceFacturacion');
 const apiPwaSMS = require('../controllers/sendMsj');
@@ -143,5 +145,12 @@ routerV3.post('/consulta/dni-ruc', auth.verificarToken, apiConsultaDniRuc.getCon
 routerV3.post('/consulta/registrar-cliente-nuevo', auth.verificarToken, apiConsultaDniRuc.setGuardarClienteNuevo);
 
 routerV3.post('/service/facturacion-e', auth.verificarToken, apiServiceFacturacion.cocinarFactura);
+
+
+
+//// MONITOR ///
+routerV3.get('/monitor/get-pedidos', auth.verificarToken, apiPwaAppMonitor.getPedidos);
+routerV3.get('/monitor/get-repartidores', auth.verificarToken, apiPwaAppMonitor.getRepartidores);
+//// MONITOR ///
 
 module.exports = routerV3;

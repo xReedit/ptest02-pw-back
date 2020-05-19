@@ -83,7 +83,7 @@ const getSocketIdComercio = async function (idsede) {
 }
 module.exports.getSocketIdComercio = getSocketIdComercio;
 
-const pushSuscripcion = async function (req) {	
+const pushSuscripcion = async function (req, res) {	
 	console.log('============================ pushSuscripcion ========');
 	const idsede = managerFilter.getInfoToken(req,'idsede');
 	const suscripcion = req.body.suscripcion;	

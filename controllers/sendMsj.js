@@ -44,6 +44,36 @@ const sendMsjConfirmacion = async function (req, res) {
 module.exports.sendMsjConfirmacion = sendMsjConfirmacion;
 
 
+
+
+// sms mensaje avisa nuevo pedido
+const sendMsjSMSNewPedido = async function (numberPhone) {	
+	// const numberPhone = req.body.numberphone;
+    // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
+    // emitirRespuesta_RES(read_query, res);        
+    var clientSMS = require('twilio')(config.accountSidSms, config.authTokenSms);
+
+ //    clientSMS.messages.create({
+	//   from: 'whatsapp:+14155238886',
+	//   body: 'Ahoy world!',
+	//   to: 'whatsapp:+51'+numberPhone
+	// }).then(message => console.log(message.sid));
+
+    clientSMS.messages.create({
+    	body: 'Papaya Express. Tiene un nuevo pedido.',
+    	to: '+51'+numberPhone,  // Text this number
+    	from: '+17852279308' // From a valid Twilio number
+	})
+	.then((message) => {		
+		return true;
+	})
+	.catch(err => {
+		return false;
+	});
+}
+module.exports.sendMsjSMSNewPedido = sendMsjSMSNewPedido;
+
+
 // notificaciones push
 // guardar suscripcion notificacion push
 const pushSuscripcion = async function (req) {
@@ -129,7 +159,7 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 		            "body": `Te llego un pedido.`,
 		            "icon": "./favicon.ico",
 		            "lang": "es",
-		            "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]
+		            "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]
 		        // }
 		    }
 		}       
@@ -177,7 +207,7 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 			            "body": `Te llego un pedido.`,
 			            "icon": "./favicon.ico",
 			            "lang": "es",
-			            "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]
+			            "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]
 			        }
 			    // }
 			}       

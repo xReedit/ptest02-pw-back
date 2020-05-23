@@ -81,6 +81,7 @@ routerV3.get('/delivery/get-categorias', apiPwaAppDelivery.getCategorias);
 routerV3.post('/delivery/verificar-codigo-sms', apiPwaAppDelivery.verificarCodigoSMS);
 routerV3.post('/delivery/send-sms-confirmation', auth.verificarTokenSms, apiPwaSMS.sendMsjConfirmacion);
 routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepartidorTEST);
+routerV3.post('/delivery/send-sms-test', apiPwaSMS.sendMsjSMSNewPedido);
 
 // notificaciones push
 // guardar suscripcion

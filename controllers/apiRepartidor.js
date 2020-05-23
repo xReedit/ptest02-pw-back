@@ -145,6 +145,13 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 	// 	        }
 	// 	    }
 	// 	}	
+
+	// envio mensaje
+	console.log("============== last_notification = ", firtsRepartidor.last_notification);
+	if ( firtsRepartidor.last_notification === 0 ||  firtsRepartidor.last_notification > 7) {
+		sendMsjsService.sendMsjSMSNewPedido(firtsRepartidor.telefono);
+	}
+
 	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0);
 
 	// enviamos el socket

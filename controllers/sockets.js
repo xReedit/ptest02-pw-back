@@ -275,7 +275,15 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 				// notificamos push al comercio
 				const socketIdComercio = await apiPwaComercio.getSocketIdComercio(dataCliente.idsede);
+				// notifica mensaje texto si tiene teleono
+				if ( socketIdComercio[0].telefono_notifica !== '' ) {
+					// console.log(' ==== notifica sms comercio =====', socketIdComercio[0].telefono_notifica);
+					apiPwaComercio.sendNotificacionNewPedidoSMS(socketIdComercio[0].telefono_notifica);
+				} 
+
+				// notificacion push
 				apiPwaComercio.sendOnlyNotificaPush(socketIdComercio[0].key_suscripcion_push, 0);				
+
 			// 	const _dataPedido = {
 			// 		dataItems: dataSend.dataPedido.p_body,
 			// 		dataDelivery: dataSend.dataPedido.p_header.arrDatosDelivery,
@@ -546,6 +554,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			// notificacion push nuevo pedido
 			apiPwaRepartidor.sendOnlyNotificaPush(socketIdRepartidor[0].key_suscripcion_push, 0);
-		})
+		});
+
+
+		// comercio con repartidores propios solicita repartidor de la red papaya
+		socket.on('set-solicitar-repartidor-papaya', () => {
+			apiPwaRepartidor.runLoopSearchRepartidor(io, dataCliente.idsede);
+		});		
 	}
 }

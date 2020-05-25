@@ -47,7 +47,7 @@ module.exports.sendMsjConfirmacion = sendMsjConfirmacion;
 
 
 // sms mensaje avisa nuevo pedido
-const sendMsjSMSNewPedido = async function (numberPhone) {	
+const sendMsjSMSNewPedido = async function (numberPhone, dato = 'Repartidor ') {	
 	// const numberPhone = req.body.numberphone;
     // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
     // emitirRespuesta_RES(read_query, res);        
@@ -60,7 +60,7 @@ const sendMsjSMSNewPedido = async function (numberPhone) {
 	// }).then(message => console.log(message.sid));
 
     clientSMS.messages.create({
-    	body: 'Papaya Express. Tiene un nuevo pedido.',
+    	body: dato  + 'Papaya Express. Tiene un nuevo pedido.',
     	to: '+51'+numberPhone,  // Text this number
     	from: '+17852279308' // From a valid Twilio number
 	})

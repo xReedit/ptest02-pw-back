@@ -71,7 +71,7 @@ const loggerUsAutorizado = async function (req, res) {
                         console.log('pass ', p);                        
                         rows[0].pass = p;
 
-                        console.log('usuario logueado ', rows[0]);
+                        // console.log('usuario logueado ', rows[0]);
                         
                         const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: '24h' });
 
@@ -110,7 +110,7 @@ const loggerUsAutorizadoRepartidor = async function (req, res) {
                         console.log('pass ', p);                        
                         rows[0].pass = p;
 
-                        console.log('usuario logueado ', rows[0]);
+                        // console.log('usuario logueado ', rows[0]);
                         
                         const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: '24h' });
 

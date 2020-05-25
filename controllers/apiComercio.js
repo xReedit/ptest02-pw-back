@@ -78,7 +78,7 @@ const setComercioConectado = function (dataCLiente) {
 module.exports.setComercioConectado = setComercioConectado;
 
 const getSocketIdComercio = async function (idsede) {
-    const read_query = `SELECT socketid, key_suscripcion_push from sede_socketid where idsede = ${idsede}`;
+    const read_query = `SELECT ss.socketid, ss.key_suscripcion_push, s.pwa_delivery_telefono_notifica_pedido telefono_notifica from sede_socketid ss inner join sede s on s.idsede = ss.idsede where ss.idsede = ${idsede}`;
     return emitirRespuesta(read_query);        
 }
 module.exports.getSocketIdComercio = getSocketIdComercio;
@@ -239,6 +239,35 @@ const sendOnlyNotificaPush = function (key_suscripcion_push, tipo_msjs) {
 	sendMsjsService.sendPushNotificactionOneRepartidor(key_suscripcion_push, tipo_msjs);
 }
 module.exports.sendOnlyNotificaPush = sendOnlyNotificaPush;
+
+const sendNotificacionNewPedidoSMS = function (numberPhone) {
+	sendMsjsService.sendMsjSMSNewPedido(numberPhone, 'Comercio ');
+}
+module.exports.sendNotificacionNewPedidoSMS = sendNotificacionNewPedidoSMS;
+
+
+const borrarMiReparidor = async function (req, res) {	
+	const idrepartidor = req.body.idrepartidor;		
+
+	const read_query = `update repartidor set estado=1 where idrepartidor = ${idrepartidor}`;
+	// return emitirRespuesta(read_query);
+	emitirRespuestaSP_RES(read_query, res);
+}
+module.exports.borrarMiReparidor = borrarMiReparidor;
+
+
+const setFlagSolicitaRepartidorPapaya = async function (req, res) {	
+	const idpedido = req.body.idpedido;	
+
+	const read_query = `update pedido set flag_solicita_repartidor_papaya = 1 where idpedido = ${idpedido}`;
+	// return emitirRespuesta(read_query);
+	emitirRespuestaSP_RES(read_query, res);
+}
+module.exports.setFlagSolicitaRepartidorPapaya = setFlagSolicitaRepartidorPapaya;
+
+
+
+
 
 function emitirRespuesta(xquery, res) {
 	console.log(xquery);

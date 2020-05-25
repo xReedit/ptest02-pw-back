@@ -290,6 +290,16 @@ const setClienteNewDireccion = async function (req, res) {
 module.exports.setClienteNewDireccion = setClienteNewDireccion;
 
 
+const setHistoryError = function (req, res) {	
+    const _elerror = req.body.elerror;
+    const _elorigen = req.body.elorigen;
+        
+    const read_query = `insert into  historial_error(fecha, error, origen) values (now(), '${JSON.stringify(_elerror)}', '${_elorigen}')`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.setHistoryError = setHistoryError;
+
 
 function emitirRespuesta_RES(xquery, res) {
 	console.log(xquery);

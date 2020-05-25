@@ -135,6 +135,8 @@ routerV3.post('/comercio/set-repartidor-to-pedido', auth.verificarToken, apiPwaA
 routerV3.get('/comercio/get-data-cierre-caja', auth.verificarToken, apiPwaAppComercio.getDataCierreCaja);
 routerV3.get('/comercio/get-mis-repartidores', auth.verificarToken, apiPwaAppComercio.getMisRepartidores);
 routerV3.post('/comercio/set-registrar-repartidor', auth.verificarToken, apiPwaAppComercio.setRegistrarRepartidor);
+routerV3.post('/comercio/borrar-mi-repartidor', auth.verificarToken, apiPwaAppComercio.borrarMiReparidor);
+routerV3.post('/comercio/set-flag-solicita-repartidor-papaya', auth.verificarToken, apiPwaAppComercio.setFlagSolicitaRepartidorPapaya);
 
 
 // comercio registro
@@ -154,5 +156,9 @@ routerV3.get('/monitor/get-pedidos', auth.verificarToken, apiPwaAppMonitor.getPe
 routerV3.get('/monitor/get-repartidores', auth.verificarToken, apiPwaAppMonitor.getRepartidores);
 routerV3.get('/monitor/get-clientes', auth.verificarToken, apiPwaAppMonitor.getCientes);
 //// MONITOR ///
+
+
+// errores
+routerV3.post('/error/set-error', apiPwaAppPedidos.setHistoryError);
 
 module.exports = routerV3;

@@ -95,7 +95,8 @@ const setNuevoPedido = async function (dataCLiente, dataPedido) {
 	const idorg = dataCLiente.idorg;
     const idsede = dataCLiente.idsede;		              
     const idusuario = dataCLiente.idusuario;		              
-    const read_query = `call procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPedido)}')`;
+    const _json = JSON.stringify(JSON.parse(JSON.stringify(dataPedido)));
+    const read_query = `call procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
     return emitirRespuestaSP(read_query);        
 }
 module.exports.setNuevoPedido = setNuevoPedido;

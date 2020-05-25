@@ -95,7 +95,15 @@ const setNuevoPedido = async function (dataCLiente, dataPedido) {
 	const idorg = dataCLiente.idorg;
     const idsede = dataCLiente.idsede;		              
     const idusuario = dataCLiente.idusuario;		              
-    const _json = JSON.stringify(JSON.parse(JSON.stringify(dataPedido)));
+    var _json = JSON.stringify(dataPedido).replace(/\\n/g, '')
+                                      .replace(/\\'/g, '')
+                                      .replace(/\\"/g, '')
+                                      .replace(/\\&/g, '')
+                                      .replace(/\\r/g, '')
+                                      .replace(/\\t/g, '')
+                                      .replace(/\\b/g, '')
+                                      .replace(/\\f/g, '');
+
     const read_query = `call procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
     return emitirRespuestaSP(read_query);        
 }

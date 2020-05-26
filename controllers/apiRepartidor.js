@@ -53,7 +53,7 @@ const setPositionNow = async function (req, res) {
 	
 	
     const read_query = `update repartidor set position_now = '${JSON.stringify(pos)}' where idrepartidor = ${idrepartidor}`;
-    emitirRespuesta_RES(read_query, res);        
+    emitirRespuesta_RES(read_query, res);
 }
 module.exports.setPositionNow = setPositionNow;
 
@@ -148,8 +148,10 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 
 	// envio mensaje
 	console.log("============== last_notification = ", firtsRepartidor.last_notification);
-	if ( firtsRepartidor.last_notification === 0 ||  firtsRepartidor.last_notification > 7) {
+	if ( firtsRepartidor.last_notification === 0 ||  firtsRepartidor.last_notification > 7) {	
 		sendMsjsService.sendMsjSMSNewPedido(firtsRepartidor.telefono);
+		const read_query = `update repartidor set last_notification = time(now()) where idrepartidor=${firtsRepartidor.idrepartidor};`;
+    	emitirRespuestaSP(read_query);
 	}
 
 	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0);

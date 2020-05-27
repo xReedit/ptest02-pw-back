@@ -408,7 +408,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// 	dataCliente.socketid = dataCliente.firts_socketid;
 		// 	socket.id = dataCliente.firts_socketid;
 
-			console.log ('sin cambiar socket', socket.id);
+		// console.log ('sin cambiar socket', socket.id);
 		// }
 		
 		
@@ -416,10 +416,14 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// registrar como conectado en cliente_socketid
 		apiPwaRepartidor.setRepartidorConectado(dataCliente);		
 
-		// ver si tenemos un pedido pendiente de aceptar
+		// ver si tenemos un pedido pendiente de aceptar // ver si solicito libear pedido
 		const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataCliente.idrepartidor);
 		socket.emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
 
+		console.log('pedioPendienteAceptar', pedioPendienteAceptar);
+		if ( pedioPendienteAceptar[0].solicita_liberar_pedido === 1 ) {
+			apiPwaRepartidor.setLiberarPedido(dataCliente.idrepartidor);
+		}
 
 
 		// escuchar estado del pedido // reparitor asignado // en camino //  llego

@@ -232,6 +232,12 @@ const setUpdateRepartidorOcupado = function (idrepartidor, estado) {
 }
 module.exports.setUpdateRepartidorOcupado = setUpdateRepartidorOcupado;
 
+const setLiberarPedido = function (idrepartidor) {  
+    const read_query = `update repartidor set ocupado = 0, solicita_liberar_pedido=0 where idrepartidor = ${idrepartidor};`;
+    emitirRespuesta(read_query);        
+}
+module.exports.setLiberarPedido = setLiberarPedido;
+
 
 
 const getSocketIdRepartidor = async function (listIdRepartidor) {
@@ -280,7 +286,7 @@ module.exports.getPedidosResumenEntregadoDia = getPedidosResumenEntregadoDia;
 
 const getPedidoPendienteAceptar = async function (idrepartidor) {
 	// const idcliente = dataCLiente.idcliente;
-    const read_query = `SELECT pedido_por_aceptar from repartidor where idrepartidor = ${idrepartidor}`;
+    const read_query = `SELECT pedido_por_aceptar, solicita_liberar_pedido from repartidor where idrepartidor = ${idrepartidor}`;
     return emitirRespuesta(read_query);        
 }
 module.exports.getPedidoPendienteAceptar = getPedidoPendienteAceptar;
@@ -369,7 +375,7 @@ const runLoopSearchRepartidor = async function (io, idsede) {
 
 	if ( intervalBucaRepartidor === null ) {
 		colocarPedidoEnRepartidor(io, idsede);
-		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
+		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 15000);
 	}
 }
 module.exports.runLoopSearchRepartidor = runLoopSearchRepartidor;

@@ -375,7 +375,7 @@ const runLoopSearchRepartidor = async function (io, idsede) {
 
 	if ( intervalBucaRepartidor === null ) {
 		colocarPedidoEnRepartidor(io, idsede);
-		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 15000);
+		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
 	}
 }
 module.exports.runLoopSearchRepartidor = runLoopSearchRepartidor;

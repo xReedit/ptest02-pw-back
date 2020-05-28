@@ -118,11 +118,11 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
         };
     }
 
-        const rptDate = new Date();
+        const rptDate = new Date().toLocaleString().split(' ');
         const fecha_manual = xArrayComprobante.fecha_manual || null; // para regularizar desde facturador
 
-        fecha_actual = fecha_manual === null ? rptDate.toISOString().slice(0,10) : fecha_manual;
-        hora_actual = rptDate.toISOString().match(/(\d{2}:){2}\d{2}/)[0];
+        fecha_actual = fecha_manual === null ? rptDate[0].replace(',', '').replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2') : fecha_manual;
+        hora_actual = rptDate[1];
 
         var direccionEmisor = xArrayEncabezado.sededireccion === '' ? xArrayEncabezado.direccion : xArrayEncabezado.sededireccion;
         direccionEmisor = direccionEmisor === undefined ? xArrayEncabezado.direccion: direccionEmisor;

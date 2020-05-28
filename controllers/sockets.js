@@ -36,8 +36,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		let dataSocket = socket.handshake.query;		
 		dataSocket.socketid = socket.id;
 
-		// const rptDate = new Date().toISOString().match(/(\d{2}:){2}\d{2}/)[0];
-		// console.log('===== rptDate ========', rptDate);		
+		// const rptDate = new Date().toLocaleString().split(' ');
+		// var aaa = '5/28/2020,'.replace(',', '');
+		// aaa = aaa.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');
+		// console.log('===== rptDate ========', aaa);		
+		// console.log('===== rptDate ========', rptDate[1]);		
 
 		console.log('datos socket JSON', dataSocket);
 

@@ -36,6 +36,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		let dataSocket = socket.handshake.query;		
 		dataSocket.socketid = socket.id;
 
+		// const rptDate = new Date().toISOString().match(/(\d{2}:){2}\d{2}/)[0];
+		// console.log('===== rptDate ========', rptDate);		
+
 		console.log('datos socket JSON', dataSocket);
 
 		const dataCliente = dataSocket;

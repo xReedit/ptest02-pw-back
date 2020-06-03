@@ -88,8 +88,8 @@ const getPedidosEsperaRepartidor = async function (idsede) {
 	// return emitirRespuesta(read_query);  
 	const read_query = `call procedure_delivery_pedidos_pendientes()`;
  	const response = await emitirRespuestaSP(read_query);        
- 	console.log('pedidos response', response);
- 	console.log('pedidos pendiente', response.data);
+ 	// console.log('pedidos response', response);
+ 	// console.log('pedidos pendiente', response.data);
  	return response;
  	 	
 
@@ -113,6 +113,7 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 
 	// quitamos el pedido al repartidor anterior
 	if ( dataPedido.last_id_repartidor_reasigno ) {
+		console.log('repartidor-notifica-server-quita-pedido --b');
 		const getSocketIdRepartidorReasigno = await getSocketIdRepartidor(dataPedido.last_id_repartidor_reasigno);
 		io.to(getSocketIdRepartidorReasigno[0].socketid).emit('repartidor-notifica-server-quita-pedido', dataPedido.idpedido);	
 	}
@@ -125,7 +126,7 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 
 		// resetea los contadores para empezar nuevamente
 		// update pedido set num_reasignaciones = 0 where idpedido = ${dataPedido.idpedido}; 
-		const read_query = `update repartidor set flag_paso_pedido=0, pedido_por_aceptar=null where flag_paso_pedido=${dataPedido.idpedido};`;
+		const read_query = `update repartidor set flag_paso_pedido='0', pedido_por_aceptar=null where flag_paso_pedido=${dataPedido.idpedido};`;
     	return emitirRespuestaSP(read_query); 
 	} else {
 
@@ -133,23 +134,11 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 		const res_call = await emitirRespuestaSP(read_query);
 	}
 
-	// enviamos push notificaction
-	// const notification = {
-	// 	"notification": {
-	// 	        "notification": {
-	// 	            "title": "Nuevo Pedido",
-	// 	            "body": `${firtsRepartidor.nombre} te llego un pedido.`,
-	// 	            "icon": "./favicon.ico",
-	// 	            "lang": "es",
-	// 	            "vibrate": [100, 50, 100]
-	// 	        }
-	// 	    }
-	// 	}	
 
 	// envio mensaje
 	console.log("============== last_notification = ", firtsRepartidor.last_notification);
 	if ( firtsRepartidor.last_notification === 0 ||  firtsRepartidor.last_notification > 7) {	
-		sendMsjsService.sendMsjSMSNewPedido(firtsRepartidor.telefono);
+		//sendMsjsService.sendMsjSMSNewPedido(firtsRepartidor.telefono);
 		const read_query = `update repartidor set last_notification = time(now()) where idrepartidor=${firtsRepartidor.idrepartidor};`;
     	emitirRespuestaSP(read_query);
 	}
@@ -164,6 +153,64 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 	return true;
 }
 module.exports.sendPedidoRepartidor = sendPedidoRepartidor;
+
+// op2 group pedidos
+const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io) {
+
+	// agarramos el primer repartidor de la lista
+	const numIndex = 0; //dataPedido.num_reasignaciones;
+	const idsPedidos = dataPedido.pedidos.join(',');
+	let firtsRepartidor = listRepartidores[numIndex];
+
+	console.log('repartidor ============ firtsRepartidor', firtsRepartidor);
+
+	// quitamos el pedido al repartidor anterior
+	console.log('asignar repartidor ============ ', dataPedido);
+	if ( dataPedido.last_id_repartidor_reasigno ) {
+		console.log('repartidor-notifica-server-quita-pedido --a');
+		const getSocketIdRepartidorReasigno = await getSocketIdRepartidor(dataPedido.last_id_repartidor_reasigno);
+
+		// si no esta ocupado quita
+		if ( getSocketIdRepartidorReasigno[0].ocupado === 0 ) {
+			io.to(getSocketIdRepartidorReasigno[0].socketid).emit('repartidor-notifica-server-quita-pedido', null);
+		}		
+	}
+
+
+	// si no encuentra repartidor envia nuevamente al primero
+	if ( !firtsRepartidor ) {		
+		firtsRepartidor = listRepartidores[0];
+		dataPedido.num_reasignado = 0;
+
+		// resetea los contadores para empezar nuevamente
+		// update pedido set num_reasignaciones = 0 where idpedido = ${dataPedido.idpedido}; 
+		const read_query = `update repartidor set flag_paso_pedido=0, pedido_por_aceptar=null where flag_paso_pedido=${dataPedido.pedidos[0]};`;
+    	return emitirRespuestaSP(read_query); 
+	} else {
+
+		const read_query = `call procedure_delivery_set_pedido_repartidor(${dataPedido.pedidos[0]}, ${firtsRepartidor.idrepartidor}, '${JSON.stringify(dataPedido)}')`;
+		const res_call = await emitirRespuestaSP(read_query);
+	}
+
+
+	// envio mensaje
+	console.log("============== last_notification = ", firtsRepartidor.last_notification);
+	if ( firtsRepartidor.last_notification === 0 ||  firtsRepartidor.last_notification > 7) {	
+		sendMsjsService.sendMsjSMSNewPedido(firtsRepartidor.telefono);
+		const read_query = `update repartidor set last_notification = time(now()) where idrepartidor=${firtsRepartidor.idrepartidor};`;
+    	return emitirRespuestaSP(read_query); 
+	}
+
+	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0);
+
+	// enviamos el socket
+	console.log('socket enviado a repartidor', firtsRepartidor);
+	io.to(firtsRepartidor.socketid).emit('repartidor-nuevo-pedido', [firtsRepartidor, dataPedido]);
+
+	// para finalizar async
+	return true;
+}
+module.exports.sendPedidoRepartidorOp2 = sendPedidoRepartidorOp2;
 
 
 const sendOnlyNotificaPush = function (key_suscripcion_push, tipo_msjs) {
@@ -209,9 +256,12 @@ module.exports.sendOnlyNotificaPush = sendOnlyNotificaPush;
 const setAsignarPedido = function (req, res) {  
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	const idpedido = req.body.idpedido;           
+	const firstPedido = idpedido.split(',')[0];
 	
-    const read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido = ${idpedido}; update repartidor set ocupado=1 where idrepartidor = ${idrepartidor};
-    					update repartidor set flag_paso_pedido=0, pedido_por_aceptar=null where flag_paso_pedido=${idpedido}`;
+	// si acepta no borra
+	// , pedido_por_aceptar=null
+    const read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido in (${idpedido}); update repartidor set ocupado=1 where idrepartidor = ${idrepartidor};
+    					update repartidor set flag_paso_pedido=0 where flag_paso_pedido=${firstPedido}`;
 
 	// const read_query = `call procedure_delivery_asignar_pedido(${idrepartidor}, ${idpedido})`;    					
     emitirRespuesta_RES(read_query, res);     
@@ -227,7 +277,9 @@ const setUpdateEstadoPedido = function (idpedido, estado, tiempo = null) {
 module.exports.setUpdateEstadoPedido = setUpdateEstadoPedido;
 
 const setUpdateRepartidorOcupado = function (idrepartidor, estado) {  
-    const read_query = `update repartidor set ocupado = ${estado} where idrepartidor = ${idrepartidor};`;
+	// si no esta ocupado libera pedido_por_aceptar;
+	const clearPedidoPorAceptar = estado === 0 ?  `, pedido_por_aceptar = null` : '';	
+    const read_query = `update repartidor set ocupado = ${estado} ${clearPedidoPorAceptar} where idrepartidor = ${idrepartidor};`;
     emitirRespuesta(read_query);        
 }
 module.exports.setUpdateRepartidorOcupado = setUpdateRepartidorOcupado;
@@ -242,7 +294,7 @@ module.exports.setLiberarPedido = setLiberarPedido;
 
 const getSocketIdRepartidor = async function (listIdRepartidor) {
 	// const idcliente = dataCLiente.idcliente;
-    const read_query = `SELECT socketid, pwa_code_verification as key_suscripcion_push from repartidor where idrepartidor in (${listIdRepartidor})`;
+    const read_query = `SELECT socketid, pwa_code_verification as key_suscripcion_push, ocupado from repartidor where idrepartidor in (${listIdRepartidor})`;
     return await emitirRespuesta(read_query);        
 }
 module.exports.getSocketIdRepartidor = getSocketIdRepartidor;
@@ -307,6 +359,13 @@ const getInfo = function (req, res) {
 }
 module.exports.getInfo = getInfo;
 
+const getPedidosRecibidosGroup = function (req, res) {
+	_ids = req.body.ids;
+    const read_query = `SELECT * from  pedido where idpedido in (${_ids})`;
+    return emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getPedidosRecibidosGroup = getPedidosRecibidosGroup;
+
 
 
 // PROCESO LOAR PEDIDOS PENDIENTES
@@ -320,41 +379,125 @@ module.exports.getInfo = getInfo;
 async function colocarPedidoEnRepartidor(io, idsede) {
 
 	// traer lista de pedidos que estan sin repartidor
-	let listPedidos =  await getPedidosEsperaRepartidor(idsede);
+	let listGroupPedidos = []; // lista agrupada
+	let listPedidos =  await getPedidosEsperaRepartidor(idsede);	
+
+	// lista de idrepartidor a quitar pedido
+	// para solo quitar una vez
+	let listLastRepartidor = ''; 
 	listPedidos = JSON.parse(JSON.stringify(listPedidos));
-	// listPedidos = listPedidos.data;
-	// console.log ( 'listPedidos', listPedidos.data );
-
-	// listPedidos = JSON.parse(JSON.stringify(listPedidos));
-
+	
 	console.log ( 'listPedidos listPedidos.lenght', listPedidos.length );
 
-	if (listPedidos.length > 0) {
+	if ( listPedidos.length > 0 ) {
+
+		// op 2
+		
+		let importeAcumula = 0;
+		let importePagar = 0;
+		let listGroupPedidos = [];
+		let listGruposPedidos = [];
+		let _num_reasignaciones = null;
+		let _last_id_repartidor_reasigno = null;
+		listPedidos.map(p => {
+			console.log( 'p.paso', p.paso );
+			console.log( 'p.idpedido', p.idpedido );
+			if ( !p.paso && p.isshow == 1 ){
+				const _idsede = p.idsede;
+
+				console.log( '_idsede', _idsede );
+
+				// p.paso = true;
+				importeAcumula = 0;
+				importePagar = 0;
+				_num_reasignaciones = null;
+				_last_id_repartidor_reasigno = null;
+				listGroup = [];
+				listPedidos
+					.filter(pp => pp.idsede === _idsede && pp.isshow_back === 1 && !pp.paso)
+					.map(pp => {						
+						importeAcumula += parseFloat(pp.total);
+						if ( importeAcumula <= pp.monto_acumula ) {
+							pp.paso=true;
+							pp.json_datos_delivery = typeof pp.json_datos_delivery === 'string' ? JSON.parse(pp.json_datos_delivery) : pp.json_datos_delivery;
+
+							// si es tarjeta no suma
+							if ( pp.json_datos_delivery.p_header.arrDatosDelivery.metodoPago.idtipo_pago !==2 ) {
+								importePagar += parseFloat(pp.total);
+							}
+							
+							console.log('push ', pp.idpedido);
+							_last_id_repartidor_reasigno = _last_id_repartidor_reasigno ? _last_id_repartidor_reasigno : pp.last_id_repartidor_reasigno;
+							_num_reasignaciones = _num_reasignaciones ? _num_reasignaciones : pp.num_reasignaciones;
+
+							listGroup.push(pp.idpedido);
+						} else {
+							importeAcumula -= parseFloat(pp.total);
+						}
+						
+					});				
+
+
+				// add las_repartidor buscar para que no duplique
+				const _idRepartidorString = `-${_last_id_repartidor_reasigno}-,`;
+				if ( listLastRepartidor.indexOf(_idRepartidorString) >= 0 ) {
+					_last_id_repartidor_reasigno = null;
+				} else {
+					listLastRepartidor +=_idRepartidorString;
+				}
+				
+
+				console.log('listLastRepartidor', listLastRepartidor);			
+
+				const _rowPedidoAdd = {
+					pedidos: listGroup,					
+					importe_acumula: importeAcumula,
+					importe_pagar: importePagar,
+					last_id_repartidor_reasigno: _last_id_repartidor_reasigno,
+					idsede: p.idsede,
+					num_reasignaciones: _num_reasignaciones,
+					sede_coordenadas: {
+						latitude: p.latitude,
+						longitude: p.longitude
+					}
+				}
+
+				console.log('idpedidos', _rowPedidoAdd.pedidos.join(','));
+
+				listGruposPedidos.push(_rowPedidoAdd);
+				console.log( 'ListGruposPedidos', listGruposPedidos );
+
+			}
+		});
+
+
+
+		// notificar al repartidor
 		// listPedidos.map(async p => {
-		for (let index = 0; index < listPedidos.length; index++) {
-			const p = listPedidos[index];
-			console.log('pedido procesar', p);
-			p.json_datos_delivery = typeof p.json_datos_delivery === 'string' ? JSON.parse(p.json_datos_delivery) : p.json_datos_delivery;			
+		for (let index = 0; index < listGruposPedidos.length; index++) {
+			const _group = listGruposPedidos[index];
+			console.log('_group procesar', _group);
+			// p.json_datos_delivery = typeof p.json_datos_delivery === 'string' ? JSON.parse(p.json_datos_delivery) : p.json_datos_delivery;			
 
 			// cantidad en efectivo a  pagar (efectivo o yape)
-			const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;	
-			const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
+			// const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;	
+			// const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
 
-			console.log('_cantidadEfectivoPagar', _cantidadEfectivoPagar);
+			console.log('_cantidadEfectivoPagar', _group.importe_pagar);
 			
 
 
 			// const _pJson = JSON.parse(JSON.stringify(p));		
 			// console.log('pedido procesar json', p);
 			// lista de repartidores			
-			const listRepartidores = await getRepartidoreForPedidoFromInterval(p.latitude, p.longitude, _cantidadEfectivoPagar);
+			const listRepartidores = await getRepartidoreForPedidoFromInterval(_group.sede_coordenadas.latitude, _group.sede_coordenadas.longitude, _group.importe_pagar);
 
 			// enviamos
-			const response_ok = await sendPedidoRepartidor(listRepartidores, p, io);
+			const response_ok = await sendPedidoRepartidorOp2(listRepartidores, _group, io);
 			console.log('response_ok', response_ok);
 		}
-		// });
-	} 
+
+	}
 
 	// proceso no termina se queda activo esperando pedidos
 	// else {
@@ -369,6 +512,63 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 	
 }
 
+
+// async function colocarPedidoEnRepartidor(io, idsede) {
+
+// 	// traer lista de pedidos que estan sin repartidor
+// 	let listGroupPedidos = []; // lista agrupada
+// 	let listPedidos =  await getPedidosEsperaRepartidor(idsede);	
+// 	listPedidos = JSON.parse(JSON.stringify(listPedidos));
+// 	// listPedidos = listPedidos.data;
+// 	// console.log ( 'listPedidos', listPedidos.data );
+
+// 	// listPedidos = JSON.parse(JSON.stringify(listPedidos));
+
+// 	console.log ( 'listPedidos listPedidos.lenght', listPedidos.length );
+
+// 	if (listPedidos.length > 0) {
+
+
+// 		// listPedidos.map(async p => {
+// 		for (let index = 0; index < listPedidos.length; index++) {
+// 			const p = listPedidos[index];
+// 			console.log('pedido procesar', p);
+// 			p.json_datos_delivery = typeof p.json_datos_delivery === 'string' ? JSON.parse(p.json_datos_delivery) : p.json_datos_delivery;			
+
+// 			// cantidad en efectivo a  pagar (efectivo o yape)
+// 			const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;	
+// 			const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
+
+// 			console.log('_cantidadEfectivoPagar', _cantidadEfectivoPagar);
+			
+
+
+// 			// const _pJson = JSON.parse(JSON.stringify(p));		
+// 			// console.log('pedido procesar json', p);
+// 			// lista de repartidores			
+// 			const listRepartidores = await getRepartidoreForPedidoFromInterval(p.latitude, p.longitude, _cantidadEfectivoPagar);
+
+// 			// enviamos
+// 			const response_ok = await sendPedidoRepartidor(listRepartidores, p, io);
+// 			console.log('response_ok', response_ok);
+// 		}
+// 		// });
+// 	} 
+
+// 	// proceso no termina se queda activo esperando pedidos
+// 	// else {
+
+// 	// 	console.log('fin del proceso')
+// 	// 	clearInterval(intervalBucaRepartidor);
+// 	// 	intervalBucaRepartidor=null;
+// 	// }	
+
+// 	// colocamos en la tabla repartidor el pedido
+
+	
+// }
+
+
 // el proceso se activa al primer pedido que recibe y se mantiene activo eseprando
 // pedidos
 const runLoopSearchRepartidor = async function (io, idsede) {
@@ -382,28 +582,132 @@ module.exports.runLoopSearchRepartidor = runLoopSearchRepartidor;
 
 
 const runLoopPrueba = async function (req, res) {
-	let listPedidos =  await getPedidosEsperaRepartidor();		
-	// listPedidos = listPedidos.data;	
+	// let listPedidos =  await getPedidosEsperaRepartidor();		
+	// // listPedidos = listPedidos.data;	
 
-	listPedidos = JSON.parse(JSON.stringify(listPedidos));
+	// listPedidos = JSON.parse(JSON.stringify(listPedidos));
 
-	console.log ( 'listPedidos', listPedidos );
+	// // console.log ( 'listPedidos', listPedidos );
 
-	console.log ( 'listPedidos listPedidos.lenght', listPedidos.length );
-	listPedidos.map(async p => {
+	// // console.log ( 'listPedidos listPedidos.lenght', listPedidos.length );
 
-		p.json_datos_delivery = JSON.parse(p.json_datos_delivery);
-		// console.log('pedido procesar', p);
-		console.log('p.latitude', p.latitude);
 
-		const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;			
+	// if ( listPedidos.length > 0 ) {
 
-		console.log('_dataJson.arrDatosDelivery.metodoPago.idtipo_pago', _dataJson.metodoPago.idtipo_pago)		
+	// 	// op 2
+	// 	let importeAcumula = 0;
+	// 	let importePagar = 0;
+	// 	let listGroupPedidos = [];
+	// 	let listGruposPedidos = [];
+	// 	listPedidos.map(p => {
+	// 		console.log( 'p.paso', p.paso );
+	// 		console.log( 'p.idpedido', p.idpedido );
+	// 		if ( !p.paso && p.isshow == 1 ){
+	// 			const _idsede = p.idsede;
 
-		const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
+	// 			console.log( '_idsede', _idsede );
 
-			console.log('_cantidadEfectivoPagar', _cantidadEfectivoPagar);
-	})
+	// 			// p.paso = true;
+	// 			importeAcumula = 0;
+	// 			importePagar = 0;
+	// 			listGroup = [];
+	// 			listPedidos
+	// 				.filter(pp => pp.idsede === _idsede && pp.isshow_back === 1 && !pp.paso)
+	// 				.map(pp => {						
+	// 					importeAcumula += parseFloat(pp.total);
+	// 					if ( importeAcumula <= pp.monto_acumula ) {
+	// 						pp.paso=true;
+	// 						pp.json_datos_delivery = typeof pp.json_datos_delivery === 'string' ? JSON.parse(pp.json_datos_delivery) : pp.json_datos_delivery;
+
+	// 						// si es tarjeta no suma
+	// 						if ( pp.json_datos_delivery.p_header.arrDatosDelivery.metodoPago.idtipo_pago !==2 ) {
+	// 							importePagar += parseFloat(pp.total);
+	// 						}
+
+	// 						console.log('push ', pp.idpedido);
+	// 						listGroup.push(pp.idpedido);
+	// 					} else {
+	// 						importeAcumula -= parseFloat(pp.total);
+	// 					}
+	// 				});
+
+	// 			const _rowPedidoAdd = {
+	// 				pedidos: listGroup,					
+	// 				importe_acumula: importeAcumula,
+	// 				importe_pagar: importePagar,
+	// 				sede_coordenadas: {
+	// 					latitude: p.latitude,
+	// 					longitude: p.longitude
+	// 				}
+	// 			}
+
+	// 			console.log('idpedidos', _rowPedidoAdd.pedidos.join(','));
+
+	// 			listGruposPedidos.push(_rowPedidoAdd);
+	// 			console.log( 'ListGruposPedidos', listGruposPedidos );
+
+	// 		}
+	// 	});
+
+
+
+	// 	// notificar al repartidor
+	// 	// listPedidos.map(async p => {
+	// 	for (let index = 0; index < listGruposPedidos.length; index++) {
+	// 		const _group = listGruposPedidos[index];
+	// 		console.log('_group procesar', _group);
+	// 		// p.json_datos_delivery = typeof p.json_datos_delivery === 'string' ? JSON.parse(p.json_datos_delivery) : p.json_datos_delivery;			
+
+	// 		// cantidad en efectivo a  pagar (efectivo o yape)
+	// 		// const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;	
+	// 		// const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
+
+	// 		console.log('_cantidadEfectivoPagar', _group.importe_pagar);
+			
+
+
+	// 		// const _pJson = JSON.parse(JSON.stringify(p));		
+	// 		// console.log('pedido procesar json', p);
+	// 		// lista de repartidores			
+	// 		const listRepartidores = await getRepartidoreForPedidoFromInterval(_group.sede_coordenadas.latitude, _group.sede_coordenadas.longitude, _group.importe_pagar);
+
+	// 		// enviamos
+	// 		const response_ok = await sendPedidoRepartidorOp2(listRepartidores, _group, io);
+	// 		console.log('response_ok', response_ok);
+	// 	}
+
+
+
+		// const property = 'idsede';
+		// const listGroupSede = listPedidos.reduce(function (acc, obj) {
+		//     var key = obj[property];
+		//     if (!acc[key]) {
+		//       acc[key] = [];
+		//     }
+		//     acc[key].push(obj.idpedido);
+		//     return acc;
+		//   }, {});
+
+		// console.log('listGroupSede ==== ', listGroupSede);
+
+		// res.json(listGruposPedidos);
+	// }
+
+
+	// listPedidos.map(async p => {
+
+	// 	p.json_datos_delivery = JSON.parse(p.json_datos_delivery);
+	// 	// console.log('pedido procesar', p);
+	// 	console.log('p.latitude', p.latitude);
+
+	// 	const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;			
+
+	// 	console.log('_dataJson.arrDatosDelivery.metodoPago.idtipo_pago', _dataJson.metodoPago.idtipo_pago)		
+
+	// 	const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
+
+	// 		console.log('_cantidadEfectivoPagar', _cantidadEfectivoPagar);
+	// })
 }
 module.exports.runLoopPrueba = runLoopPrueba;
 

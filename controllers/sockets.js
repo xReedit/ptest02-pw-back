@@ -37,7 +37,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		dataSocket.socketid = socket.id;
 
 		// const rptDate = new Date().toLocaleString().split(' ');
-		// var aaa = '5/28/2020,'.replace(',', '');
+		// var aaa = '2020-05-28'.replace(',', '');
 		// aaa = aaa.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');
 		// console.log('===== rptDate ========', aaa);		
 		// console.log('===== rptDate ========', rptDate[1]);		
@@ -282,9 +282,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// notificamos push al comercio
 				const socketIdComercio = await apiPwaComercio.getSocketIdComercio(dataCliente.idsede);
 				// notifica mensaje texto si tiene teleono
-				if ( socketIdComercio[0].telefono_notifica !== '' ) {
-					// console.log(' ==== notifica sms comercio =====', socketIdComercio[0].telefono_notifica);
-					apiPwaComercio.sendNotificacionNewPedidoSMS(socketIdComercio[0].telefono_notifica);
+				if ( socketIdComercio[0].telefono_notifica !== undefined ) {
+					if ( socketIdComercio[0].telefono_notifica !== '' ) {
+						apiPwaComercio.sendNotificacionNewPedidoSMS(socketIdComercio[0].telefono_notifica);
+					}
+					// console.log(' ==== notifica sms comercio =====', socketIdComercio[0].telefono_notifica);					
 				} 
 
 				// notificacion push
@@ -311,6 +313,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			// para actaluzar vista de caja // control de pedidos
 			// socket.broadcast.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);			
+
 
 			io.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
 
@@ -384,6 +387,19 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 
+		// restobar
+		// notifica al pedido que tiene un pedido asignado desde el comercio control de pedidos
+		socket.on('set-repartidor-pedido-asigna-comercio', async (dataPedido) => {
+			console.log('set-repartidor-pedido-asigna-comercio', dataPedido);
+			const socketIdRepartidor = await apiPwaRepartidor.getSocketIdRepartidor(dataPedido.idrepartidor);
+			io.to(socketIdRepartidor[0].socketid).emit('set-repartidor-pedido-asigna-comercio', dataPedido);				
+
+			// notificacion push nuevo pedido
+			apiPwaRepartidor.sendOnlyNotificaPush(socketIdRepartidor[0].key_suscripcion_push, 0);
+		});
+
+
+
 
 		// delivery cliente
 
@@ -414,9 +430,15 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// 	dataCliente.socketid = dataCliente.firts_socketid;
 		// 	socket.id = dataCliente.firts_socketid;
 
-		// console.log ('sin cambiar socket', socket.id);
+		console.log ('repartidor conectado ==========');
+		// verifica si hay conexion con el servidor
+		socket.on('verificar-conexion', (socketId) => {
+			// responde solo al que solicita la verificacion
+			io.to(socketId).emit('verificar-conexion', true); // responde true si se logra la conexion
+		});
 		// }
 		
+		socket.emit('finishLoadDataInitial');
 		
 
 		// registrar como conectado en cliente_socketid
@@ -502,6 +524,26 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// notifica a comercio			
 			const socketidComercio = await apiPwaComercio.getSocketIdComercio(dataPedido.datosComercio.idsede);
 			io.to(socketidComercio[0].socketid).emit('repartidor-propio-notifica-fin-pedido', dataPedido);
+		});
+
+		// notifica fin de solo un pedido de grupo de pedidos
+		socket.on('repartidor-notifica-fin-one-pedido', async (dataPedido) => {
+			console.log('repartidor-propio-notifica-fin-pedido', dataPedido);
+			apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
+			// apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
+
+			// para que el comercio actualice el marker
+			// notifica a comercio			
+			const socketidComercio = await apiPwaComercio.getSocketIdComercio(dataPedido.datosComercio.idsede);
+			io.to(socketidComercio[0].socketid).emit('repartidor-propio-notifica-fin-pedido', dataPedido);
+		});
+
+
+
+		// notifica el fin de todo el grupo de pedidos
+		socket.on('repartidor-grupo-pedido-finalizado', (idrepartidor) => {
+			console.log('repartidor-grupo-pedido-finalizado', idrepartidor);			
+			apiPwaRepartidor.setUpdateRepartidorOcupado(idrepartidor, 0);
 		});
 
 

@@ -168,7 +168,8 @@ const getConsultaDatosCliente = async function (req, res) {
     const doc = req.body.documento;
 
     // console.log('cuenta de mesa: ', mesa);
-	const read_query = `SELECT * FROM cliente where (idorg=${idorg}) AND estado=0 and ruc='${doc}' order by nombres`;	
+    // idorg=${idorg}) AND 
+	const read_query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' order by nombres limit 1`;	
     emitirRespuesta_RES(read_query, res);
 }
 module.exports.getConsultaDatosCliente = getConsultaDatosCliente;
@@ -284,7 +285,7 @@ const setClientePerfil = async function (req, res) {
         
     const read_query = `update cliente set ruc='${req.body.ruc}', email='${req.body.email}', f_nac='${req.body.f_nac}' where idcliente=${idcliente}`;
     // return emitirRespuestaSP(read_query);      
-    emitirRespuesta_RES(read_query, res);  
+    emitirRespuesta_RES(read_query, res);
 }
 module.exports.setClientePerfil = setClientePerfil;
 
@@ -308,6 +309,12 @@ const setHistoryError = function (req, res) {
     emitirRespuesta_RES(read_query, res);  
 }
 module.exports.setHistoryError = setHistoryError;
+
+const getAllClienteBySearch = function (req, res) {
+    const read_query = `call pwa_delivery_get_all_clientes()`;
+    emitirRespuestaSP_RES(read_query, res); 
+}
+module.exports.getAllClienteBySearch = getAllClienteBySearch;
 
 
 function emitirRespuesta_RES(xquery, res) {

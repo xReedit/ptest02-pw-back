@@ -46,6 +46,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		const dataCliente = dataSocket;
 
+		/// repartidor
 		if (dataCliente.isRepartidor) {
 			// socketMaster = socket; 
 			socketRepartidor(dataCliente,socket);
@@ -475,9 +476,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			}			
 
 			// notifica a comercio
-			const socketIdComercio = await apiPwaComercio.getSocketIdComercio(datosUbicacion.idsede);
-			console.log('repartidor-notifica-ubicacion ==> al comercio', socketIdComercio[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
-			io.to(socketIdComercio[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion);	
+			if ( datosUbicacion.idsede ) {
+				const socketIdComercio = await apiPwaComercio.getSocketIdComercio(datosUbicacion.idsede);
+				console.log('repartidor-notifica-ubicacion ==> al comercio', socketIdComercio[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
+				io.to(socketIdComercio[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion);	
+			}			
 
 		});
 

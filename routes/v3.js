@@ -159,6 +159,9 @@ routerV3.post('/service/facturacion-e', auth.verificarToken, apiServiceFacturaci
 routerV3.get('/monitor/get-pedidos', auth.verificarToken, apiPwaAppMonitor.getPedidos);
 routerV3.get('/monitor/get-repartidores', auth.verificarToken, apiPwaAppMonitor.getRepartidores);
 routerV3.get('/monitor/get-clientes', auth.verificarToken, apiPwaAppMonitor.getCientes);
+routerV3.get('/monitor/get-pedidos-pendientes', auth.verificarToken, apiPwaAppMonitor.getPedidosPendientesRepartidor);
+routerV3.post('/monitor/set-reset-repartidor', auth.verificarToken, apiPwaAppMonitor.setResetRepartidor);
+routerV3.post('/monitor/set-liberar-repartidor', auth.verificarToken, apiPwaAppMonitor.setLiberarRepartidor);
 //// MONITOR ///
 
 

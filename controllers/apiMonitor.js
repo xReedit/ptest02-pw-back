@@ -39,17 +39,31 @@ module.exports.getPedidosPendientesRepartidor = getPedidosPendientesRepartidor;
 const setResetRepartidor = async function (req, res) {
 	const idrepartidor = req.body.idrepartidor;
 	const read_query = `update repartidor set pedidos_reasignados = 0 where idrepartidor = ${idrepartidor};`;
-    emitirRespuesta(read_query);        
+    execSqlQueryNoReturn(read_query, res);       
 }
 module.exports.setResetRepartidor = setResetRepartidor;
 
 
 const setLiberarRepartidor = function (req, res) {  
 	const idrepartidor = req.body.idrepartidor;
-    const read_query = `update repartidor set ocupado = 0, pedido_por_aceptar = null, solicita_liberar_pedido=0 where idrepartidor = ${idrepartidor};`;
-    emitirRespuesta(read_query);        
+    const read_query = `update repartidor set ocupado = 0, flag_paso_pedido = 0, pedido_por_aceptar = null, solicita_liberar_pedido=0 where idrepartidor = ${idrepartidor};`;
+    execSqlQueryNoReturn(read_query, res);     
 }
 module.exports.setLiberarRepartidor = setLiberarRepartidor;
+
+
+function execSqlQueryNoReturn(xquery, res) {
+	console.log(xquery);
+	sequelize.query(xquery, {type: sequelize.QueryTypes.UPDATE}).spread(function(results, metadata) {
+  // Results will be an empty array and metadata will contain the number of affected rows.
+
+	  	return ReS(res, {
+			data: results
+		});
+	});
+
+}
+
 
 
 function emitirRespuesta(xquery) {

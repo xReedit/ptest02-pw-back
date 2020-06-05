@@ -260,7 +260,8 @@ const setAsignarPedido = function (req, res) {
 	
 	// si acepta no borra
 	// , pedido_por_aceptar=null
-    const read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido in (${idpedido}); update repartidor set ocupado=1 where idrepartidor = ${idrepartidor};
+    const read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido in (${idpedido});
+    					update repartidor set ocupado=1 where idrepartidor = ${idrepartidor};
     					update repartidor set flag_paso_pedido=0 where flag_paso_pedido=${firstPedido}`;
 
 	// const read_query = `call procedure_delivery_asignar_pedido(${idrepartidor}, ${idpedido})`;    					
@@ -269,7 +270,7 @@ const setAsignarPedido = function (req, res) {
 }
 module.exports.setAsignarPedido = setAsignarPedido;
 
-const setUpdateEstadoPedido = function (idpedido, estado, tiempo = null) {
+const setUpdateEstadoPedido = function (idpedido, estado, tiempo = null) {	
 	const savePwaEstado = estado === 4 ? ", pwa_estado = 'E', estado=2 " : '';	 // estado = 2 => pagado
     const read_query = `update pedido set pwa_delivery_status = '${estado}' ${savePwaEstado} where idpedido = ${idpedido};`;
     emitirRespuesta(read_query);        
@@ -278,7 +279,8 @@ module.exports.setUpdateEstadoPedido = setUpdateEstadoPedido;
 
 const setUpdateRepartidorOcupado = function (idrepartidor, estado) {  
 	// si no esta ocupado libera pedido_por_aceptar;
-	const clearPedidoPorAceptar = estado === 0 ?  `, pedido_por_aceptar = null` : '';	
+	console.log('==== CAMBIAMOS DE ESTADO OCUPADO ===', estado);
+	const clearPedidoPorAceptar = estado === 0 ?  `, pedido_por_aceptar = null` : '';
     const read_query = `update repartidor set ocupado = ${estado} ${clearPedidoPorAceptar} where idrepartidor = ${idrepartidor};`;
     emitirRespuesta(read_query);        
 }
@@ -338,7 +340,7 @@ module.exports.getPedidosResumenEntregadoDia = getPedidosResumenEntregadoDia;
 
 const getPedidoPendienteAceptar = async function (idrepartidor) {
 	// const idcliente = dataCLiente.idcliente;
-    const read_query = `SELECT pedido_por_aceptar, solicita_liberar_pedido from repartidor where idrepartidor = ${idrepartidor}`;
+    const read_query = `SELECT pedido_por_aceptar, solicita_liberar_pedido, pedido_paso_va from repartidor where idrepartidor = ${idrepartidor}`;
     return emitirRespuesta(read_query);        
 }
 module.exports.getPedidoPendienteAceptar = getPedidoPendienteAceptar;
@@ -810,18 +812,7 @@ function execSqlQueryNoReturn(xquery, res) {
 			data: results
 		});
 	});
-	// .then(function (rows) {
-		
-	// 	// return ReS(res, {
-	// 	// 	data: rows
-	// 	// });
-	// 	return {
-	// 		data: rows
-	// 	};
-	// })
-	// .catch((err) => {
-	// 	return false;
-	// });
+
 }
 
 

@@ -446,13 +446,14 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		apiPwaRepartidor.setRepartidorConectado(dataCliente);		
 
 		// ver si tenemos un pedido pendiente de aceptar // ver si solicito libear pedido
-		const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataCliente.idrepartidor);
-		socket.emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
+		const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataCliente.idrepartidor);		
 
 		console.log('pedioPendienteAceptar', pedioPendienteAceptar);
 		if ( pedioPendienteAceptar[0].solicita_liberar_pedido === 1 ) {
 			apiPwaRepartidor.setLiberarPedido(dataCliente.idrepartidor);
-		}
+		} else {
+			socket.emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
+		}		
 
 
 		// escuchar estado del pedido // reparitor asignado // en camino //  llego
@@ -531,14 +532,16 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notifica fin de solo un pedido de grupo de pedidos
 		socket.on('repartidor-notifica-fin-one-pedido', async (dataPedido) => {
-			console.log('repartidor-propio-notifica-fin-pedido', dataPedido);
+			console.log('repartidor-notifica-fin-one-pedido', dataPedido);
+			
 			apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
 			// apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
 
 			// para que el comercio actualice el marker
 			// notifica a comercio			
-			const socketidComercio = await apiPwaComercio.getSocketIdComercio(dataPedido.datosComercio.idsede);
-			io.to(socketidComercio[0].socketid).emit('repartidor-propio-notifica-fin-pedido', dataPedido);
+			const idComercio = dataPedido.datosComercio ? dataPedido.datosComercio.idsede : dataPedido.idsede;
+			const socketidComercio = await apiPwaComercio.getSocketIdComercio(idComercio);
+			io.to(socketidComercio[0].socketid).emit('repartidor-notifica-fin-pedido', dataPedido);
 		});
 
 
@@ -573,10 +576,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			// cerrar pedido
 			apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
-			apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
+			// apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
 
 			// notifica al repartidor para que califique cliente
-			io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-fin-pedido', dataPedido);	
+			io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-fin-pedido', dataPedido);
 		});		
 
 

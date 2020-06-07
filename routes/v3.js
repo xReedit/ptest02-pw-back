@@ -155,13 +155,18 @@ routerV3.post('/service/facturacion-e', auth.verificarToken, apiServiceFacturaci
 
 
 
-//// MONITOR ///
-routerV3.get('/monitor/get-pedidos', auth.verificarToken, apiPwaAppMonitor.getPedidos);
+//// MONITOR PACMAN ///
+routerV3.post('/login-usuario-autorizado-pacman', login.loggerUsAutorizadoPacman);
+routerV3.post('/monitor/get-pedidos', auth.verificarToken, apiPwaAppMonitor.getPedidos);
+routerV3.post('/monitor/get-pedidos-abono', auth.verificarToken, apiPwaAppMonitor.getPedidosAbono);
 routerV3.get('/monitor/get-repartidores', auth.verificarToken, apiPwaAppMonitor.getRepartidores);
 routerV3.get('/monitor/get-clientes', auth.verificarToken, apiPwaAppMonitor.getCientes);
 routerV3.get('/monitor/get-pedidos-pendientes', auth.verificarToken, apiPwaAppMonitor.getPedidosPendientesRepartidor);
 routerV3.post('/monitor/set-reset-repartidor', auth.verificarToken, apiPwaAppMonitor.setResetRepartidor);
 routerV3.post('/monitor/set-liberar-repartidor', auth.verificarToken, apiPwaAppMonitor.setLiberarRepartidor);
+routerV3.post('/monitor/set-check-liquidado', auth.verificarToken, apiPwaAppMonitor.setCheckLiquidado);
+routerV3.post('/monitor/set-check-abonado', auth.verificarToken, apiPwaAppMonitor.setCheckAbonado);
+routerV3.post('/monitor/set-check-abonado-repartidor', auth.verificarToken, apiPwaAppMonitor.setCheckAbonadoRepartidor);
 //// MONITOR ///
 
 

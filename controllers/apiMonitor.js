@@ -12,12 +12,22 @@ let mysql_clean = function (string) {
 
 // registro de comercio
 const getPedidos = function (req, res) {
-    const read_query = `call procedure_pwa_delivery_monitor_pedidos()`;
+	const fini = req.body.fromDate;
+	const ffin = req.body.toDate;
+    const read_query = `call procedure_pwa_delivery_monitor_pedidos('${fini}', '${ffin}', 0)`;
     emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.getPedidos = getPedidos;
 
-const getRepartidores = function (req, res) {
+const getPedidosAbono = function (req, res) {
+	const fini = req.body.fromDate;
+	const ffin = req.body.toDate;
+    const read_query = `call procedure_pwa_delivery_monitor_pedidos('${fini}', '${ffin}', 1)`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.getPedidosAbono = getPedidosAbono;
+
+const getRepartidores = function (req, res) {	
     const read_query = `call procedure_pwa_delivery_monitor_repartidores()`;
     emitirRespuestaSP_RES(read_query, res);        
 }
@@ -30,7 +40,7 @@ const getCientes = async function (req, res) {
 module.exports.getCientes = getCientes;
 
 
-const getPedidosPendientesRepartidor = async function (req, res) {	
+const getPedidosPendientesRepartidor = async function (req, res) {		
     const read_query = `call procedure_delivery_pedidos_pendientes()`;
     emitirRespuestaSP_RES(read_query, res);  
 }
@@ -50,6 +60,27 @@ const setLiberarRepartidor = function (req, res) {
     execSqlQueryNoReturn(read_query, res);     
 }
 module.exports.setLiberarRepartidor = setLiberarRepartidor;
+
+const setCheckLiquidado = function (req, res) {  
+	const idpedido = req.body.idpedido;
+    const read_query = `update pedido set check_liquidado = '1' where idpedido  = ${idpedido};`;
+    execSqlQueryNoReturn(read_query, res);     
+}
+module.exports.setCheckLiquidado = setCheckLiquidado;
+
+const setCheckAbonado = function (req, res) {  
+	const idpedido = req.body.idpedido;
+    const read_query = `update pedido set check_pagado = '1', check_pago_fecha = now() where idpedido = ${idpedido};`;
+    execSqlQueryNoReturn(read_query, res);     
+}
+module.exports.setCheckAbonado = setCheckAbonado;
+
+const setCheckAbonadoRepartidor = function (req, res) {
+	const idpedido = req.body.idpedido;
+    const read_query = `update pedido set check_pago_repartidor = '1' where idpedido = ${idpedido};`;
+    execSqlQueryNoReturn(read_query, res);     
+}
+module.exports.setCheckAbonadoRepartidor = setCheckAbonadoRepartidor;
 
 
 function execSqlQueryNoReturn(xquery, res) {

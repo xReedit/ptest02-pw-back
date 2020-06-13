@@ -195,11 +195,11 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 
 	// envio mensaje
 	console.log("============== last_notification = ", firtsRepartidor.last_notification);
-	if ( firtsRepartidor.last_notification === 0 ||  firtsRepartidor.last_notification > 7) {	
-		sendMsjsService.sendMsjSMSNewPedido(firtsRepartidor.telefono);
-		const read_query = `update repartidor set last_notification = time(now()) where idrepartidor=${firtsRepartidor.idrepartidor};`;
-    	return emitirRespuestaSP(read_query); 
-	}
+	// if ( firtsRepartidor.last_notification === 0 ||  firtsRepartidor.last_notification > 7) {	
+		// sendMsjsService.sendMsjSMSNewPedido(firtsRepartidor.telefono);
+		// const read_query = `update repartidor set last_notification = time(now()) where idrepartidor=${firtsRepartidor.idrepartidor};`;
+    	// return emitirRespuestaSP(read_query); 
+	// }
 
 	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0);
 
@@ -367,6 +367,9 @@ const getPedidosRecibidosGroup = function (req, res) {
     return emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getPedidosRecibidosGroup = getPedidosRecibidosGroup;
+
+
+
 
 
 
@@ -720,6 +723,71 @@ module.exports.runLoopPrueba = runLoopPrueba;
 // PROCESO COLOCA LOS PEDIDOS EN LOS REPARTIDORES
 // PROCESO LOAR PEDIDOS PENDIENTES
 // PROCESO COLOCA LOS PEDIDOS EN LOS REPARTIDORES
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Eventos enviados por el servidor
+// si los repartidores tienen pedidos nuevos
+
+
+
+// const getIfPedidoNuevo = function (req, res) {
+// 	// console.log('======= init event-stream =====');
+
+// 	res.writeHead(200, {
+//         'Content-Type': 'text/event-stream',
+//         'Cache-Control': 'no-cache',
+//         'Connection': 'keep-alive',
+//     });
+
+
+//     sseDemo(req, res);
+// }
+// module.exports.getIfPedidoNuevo = getIfPedidoNuevo;
+
+
+// function sseDemo(req, res) {
+//     const idrepartidor = req.query.id; //managerFilter.getInfoToken(req,'idrepartidor');;
+//     // console.log('======= init event-stream =====', idrepartidor);
+
+//     const intervalId = setInterval(async() => {
+//     	const read_query = `call procedure_delivery_reparitdor_nuevo_pedido(${idrepartidor});`;
+//     	const responsePedido =  await emitirRespuestaSP(read_query);
+
+//     	console.log('======= init event-stream =====', responsePedido);
+	
+//         res.write("data: " + JSON.stringify(responsePedido) +
+//                     "\n\n", "utf8", () => {
+//                         if (res.flushHeaders) {
+//                             res.flushHeaders();
+//                         }
+//                     });
+
+//     }, 1000);
+
+//     req.on('close', () => {
+//         clearInterval(intervalId);
+//     });
+// }
+
+
+
+
+
 
 
 

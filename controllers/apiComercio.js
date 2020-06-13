@@ -58,12 +58,16 @@ const setEstadoPedido = function (req, res) {
 	const idpedido = req.body.idpedido;
 
 	// estado E entrega al cliente // si el cliente recoge en comercio
-	const savePwaEstado = estado === 'E' ? ", pwa_delivery_status = 4 " : '';
-	// guarda el tiempo si finaliza el pedido desde el comercio
-	const saveTimeAtencion = estado === 'E' ? `, pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now())` : '';
+	// const savePwaEstado = estado === 'E' ? ", pwa_delivery_status = 4 " : '';
+	// // guarda el tiempo si finaliza el pedido desde el comercio
+	// const saveTimeAtencion = estado === 'E' ? `, pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now())` : '';
 
-    const read_query = `update pedido set pwa_estado = '${estado}' ${savePwaEstado} ${saveTimeAtencion} where idpedido = ${idpedido}`;
-    emitirRespuestaSP_RES(read_query, res);        
+ //    const read_query = `update pedido set pwa_estado = '${estado}' ${savePwaEstado} ${saveTimeAtencion} where idpedido = ${idpedido}`;
+
+ //    emitirRespuestaSP_RES(read_query, res);   
+
+    const read_query = `call procedure_delivery_set_estado_set_estado_pedido(${idpedido}, '${estado}')`;
+    emitirRespuestaSP_RES(read_query, res);     
 }
 module.exports.setEstadoPedido = setEstadoPedido;
 

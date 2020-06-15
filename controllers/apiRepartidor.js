@@ -58,6 +58,15 @@ const setPositionNow = async function (req, res) {
 module.exports.setPositionNow = setPositionNow;
 
 
+// guarda position desde el socket
+// const setPositionFromSocket = function (idrepartidor, position) {	
+	
+//     const read_query = `update repartidor set position_now = '${JSON.stringify(pos)}' where idrepartidor = ${idrepartidor}`;
+//     emitirRespuesta_RES(read_query, res);
+// }
+// module.exports.setPositionFromSocket = setPositionFromSocket;
+
+
 const getRepartidoreForPedido = async function (dataPedido) {
 	const datosEstablecimiento = dataPedido.dataDelivery ? dataPedido.dataDelivery.establecimiento : dataPedido.datosDelivery.establecimiento;
 	const es_latitude = datosEstablecimiento.latitude;
@@ -261,15 +270,25 @@ const setAsignarPedido = function (req, res) {
 	// si acepta no borra
 	// , pedido_por_aceptar=null
     const read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido in (${idpedido});
-    					update repartidor set ocupado=1 where idrepartidor = ${idrepartidor};
+    					update repartidor set ocupado = 1, pedido_paso_va = 1 where idrepartidor = ${idrepartidor};
     					update repartidor set flag_paso_pedido=0 where flag_paso_pedido=${firstPedido}`;
 
 	// const read_query = `call procedure_delivery_asignar_pedido(${idrepartidor}, ${idpedido})`;    					
-    emitirRespuesta_RES(read_query, res);     
+    execSqlQueryNoReturn(read_query, res);     
     // return emitirRespuesta_RES(read_query, res);   
 }
 module.exports.setAsignarPedido = setAsignarPedido;
 
+const setPasoVaPedido = function (req, res) {
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
+	const paso = req.body.paso_va;
+    const read_query = `update repartidor set pedido_paso_va = ${paso} where idrepartidor = ${idrepartidor};`;
+    execSqlQueryNoReturn(read_query, res); 
+}
+module.exports.setPasoVaPedido = setPasoVaPedido;
+
+
+/// desde el comercio
 const setUpdateEstadoPedido = function (idpedido, estado, tiempo = null) {	
 	const savePwaEstado = estado === 4 ? ", pwa_estado = 'E', estado=2 " : '';	 // estado = 2 => pagado
     const read_query = `update pedido set pwa_delivery_status = '${estado}' ${savePwaEstado} where idpedido = ${idpedido};`;
@@ -279,15 +298,15 @@ module.exports.setUpdateEstadoPedido = setUpdateEstadoPedido;
 
 const setUpdateRepartidorOcupado = function (idrepartidor, estado) {  
 	// si no esta ocupado libera pedido_por_aceptar;
-	console.log('==== CAMBIAMOS DE ESTADO OCUPADO ===', estado);
-	const clearPedidoPorAceptar = estado === 0 ?  `, pedido_por_aceptar = null` : '';
+	// console.log('==== CAMBIAMOS DE ESTADO OCUPADO ===', estado);
+	const clearPedidoPorAceptar = estado === 0 ?  `, pedido_por_aceptar = null, pedido_paso_va = 0` : '';
     const read_query = `update repartidor set ocupado = ${estado} ${clearPedidoPorAceptar} where idrepartidor = ${idrepartidor};`;
     emitirRespuesta(read_query);        
 }
 module.exports.setUpdateRepartidorOcupado = setUpdateRepartidorOcupado;
 
 const setLiberarPedido = function (idrepartidor) {  
-    const read_query = `update repartidor set ocupado = 0, solicita_liberar_pedido=0 where idrepartidor = ${idrepartidor};`;
+    const read_query = `update repartidor set ocupado = 0, pedido_por_aceptar = null, solicita_liberar_pedido=0, pedido_paso_va = 0 where idrepartidor = ${idrepartidor};`;
     emitirRespuesta(read_query);        
 }
 module.exports.setLiberarPedido = setLiberarPedido;

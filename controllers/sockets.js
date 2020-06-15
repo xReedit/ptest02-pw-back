@@ -481,7 +481,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				const socketIdComercio = await apiPwaComercio.getSocketIdComercio(datosUbicacion.idsede);
 				console.log('repartidor-notifica-ubicacion ==> al comercio', socketIdComercio[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
 				io.to(socketIdComercio[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion);	
-			}			
+			}		
+
+			// notificar a la central
 
 		});
 
@@ -533,7 +535,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// notifica fin de solo un pedido de grupo de pedidos
 		socket.on('repartidor-notifica-fin-one-pedido', async (dataPedido) => {
 			console.log('repartidor-notifica-fin-one-pedido', dataPedido);
-			
+
 			apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
 			// apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
 

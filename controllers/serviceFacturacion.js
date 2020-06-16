@@ -80,7 +80,7 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
 
     // Importe total a pagar siempre ultimo es es el total
     const index_total = xArraySubTotales.length - 1;
-    const importe_total_pagar = xArraySubTotales[index_total].importe;
+    const importe_total_pagar = parseFloat(xArraySubTotales[index_total].importe).toFixed(2);
     const importe_total_igv = xArraySubTotales.filter(x => x.descripcion === 'I.G.V').map( x => x.importe)[0] || 0;
 
     // verifica si esta exonerado al igv /*/ caso de la selva u otros ubigeos exonerados del igv

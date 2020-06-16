@@ -91,30 +91,30 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
     if ( isExoneradoIGV ) { // exonerado del igv
         // totales
         totales = {
-            'total_exportacion': 0.00,
-            'total_operaciones_gravadas': 0.00,
-            'total_operaciones_inafectas': 0.00,
-            'total_operaciones_exoneradas': importe_total_pagar,
-            'total_operaciones_gratuitas': 0.00,
-            'total_igv': 0.00,
-            'total_impuestos': 0.00,
-            'total_valor': importe_total_pagar,
-            'total_venta': importe_total_pagar
+            "total_exportacion": 0.00,
+            "total_operaciones_gravadas": 0.00,
+            "total_operaciones_inafectas": 0.00,
+            "total_operaciones_exoneradas": importe_total_pagar,
+            "total_operaciones_gratuitas": 0.00,
+            "total_igv": 0.00,
+            "total_impuestos": 0.00,
+            "total_valor": importe_total_pagar,
+            "total_venta": importe_total_pagar
         };
     } else {
 
         const total_operaciones_gravadas = xArraySubTotales[0].importe; // el subtotal
 
         totales = {
-            'total_exportacion': 0.00,
-            'total_operaciones_gravadas': total_operaciones_gravadas,
-            'total_operaciones_inafectas': 0.00,
-            'total_operaciones_exoneradas': 0.00,
-            'total_operaciones_gratuitas': 0.00,
-            'total_igv': importe_total_igv,
-            'total_impuestos': importe_total_igv,
-            'total_valor': total_operaciones_gravadas,
-            'total_venta': importe_total_pagar
+            "total_exportacion": 0.00,
+            "total_operaciones_gravadas": total_operaciones_gravadas,
+            "total_operaciones_inafectas": 0.00,
+            "total_operaciones_exoneradas": 0.00,
+            "total_operaciones_gratuitas": 0.00,
+            "total_igv": importe_total_igv,
+            "total_impuestos": importe_total_igv,
+            "total_valor": total_operaciones_gravadas,
+            "total_venta": importe_total_pagar
         };
     }
 
@@ -122,6 +122,11 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
         const fecha_manual = xArrayComprobante.fecha_manual || null; // para regularizar desde facturador
 
         fecha_actual = fecha_manual === null ? rptDate[0].replace(',', '').replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2') : fecha_manual;
+
+        // transformar fecha dia y mes 0 adelante
+        const fecha_format = fecha_actual.split('-');
+        fecha_actual = `${fecha_format[0]}-${xCeroIzq(fecha_format[1], 2)}-${xCeroIzq(fecha_format[2], 2)}`;
+
         hora_actual = rptDate[1];
 
         var direccionEmisor = xArrayEncabezado.sededireccion === '' ? xArrayEncabezado.direccion : xArrayEncabezado.sededireccion;
@@ -130,41 +135,41 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
         xArrayComprobante.correlativo = xReturnCorrelativoComprobante(xArrayComprobante);
 
         const jsonData = {
-            'serie_documento': `${abreviaCo}${xArrayComprobante.serie}`,
-            'numero_documento': xArrayComprobante.correlativo,
-            'fecha_de_emision': `${fecha_actual}`,
-            'hora_de_emision': `${hora_actual}`,
-            'codigo_tipo_operacion': '0101',
-            'codigo_tipo_documento': `${xtipo_de_documento_comprobante}`,
-            'codigo_tipo_moneda': 'PEN',
-            'fecha_de_vencimiento': `${fecha_actual}`,
-            'numero_orden_de_compra': '',
-            'datos_del_emisor': {
-                'codigo_pais': 'PE',
-                'ubigeo': xArrayEncabezado.ubigeo,
-                'direccion': `${direccionEmisor} ` + ' | ' + `${xArrayEncabezado.sedeciudad}`,
-                'correo_electronico': '',
-                'telefono': `${xArrayEncabezado.telefono}`,
-                'codigo_del_domicilio_fiscal': xArrayEncabezado.codigo_del_domicilio_fiscal
+            "serie_documento": `${abreviaCo}${xArrayComprobante.serie}`,
+            "numero_documento": xArrayComprobante.correlativo,
+            "fecha_de_emision": `${fecha_actual}`,
+            "hora_de_emision": `${hora_actual}`,
+            "codigo_tipo_operacion": "0101",
+            "codigo_tipo_documento": `${xtipo_de_documento_comprobante}`,
+            "codigo_tipo_moneda": "PEN",
+            "fecha_de_vencimiento": `${fecha_actual}`,
+            "numero_orden_de_compra": "",
+            "datos_del_emisor": {
+                "codigo_pais": "PE",
+                "ubigeo": xArrayEncabezado.ubigeo,
+                "direccion": `${direccionEmisor} ` + ' | ' + `${xArrayEncabezado.sedeciudad}`,
+                "correo_electronico": "",
+                "telefono": `${xArrayEncabezado.telefono}`,
+                "codigo_del_domicilio_fiscal": xArrayEncabezado.codigo_del_domicilio_fiscal
             },
-            'datos_del_cliente_o_receptor': {
-                'codigo_tipo_documento_identidad': `${xtipo_de_documento_identidad_cliente}`,
-                'numero_documento': `${xnum_doc_cliente}`,
-                'apellidos_y_nombres_o_razon_social': `${xArrayCliente.nombres === '' ? 'PUBLICO EN GENERAL' : xArrayCliente.nombres}`,
-                'codigo_pais': 'PE',
-                'ubigeo': '220101',
-                'direccion': xArrayCliente.direccion,
-                'correo_electronico': '',
-                'telefono': ''
+            "datos_del_cliente_o_receptor": {
+                "codigo_tipo_documento_identidad": `${xtipo_de_documento_identidad_cliente}`,
+                "numero_documento": `${xnum_doc_cliente}`,
+                "apellidos_y_nombres_o_razon_social": `${xArrayCliente.nombres === "" ? "PUBLICO EN GENERAL" : xArrayCliente.nombres}`,
+                "codigo_pais": "PE",
+                "ubigeo": "220101",
+                "direccion": xArrayCliente.direccion,
+                "correo_electronico": "",
+                "telefono": ""
             },
-            'totales': totales,
-            'items': xitems,
-            'extras': {
-                'forma_de_pago': '',
-                'observaciones': '',
-                'vendedor': '',
-                'caja': '',
-                'idcliente': xArrayCliente.idcliente
+            "totales": totales,
+            "items": xitems,
+            "extras": {
+                "forma_de_pago": "",
+                "observaciones": "",
+                "vendedor": "",
+                "caja": "",
+                "idcliente": xArrayCliente.idcliente
             }
 
         };
@@ -203,7 +208,7 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
 // items del comprobante
 function xJsonSunatCocinarItemDetalle(orden, ValorIGV, isExoneradoIGV) {
     const xListItemsRpt = [];
-    const procentaje_IGV = ValorIGV / 100;
+    const procentaje_IGV = parseFloat(parseFloat(ValorIGV)/100);
 
     // var valor_referencial_unitario_por_item_en_operaciones_no_onerosas_y_codigo = {"monto_de_valor_referencial_unitario": "01", "codigo_de_tipo_de_precio": "02"};
     // orden[0].items.map(items => {
@@ -211,36 +216,42 @@ function xJsonSunatCocinarItemDetalle(orden, ValorIGV, isExoneradoIGV) {
             // if ( typeof x !== 'Object' ) {return; }
             index++;
 
-            let codigo_tipo_afectacion_igv = '20';
+            let codigo_tipo_afectacion_igv = "20";
             let total_base_igv = 0;
             let total_igv = 0;
-            let total_valor_item = x.precio_total;
+            let total_valor_item = parseFloat(x.precio_total).toFixed(2); // x.precio_total;
             if (!isExoneradoIGV) {// con igv
             //   valor_referencial_unitario_por_item_en_operaciones_no_onerosas_y_codigo = { monto_de_valor_referencial_unitario: "01" };
-              codigo_tipo_afectacion_igv = '10';
-              total_igv = parseFloat(x.precio_total) * procentaje_IGV;
+              codigo_tipo_afectacion_igv = "10";
+              // total_igv = parseFloat(x.precio_total) * procentaje_IGV;
+              // total_base_igv = parseFloat(x.precio_total) - total_igv;
+              // total_valor_item = total_base_igv;
+
+              total_igv = parseFloat(parseFloat(x.precio_total) * procentaje_IGV).toFixed(2);
               total_base_igv = parseFloat(x.precio_total) - total_igv;
-              total_valor_item = total_base_igv;
+              total_valor_item = parseFloat(total_base_igv);
             }
+
+            const _val_unitario = x.punitario || x.precio_total;
 
             // const montoIGVItem =  parseFloat(parseFloat(x.precio_total) * procentaje_IGV).toFixed(2);
             const jsonItem = {
-                'codigo_interno': x.id,
-                'descripcion': x.des,
-                'codigo_producto_sunat': '90101500',
-                'codigo_producto_gsl': '90101500',
-                'unidad_de_medida': 'NIU',
-                'cantidad': x.cantidad,
-                'valor_unitario': parseFloat(x.punitario).toFixed(2),
-                'codigo_tipo_precio': '01',
-                'precio_unitario': parseFloat(x.punitario).toFixed(2),
-                'codigo_tipo_afectacion_igv': codigo_tipo_afectacion_igv,
-                'total_base_igv': total_base_igv,
-                'porcentaje_igv': ValorIGV,
-                'total_igv': total_igv,
-                'total_impuestos': total_igv,
-                'total_valor_item': total_valor_item,
-                'total_item': parseFloat(x.precio_total).toFixed(2)
+                "codigo_interno": x.id,
+                "descripcion": x.des,
+                "codigo_producto_sunat": "90101500",
+                "codigo_producto_gsl": "90101500",
+                "unidad_de_medida": "NIU",
+                "cantidad": x.cantidad,
+                "valor_unitario": parseFloat(_val_unitario).toFixed(2), //parseFloat(x.punitario).toFixed(2),
+                "codigo_tipo_precio": "01",
+                "precio_unitario": parseFloat(_val_unitario).toFixed(2), // parseFloat(x.punitario).toFixed(2),
+                "codigo_tipo_afectacion_igv": codigo_tipo_afectacion_igv,
+                "total_base_igv": total_base_igv,
+                "porcentaje_igv": parseFloat(ValorIGV),
+                "total_igv": total_igv,
+                "total_impuestos": total_igv,
+                "total_valor_item": total_valor_item,
+                "total_item": parseFloat(x.precio_total).toFixed(2)
             };
 
             xListItemsRpt.push(jsonItem);

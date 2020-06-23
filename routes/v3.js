@@ -142,7 +142,7 @@ routerV3.get('/comercio/get-data-cierre-caja', auth.verificarToken, apiPwaAppCom
 routerV3.get('/comercio/get-mis-repartidores', auth.verificarToken, apiPwaAppComercio.getMisRepartidores);
 routerV3.post('/comercio/set-registrar-repartidor', auth.verificarToken, apiPwaAppComercio.setRegistrarRepartidor);
 routerV3.post('/comercio/borrar-mi-repartidor', auth.verificarToken, apiPwaAppComercio.borrarMiReparidor);
-routerV3.get('/comercio/set-flag-solicita-repartidor-papaya', auth.verificarToken, apiPwaAppComercio.setFlagSolicitaRepartidorPapaya);
+routerV3.post('/comercio/set-flag-solicita-repartidor-papaya', auth.verificarToken, apiPwaAppComercio.setFlagSolicitaRepartidorPapaya);
 
 
 // comercio registro

@@ -39,8 +39,11 @@ module.exports.getMisPedido = getMisPedido;
 const verificarCodigoSMS = async function (req, res) {
 	// console.log ('idcliente', req.body);
 	const codigo = req.body.codigo;
-    const read_query = `SELECT idcliente from cliente where pwa_code_verification = ${codigo} and estado = 0`;
-    emitirRespuesta_RES(read_query, res);        
+	const idcliente = req.body.idcliente;
+	const numberPhone = req.body.numberphone;
+    // const read_query = `SELECT idcliente from cliente where idcliente=${idcliente} and pwa_code_verification = '${codigo}' and estado = 0`;
+    const read_query = `call porcedure_pwa_update_phono_sms_cliente(${idcliente}, '${numberPhone}', '${codigo}')`;
+    emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.verificarCodigoSMS = verificarCodigoSMS;
 

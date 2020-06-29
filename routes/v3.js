@@ -169,6 +169,8 @@ routerV3.post('/monitor/set-liberar-repartidor', auth.verificarToken, apiPwaAppM
 routerV3.post('/monitor/set-check-liquidado', auth.verificarToken, apiPwaAppMonitor.setCheckLiquidado);
 routerV3.post('/monitor/set-check-abonado', auth.verificarToken, apiPwaAppMonitor.setCheckAbonado);
 routerV3.post('/monitor/set-check-abonado-repartidor', auth.verificarToken, apiPwaAppMonitor.setCheckAbonadoRepartidor);
+routerV3.post('/monitor/get-repartidores-ciudad', auth.verificarToken, apiPwaAppMonitor.getRepartidoreCiudad);
+routerV3.post('/monitor/set-asignar-pedido-manual', auth.verificarToken, apiPwaAppMonitor.setAsignarPedidoManual);
 //// MONITOR ///
 
 

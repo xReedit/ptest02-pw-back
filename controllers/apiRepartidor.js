@@ -359,7 +359,7 @@ module.exports.getPedidosResumenEntregadoDia = getPedidosResumenEntregadoDia;
 
 const getPedidoPendienteAceptar = async function (idrepartidor) {
 	// const idcliente = dataCLiente.idcliente;
-    const read_query = `SELECT pedido_por_aceptar, solicita_liberar_pedido, pedido_paso_va from repartidor where idrepartidor = ${idrepartidor}`;
+    const read_query = `SELECT pedido_por_aceptar, solicita_liberar_pedido, pedido_paso_va, socketid, pwa_code_verification as key_suscripcion_push from repartidor where idrepartidor = ${idrepartidor}`;
     return emitirRespuesta(read_query);        
 }
 module.exports.getPedidoPendienteAceptar = getPedidoPendienteAceptar;

@@ -53,6 +53,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			return;
 		}
 
+		/// monitor pacman
+		if (dataCliente.isMonitorPacman === 'true') {
+			// socketMaster = socket; 
+			socketMonitorPacman(dataCliente,socket);
+			return;
+		}
+
 		if (dataCliente.isOutCarta === 'true') {
 			// socketMaster = socket; 
 			socketClienteDeliveryEstablecimientos(dataCliente,socket);
@@ -446,7 +453,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		apiPwaRepartidor.setRepartidorConectado(dataCliente);		
 
 		// ver si tenemos un pedido pendiente de aceptar // ver si solicito libear pedido
-		const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataCliente.idrepartidor);		
+		const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataCliente.idrepartidor);
 
 		console.log('pedioPendienteAceptar', pedioPendienteAceptar);
 		if ( pedioPendienteAceptar[0].solicita_liberar_pedido === 1 ) {
@@ -609,6 +616,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// notifica al pedido que tiene un pedido asignado desde el comercio
 		socket.on('set-repartidor-pedido-asigna-comercio', async (dataPedido) => {
 			console.log('set-repartidor-pedido-asigna-comercio', dataPedido);
+
 			const socketIdRepartidor = await apiPwaRepartidor.getSocketIdRepartidor(dataPedido.idrepartidor);
 			io.to(socketIdRepartidor[0].socketid).emit('set-repartidor-pedido-asigna-comercio', dataPedido);				
 
@@ -621,5 +629,24 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('set-solicitar-repartidor-papaya', () => {
 			apiPwaRepartidor.runLoopSearchRepartidor(io, dataCliente.idsede);
 		});		
+
+				
+
+
+	}
+
+	async function socketMonitorPacman(dataCliente, socket) {
+		console.log('desde func monitor pacman', dataCliente);
+
+		// notifica al repartidor del pedido asinado manualmente
+		socket.on('set-asigna-pedido-repartidor-manual', async (dataPedido) => {				
+			const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataPedido.idrepartidor);
+			const socketIdRepartidor = pedioPendienteAceptar[0].socketid;
+			io.to(socketIdRepartidor).emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
+
+			// notificacion push nuevo pedido
+			apiPwaRepartidor.sendOnlyNotificaPush(pedioPendienteAceptar[0].key_suscripcion_push, 0);
+		});		
+
 	}
 }

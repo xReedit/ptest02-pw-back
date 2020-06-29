@@ -39,6 +39,13 @@ const getCientes = async function (req, res) {
 }
 module.exports.getCientes = getCientes;
 
+const getRepartidoreCiudad = function (req, res) {	
+	const codigo_postal = req.body.codigo_postal;
+    const read_query = `SELECT * from repartidor where codigo_postal = '${codigo_postal}' and estado = 0 and online = 1 and COALESCE(idsede_suscrito, 0) = 0`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getRepartidoreCiudad = getRepartidoreCiudad;
+
 
 const getPedidosPendientesRepartidor = async function (req, res) {		
     const read_query = `call procedure_delivery_pedidos_pendientes()`;
@@ -82,6 +89,14 @@ const setCheckAbonadoRepartidor = function (req, res) {
 }
 module.exports.setCheckAbonadoRepartidor = setCheckAbonadoRepartidor;
 
+const setAsignarPedidoManual = function (req, res) {
+	const dataPedido = req.body.pedido;
+    
+    const read_query = `call procedure_delivery_set_pedido_repartidor_manual('${JSON.stringify(dataPedido)}')`;
+    emitirRespuestaSP_RES(read_query, res);  
+}
+module.exports.setAsignarPedidoManual = setAsignarPedidoManual;
+
 
 function execSqlQueryNoReturn(xquery, res) {
 	console.log(xquery);
@@ -92,8 +107,8 @@ function execSqlQueryNoReturn(xquery, res) {
 			data: results
 		});
 	});
-
 }
+
 
 
 

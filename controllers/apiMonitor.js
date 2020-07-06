@@ -97,6 +97,49 @@ const setAsignarPedidoManual = function (req, res) {
 }
 module.exports.setAsignarPedidoManual = setAsignarPedidoManual;
 
+const setRegistraPagoComercio = function (req, res) {
+	const dataRegistro = req.body.registro;
+    
+    const read_query = `call procedure_monitor_registro_pago_comercio('${JSON.stringify(dataRegistro)}')`;
+    emitirRespuestaSP_RES(read_query, res);  
+}
+module.exports.setRegistraPagoComercio = setRegistraPagoComercio;
+
+
+const getComerciosResumen = function (req, res) {		
+    const read_query = `call procedure_monitor_comercios()`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.getComerciosResumen = getComerciosResumen;
+
+const setHistorialPagoComercio = function (req, res) {	
+	const idsede = req.body.idsede;
+    const read_query = `SELECT * from sede_detalle_pago where idsede = '${idsede}'`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.setHistorialPagoComercio = setHistorialPagoComercio;
+
+const getComerciosAfiliados = function (req, res) {		
+    const read_query = `SELECT * from sede where pwa_comercio_afiliado = 1 and estado = 0`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getComerciosAfiliados = getComerciosAfiliados;
+
+const getRepartidoresConectados = function (req, res) {		
+    const read_query = `select * from repartidor where COALESCE(idsede_suscrito, 0) = 0 and online=1 and estado=0`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getRepartidoresConectados = getRepartidoresConectados;
+
+const getRepartidoresPedidosAceptados = function (req, res) {		
+    const read_query = `SELECT p.* from pedido p
+			inner join repartidor r on r.idrepartidor = p.idrepartidor
+			where  REPLACE(REPLACE(cast(pedido_por_aceptar->>'$.pedidos' as CHAR(200)), '[', ''), ']', '') LIKE concat('%',cast(idpedido as char(5)),'%')
+			and COALESCE(r.idsede_suscrito, 0) = 0 and r.online=1 and r.estado=0`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getRepartidoresPedidosAceptados = getRepartidoresPedidosAceptados;
+
 
 function execSqlQueryNoReturn(xquery, res) {
 	console.log(xquery);

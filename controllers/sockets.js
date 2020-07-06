@@ -490,7 +490,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				io.to(socketIdComercio[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion);	
 			}		
 
-			// notificar a la central
+			// notificar a la central monitor
+			io.to('MONITOR').emit('repartidor-notifica-ubicacion', datosUbicacion);
 
 		});
 
@@ -522,7 +523,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			io.to(socketidComercio[0].socketid).emit('repartidor-notifica-a-comercio-pedido-aceptado', dataPedido);	
 
-
+			// NOTIFICA a la central
+			io.to('MONITOR').emit('repartidor-notifica-a-comercio-pedido-aceptado', dataPedido);
 
 		});
 
@@ -637,6 +639,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 	async function socketMonitorPacman(dataCliente, socket) {
 		console.log('desde func monitor pacman', dataCliente);
+		socket.join('MONITOR');
 
 		// notifica al repartidor del pedido asinado manualmente
 		socket.on('set-asigna-pedido-repartidor-manual', async (dataPedido) => {				

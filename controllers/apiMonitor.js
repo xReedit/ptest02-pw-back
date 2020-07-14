@@ -112,6 +112,13 @@ const getComerciosResumen = function (req, res) {
 }
 module.exports.getComerciosResumen = getComerciosResumen;
 
+const getComercioCalcularPago = function (req, res) {	
+	const idsede = req.body.idsede;	
+    const read_query = `call procedure_monitor_comercios_caluclar(${idsede})`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.getComercioCalcularPago = getComercioCalcularPago;
+
 const setHistorialPagoComercio = function (req, res) {	
 	const idsede = req.body.idsede;
     const read_query = `SELECT * from sede_detalle_pago where idsede = '${idsede}'`;
@@ -139,6 +146,15 @@ const getRepartidoresPedidosAceptados = function (req, res) {
     emitirRespuesta_RES(read_query, res);  
 }
 module.exports.getRepartidoresPedidosAceptados = getRepartidoresPedidosAceptados;
+
+const setSedeInfo = function (req, res) {
+	const registro = req.body.registro;
+    const read_query = `update sede set comsion_entrega = ${registro.comision}, costo_restobar_fijo_mensual='${registro.restobar}' where idsede=${registro.idsede}`;
+    execSqlQueryNoReturn(read_query, res);     
+}
+module.exports.setSedeInfo = setSedeInfo;
+
+
 
 
 function execSqlQueryNoReturn(xquery, res) {

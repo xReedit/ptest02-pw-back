@@ -230,6 +230,8 @@ function xJsonSunatCocinarItemDetalle(orden, ValorIGV, isExoneradoIGV) {
               total_igv = parseFloat(parseFloat(x.precio_total) * procentaje_IGV).toFixed(2);
               total_base_igv = parseFloat(x.precio_total) - total_igv;
               total_valor_item = parseFloat(total_base_igv);
+            } else {
+                total_base_igv = parseFloat(x.precio_total); // cambio x error 3105 IGV
             }
 
             const _val_unitario = x.punitario || x.precio_total;

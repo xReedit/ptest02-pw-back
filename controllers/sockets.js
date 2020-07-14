@@ -447,6 +447,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// }
 		
 		socket.emit('finishLoadDataInitial');
+
+		// notifica que el repartidor esta online
+		io.to('MONITOR').emit('notifica-repartidor-online', dataCliente);
 		
 
 		// registrar como conectado en cliente_socketid

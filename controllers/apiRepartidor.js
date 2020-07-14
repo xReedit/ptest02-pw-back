@@ -31,7 +31,7 @@ const setEfectivoMano = function (req, res) {
 	const efectivo = req.body.efectivo;      
 	const online = req.body.online;     
 
-	console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
+	// console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	
     const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
     execSqlQueryNoReturn(read_query, res);
@@ -182,6 +182,9 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 		// si no esta ocupado quita
 		if ( getSocketIdRepartidorReasigno[0].ocupado === 0 ) {
 			io.to(getSocketIdRepartidorReasigno[0].socketid).emit('repartidor-notifica-server-quita-pedido', null);
+
+			// NOTIFICA MONITOR quita  pedido a repartidor
+			io.to('MONITOR').emit('notifica-server-quita-pedido-repartidor', dataPedido.last_id_repartidor_reasigno);
 		}		
 	}
 
@@ -199,6 +202,10 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 
 		const read_query = `call procedure_delivery_set_pedido_repartidor(${dataPedido.pedidos[0]}, ${firtsRepartidor.idrepartidor}, '${JSON.stringify(dataPedido)}')`;
 		const res_call = await emitirRespuestaSP(read_query);
+
+		// NOTIFICA MONITOR repartidor nuevo pedido
+		console.log('===== notifica-server-pedido-por-aceptar');	
+		io.to('MONITOR').emit('notifica-server-pedido-por-aceptar', [firtsRepartidor, dataPedido]);
 	}
 
 
@@ -507,9 +514,7 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 			// const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;	
 			// const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
 
-			console.log('_cantidadEfectivoPagar', _group.importe_pagar);
-			
-
+			console.log('_cantidadEfectivoPagar', _group.importe_pagar);				
 
 			// const _pJson = JSON.parse(JSON.stringify(p));		
 			// console.log('pedido procesar json', p);
@@ -519,6 +524,11 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 			// enviamos
 			const response_ok = await sendPedidoRepartidorOp2(listRepartidores, _group, io);
 			console.log('response_ok', response_ok);
+		}
+
+		if ( listGruposPedidos.length > 0 ) {
+			// NOTIFICA a la central
+			io.to('MONITOR').emit('notifica-pedidos-pendientes', listGruposPedidos);
 		}
 
 	}
@@ -599,7 +609,7 @@ const runLoopSearchRepartidor = async function (io, idsede) {
 
 	if ( intervalBucaRepartidor === null ) {
 		colocarPedidoEnRepartidor(io, idsede);
-		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
+		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 15000);
 	}
 }
 module.exports.runLoopSearchRepartidor = runLoopSearchRepartidor;

@@ -113,8 +113,10 @@ const getComerciosResumen = function (req, res) {
 module.exports.getComerciosResumen = getComerciosResumen;
 
 const getComercioCalcularPago = function (req, res) {	
-	const idsede = req.body.idsede;	
-    const read_query = `call procedure_monitor_comercios_caluclar(${idsede})`;
+	const desde = req.body.desde;
+	const hasta = req.body.hasta;
+	const idsede = req.body.idsede;		
+    const read_query = `call procedure_monitor_comercios_caluclar('${desde}', '${hasta}', ${idsede})`;
     emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.getComercioCalcularPago = getComercioCalcularPago;
@@ -154,6 +156,14 @@ const setSedeInfo = function (req, res) {
 }
 module.exports.setSedeInfo = setSedeInfo;
 
+const getAllPedidosComercio = function (req, res) {		
+	const idsede = req.body.idsede;
+	const fdesde = req.body.desde;
+	const fhasta = req.body.hasta;
+    const read_query = `SELECT * from pedido where idsede = ${idsede} and  STR_TO_DATE(fecha, '%d/%m/%Y') BETWEEN STR_TO_DATE('${fdesde}', '%d/%m/%Y') and STR_TO_DATE('${fhasta}', '%d/%m/%Y') and pwa_is_delivery = 1`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getAllPedidosComercio = getAllPedidosComercio;
 
 
 

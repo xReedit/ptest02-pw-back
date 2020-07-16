@@ -176,7 +176,7 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 	// quitamos el pedido al repartidor anterior
 	console.log('asignar repartidor ============ ', dataPedido);
 	if ( dataPedido.last_id_repartidor_reasigno ) {
-		console.log('repartidor-notifica-server-quita-pedido --a');
+		// console.log('repartidor-notifica-server-quita-pedido --a');
 		const getSocketIdRepartidorReasigno = await getSocketIdRepartidor(dataPedido.last_id_repartidor_reasigno);
 
 		// si no esta ocupado quita
@@ -184,7 +184,7 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 			io.to(getSocketIdRepartidorReasigno[0].socketid).emit('repartidor-notifica-server-quita-pedido', null);
 
 			// NOTIFICA MONITOR quita  pedido a repartidor
-			io.to('MONITOR').emit('notifica-server-quita-pedido-repartidor', dataPedido.last_id_repartidor_reasigno);
+			// io.to('MONITOR').emit('notifica-server-quita-pedido-repartidor', dataPedido.last_id_repartidor_reasigno);
 		}		
 	}
 
@@ -204,8 +204,8 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 		const res_call = await emitirRespuestaSP(read_query);
 
 		// NOTIFICA MONITOR repartidor nuevo pedido
-		console.log('===== notifica-server-pedido-por-aceptar');	
-		io.to('MONITOR').emit('notifica-server-pedido-por-aceptar', [firtsRepartidor, dataPedido]);
+		// console.log('===== notifica-server-pedido-por-aceptar');	
+		// io.to('MONITOR').emit('notifica-server-pedido-por-aceptar', [firtsRepartidor, dataPedido]);
 	}
 
 

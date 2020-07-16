@@ -179,6 +179,7 @@ routerV3.get('/monitor/get-repartidores-conectado', auth.verificarToken, apiPwaA
 routerV3.get('/monitor/get-repartidores-pedidos-asignados', auth.verificarToken, apiPwaAppMonitor.getRepartidoresPedidosAceptados);
 routerV3.post('/monitor/get-comercio-calcular-pago', auth.verificarToken, apiPwaAppMonitor.getComercioCalcularPago);
 routerV3.post('/monitor/set-sede-info', auth.verificarToken, apiPwaAppMonitor.setSedeInfo);
+routerV3.post('/monitor/get-comercio-all-pedidos-cobrar', auth.verificarToken, apiPwaAppMonitor.getAllPedidosComercio);
 //// MONITOR ///
 
 

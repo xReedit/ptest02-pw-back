@@ -166,6 +166,13 @@ const getAllPedidosComercio = function (req, res) {
 module.exports.getAllPedidosComercio = getAllPedidosComercio;
 
 
+const getAllSedes = function (req, res) {		
+    const read_query = `SELECT * from sede where estado = 0 order by ciudad, nombre`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getAllSedes = getAllSedes;
+
+
 
 function execSqlQueryNoReturn(xquery, res) {
 	console.log(xquery);

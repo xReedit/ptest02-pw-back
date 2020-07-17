@@ -180,6 +180,7 @@ routerV3.get('/monitor/get-repartidores-pedidos-asignados', auth.verificarToken,
 routerV3.post('/monitor/get-comercio-calcular-pago', auth.verificarToken, apiPwaAppMonitor.getComercioCalcularPago);
 routerV3.post('/monitor/set-sede-info', auth.verificarToken, apiPwaAppMonitor.setSedeInfo);
 routerV3.post('/monitor/get-comercio-all-pedidos-cobrar', auth.verificarToken, apiPwaAppMonitor.getAllPedidosComercio);
+routerV3.get('/monitor/get-all-sedes', auth.verificarToken, apiPwaAppMonitor.getAllSedes);
 //// MONITOR ///
 
 

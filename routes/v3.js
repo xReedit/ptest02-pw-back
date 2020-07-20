@@ -181,6 +181,11 @@ routerV3.post('/monitor/get-comercio-calcular-pago', auth.verificarToken, apiPwa
 routerV3.post('/monitor/set-sede-info', auth.verificarToken, apiPwaAppMonitor.setSedeInfo);
 routerV3.post('/monitor/get-comercio-all-pedidos-cobrar', auth.verificarToken, apiPwaAppMonitor.getAllPedidosComercio);
 routerV3.get('/monitor/get-all-sedes', auth.verificarToken, apiPwaAppMonitor.getAllSedes);
+routerV3.post('/monitor/get-select-tipo-aplica', auth.verificarToken, apiPwaAppMonitor.getAplicaA);
+routerV3.post('/monitor/set-registrar-descuento', auth.verificarToken, apiPwaAppMonitor.setRegistrarDescuento);
+routerV3.post('/monitor/get-all-sedes-descuentos', auth.verificarToken, apiPwaAppMonitor.getAllDescuentosSede);
+routerV3.post('/monitor/get-item-sedes-descuentos', auth.verificarToken, apiPwaAppMonitor.getItemDescuentosSede);
+routerV3.post('/monitor/delete-item-sedes-descuentos', auth.verificarToken, apiPwaAppMonitor.deleteItemDescuentosSede);
 //// MONITOR ///
 
 

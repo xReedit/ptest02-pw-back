@@ -172,6 +172,63 @@ const getAllSedes = function (req, res) {
 }
 module.exports.getAllSedes = getAllSedes;
 
+const getAllDescuentosSede = function (req, res) {		
+	const idsede = req.body.idsede;
+    const read_query = `SELECT idsede_descuento, descripcion, f_desde, f_fin, numero_pedidos, if ( STR_TO_DATE(f_fin, '%d/%m/%Y %H:%i:%s') > now(), 1 , 0 ) activo  from sede_descuento where idsede = ${idsede} and estado = 0;`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getAllDescuentosSede = getAllDescuentosSede;
+
+const getItemDescuentosSede = function (req, res) {		
+	const idsede_descuento = req.body.idsede_descuento;
+    const read_query = `SELECT * from sede_descuento_detalle where idsede_descuento = ${idsede_descuento}`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getItemDescuentosSede = getItemDescuentosSede;
+
+const deleteItemDescuentosSede = function (req, res) {		
+	const idsede_descuento = req.body.idsede_descuento;    
+    const read_query = `update sede_descuento set estado = 1 where idsede_descuento = ${idsede_descuento}`;
+    execSqlQueryNoReturn(read_query, res);  
+}
+module.exports.deleteItemDescuentosSede = deleteItemDescuentosSede;
+
+
+const getAplicaA = async function (req, res) {
+	const aplica = req.body.op;
+	const idsede = req.body.idsede;
+	let read_query = '';
+
+	switch (aplica) {
+      case 0:
+      	read_query = `SELECT concat(s.descripcion, ' | ',  i.descripcion) descripcion, i.iditem as id 
+					from item i 
+						inner join carta_lista cl on cl.iditem = i.iditem
+						inner join seccion s on s.idseccion = cl.idseccion
+					where i.idsede=${idsede} and i.estado=0 order by i.descripcion`;
+        break;
+      case 1:
+      	read_query = `SELECT descripcion, idseccion as id from seccion where idsede=${idsede} and estado=0 order by descripcion`;
+        break;
+      case 2:
+      	read_query = `SELECT concat(pf.descripcion,' | ', p.descripcion) descripcion, p.idproducto as id from producto p inner join producto_familia pf on pf.idproducto_familia = p.idproducto_familia where p.idsede=${idsede} and p.estado=0 order by pf.descripcion, p.descripcion`;
+        break;
+      case 3:
+      	read_query = `SELECT descripcion, idproducto_familia as id from producto_familia where idsede = ${idsede} and estado=0 order by descripcion`;
+        break;
+    }	
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getAplicaA = getAplicaA;
+
+const setRegistrarDescuento = function (req, res) {	
+	const obj = req.body.obj;	
+    const read_query = `call procedure_app_descuentos('${JSON.stringify(obj)}')`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.setRegistrarDescuento = setRegistrarDescuento;
+
+
 
 
 function execSqlQueryNoReturn(xquery, res) {

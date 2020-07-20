@@ -51,19 +51,23 @@ const getObjCarta = async function (dataCLiente) {
 module.exports.getObjCarta = getObjCarta;
 
 // datos de la sede, impresoras
-const getDataSede = async function (dataCLiente) {
-	// console.log('getDataSede', req.boyd);
-	// const idorg = req.body.idorg;
- //    const idsede = req.body.idsede;
-	// console.log( 'data cliente', dataCLiente )
+const getDataSede = async function (dataCLiente) {	
 	const idorg = dataCLiente.idorg;
     const idsede = dataCLiente.idsede;           
         
     const read_query = `call procedure_pwa_pedido_dataorg(${idorg},${idsede})`;    
-    return emitirRespuestaSP(read_query);
-    // emitirRespuestaSP_RES(read_query, res);        
+    return emitirRespuestaSP(read_query);    
 }
 module.exports.getDataSede = getDataSede;
+
+const getDataSedeDescuentos = async function (dataCLiente) {  
+    const idorg = dataCLiente.idorg;
+    const idsede = dataCLiente.idsede;           
+        
+    const read_query = `call procedure_pwa_sede_descuentos(${idsede})`;    
+    return emitirRespuestaSP(read_query);    
+}
+module.exports.getDataSedeDescuentos = getDataSedeDescuentos;
 
 const getTipoConsumo = async function (dataCLiente) {
 	const idorg = dataCLiente.idorg;

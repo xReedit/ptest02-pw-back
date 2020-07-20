@@ -67,9 +67,6 @@ const getCategorias = async function (req, res) {
 module.exports.getCategorias = getCategorias;
 
 
-
-
-
 function emitirRespuesta(xquery, res) {
 	console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})

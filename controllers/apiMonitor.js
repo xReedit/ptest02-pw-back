@@ -193,6 +193,30 @@ const deleteItemDescuentosSede = function (req, res) {
 }
 module.exports.deleteItemDescuentosSede = deleteItemDescuentosSede;
 
+const getAllSedesServiceExpress = function (req, res) {		
+	const idsede_descuento = req.body.idsede_descuento;
+    const read_query = `SELECT * from sede_config_service_delivery where estado = 0`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getAllSedesServiceExpress = getAllSedesServiceExpress;
+
+const getTablaPrecipitacion = function (req, res) {		
+	const idsede_descuento = req.body.idsede_descuento;
+    const read_query = `SELECT * from comision_intensidad_lluvia where estado = 0`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getTablaPrecipitacion = getTablaPrecipitacion;
+
+const setImporteComisionLluvia = function (req, res) {	
+	const idsede_config_service_delivery = req.body.idsede_config_service_delivery;    
+	const costo_show = req.body.clima_comision.costo_show;    
+	const costo_x_km_adicional_show = req.body.clima_comision.costo_x_km_adicional_show;    
+	const isRain = req.body.clima_comision.isRain;    
+    const read_query = `update sede_config_service_delivery set c_minimo = ${costo_show}, c_km=${costo_x_km_adicional_show}, is_rain=${isRain} where idsede_config_service_delivery = ${idsede_config_service_delivery}`;
+    execSqlQueryNoReturn(read_query, res);  
+}
+module.exports.setImporteComisionLluvia = setImporteComisionLluvia;
+
 
 const getAplicaA = async function (req, res) {
 	const aplica = req.body.op;

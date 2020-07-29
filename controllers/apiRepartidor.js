@@ -57,6 +57,16 @@ const setPositionNow = async function (req, res) {
 }
 module.exports.setPositionNow = setPositionNow;
 
+const setCambioPassRepartidor = async function (req, res) {
+	const idrepartidor = req.body.idrepartidor;	
+	const p2 = req.body.p2;	
+
+	const read_query = `update repartidor set pass = '${p2}' where idrepartidor = ${idrepartidor}`;
+    execSqlQueryNoReturn(read_query, res);
+    
+}
+module.exports.setCambioPassRepartidor = setCambioPassRepartidor;
+
 
 // guarda position desde el socket
 // const setPositionFromSocket = function (idrepartidor, position) {	
@@ -609,7 +619,7 @@ const runLoopSearchRepartidor = async function (io, idsede) {
 
 	if ( intervalBucaRepartidor === null ) {
 		colocarPedidoEnRepartidor(io, idsede);
-		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 15000);
+		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
 	}
 }
 module.exports.runLoopSearchRepartidor = runLoopSearchRepartidor;

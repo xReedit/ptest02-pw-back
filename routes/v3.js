@@ -117,6 +117,7 @@ routerV3.get('/repartidor/get-pedidos-entregados-dia', auth.verificarToken, apiP
 routerV3.get('/repartidor/get-pedidos-resumen-entregados-dia', auth.verificarToken, apiPwaAppRepartidor.getPedidosResumenEntregadoDia);
 routerV3.get('/repartidor/get-repartidor-propio-mis-pedidos', auth.verificarToken, apiPwaAppRepartidor.getPropioPedidos);
 routerV3.post('/repartidor/get-pedidos-recibidos-group', auth.verificarToken, apiPwaAppRepartidor.getPedidosRecibidosGroup);
+routerV3.post('/repartidor/set-cambio-pass-repartidor', auth.verificarToken, apiPwaAppRepartidor.setCambioPassRepartidor);
 // routerV3.get('/repartidor/get-view-event-new-pedido', apiPwaAppRepartidor.getIfPedidoNuevo);
 
 
@@ -186,6 +187,9 @@ routerV3.post('/monitor/set-registrar-descuento', auth.verificarToken, apiPwaApp
 routerV3.post('/monitor/get-all-sedes-descuentos', auth.verificarToken, apiPwaAppMonitor.getAllDescuentosSede);
 routerV3.post('/monitor/get-item-sedes-descuentos', auth.verificarToken, apiPwaAppMonitor.getItemDescuentosSede);
 routerV3.post('/monitor/delete-item-sedes-descuentos', auth.verificarToken, apiPwaAppMonitor.deleteItemDescuentosSede);
+routerV3.get('/monitor/get-sede-con-servicio-express', auth.verificarToken, apiPwaAppMonitor.getAllSedesServiceExpress);
+routerV3.get('/monitor/get-tabla-precipitacion', auth.verificarToken, apiPwaAppMonitor.getTablaPrecipitacion);
+routerV3.post('/monitor/set-importe-comsion-lluvia', auth.verificarToken, apiPwaAppMonitor.setImporteComisionLluvia);
 //// MONITOR ///
 
 

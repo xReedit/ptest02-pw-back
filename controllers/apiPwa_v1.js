@@ -320,6 +320,16 @@ const getAllClienteBySearch = function (req, res) {
 }
 module.exports.getAllClienteBySearch = getAllClienteBySearch;
 
+const getLastComisionEntrega = async function (req, res) {    
+    const code_postal = req.body.codigo_postal;
+        
+    const read_query = `select * from sede_config_service_delivery where codigo_postal like '%${code_postal}%' limit 1`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getLastComisionEntrega = getLastComisionEntrega;
+
+
 
 function emitirRespuesta_RES(xquery, res) {
 	console.log(xquery);

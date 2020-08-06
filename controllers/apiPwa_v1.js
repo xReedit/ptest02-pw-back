@@ -125,11 +125,11 @@ module.exports.setPrintComanda = setPrintComanda;
 const getLaCuenta = async function (req, res) {
 	const idorg = req.body.idorg || managerFilter.getInfoToken(req,'idorg');
 	const idsede = req.body.idsede || managerFilter.getInfoToken(req, 'idsede');
-    const mesa = req.body.mesa;
-    const idpedido = req.body.idpedido;
+    const mesa = req.body.mesa ? req.body.mesa : '';
+    const idpedido = req.body.idpedido ? req.body.idpedido : '';
 
-    // console.log('cuenta de mesa: ', mesa);
-	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', ${idpedido}, ${idorg}, ${idsede});`;	
+    console.log('cuenta de mesa: ', idpedido);
+	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', '${idpedido}', ${idorg}, ${idsede});`;	
     emitirRespuestaSP_RES(read_query, res);
 
     // const read_query = `call procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}')`;

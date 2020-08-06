@@ -127,8 +127,7 @@ const getLaCuenta = async function (req, res) {
 	const idsede = req.body.idsede || managerFilter.getInfoToken(req, 'idsede');
     const mesa = req.body.mesa ? req.body.mesa : '';
     const idpedido = req.body.idpedido ? req.body.idpedido : '';
-
-    console.log('cuenta de mesa: ', idpedido);
+    
 	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', '${idpedido}', ${idorg}, ${idsede});`;	
     emitirRespuestaSP_RES(read_query, res);
 

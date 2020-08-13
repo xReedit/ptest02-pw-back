@@ -50,6 +50,7 @@ routerV3.post('/pedido/get-last-comsion-entrega-sede', apiPwaAppPedidos.getLastC
 
 // para buscar todos los clientes
 routerV3.get('/pedido/get-all-clientes', auth.verificarToken, apiPwaAppPedidos.getAllClienteBySearch);
+routerV3.post('/pedido/get-find-cliente-by-name', auth.verificarToken, apiPwaAppPedidos.getAllClienteBySearchName);
 
 routerV3.post('/service/consulta-dni-ruc', auth.verificarToken, apiPwaAppPedidos.getConsultaDatosCliente);
 
@@ -86,6 +87,7 @@ routerV3.post('/delivery/verificar-codigo-sms', apiPwaAppDelivery.verificarCodig
 routerV3.post('/delivery/send-sms-confirmation', auth.verificarTokenSms, apiPwaSMS.sendMsjConfirmacion);
 routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepartidorTEST);
 routerV3.post('/delivery/send-sms-test', apiPwaSMS.sendMsjSMSNewPedido);
+routerV3.post('/delivery/get-comercio-x-calificar', apiPwaAppDelivery.getComercioXCalificar);
 
 // notificaciones push
 // guardar suscripcion

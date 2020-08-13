@@ -67,6 +67,20 @@ const getCategorias = async function (req, res) {
 module.exports.getCategorias = getCategorias;
 
 
+const getComercioXCalificar = async function (req, res) {
+	// console.log ('idcliente', req.body);
+	const idcliente = req.body.idcliente;
+    // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
+    const read_query = `SELECT p.idpedido, p.idsede, s.nombre nomestablecimiento
+						from pedido p
+							inner join sede s on s.idsede = p.idsede
+						where p.idcliente = ${idcliente} and p.flag_calificado = 0`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getComercioXCalificar = getComercioXCalificar;
+
+
+
 function emitirRespuesta(xquery, res) {
 	console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})

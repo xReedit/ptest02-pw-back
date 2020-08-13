@@ -319,6 +319,13 @@ const getAllClienteBySearch = function (req, res) {
 }
 module.exports.getAllClienteBySearch = getAllClienteBySearch;
 
+const getAllClienteBySearchName = function (req, res) {
+    const buscar = req.body.buscar;
+    const read_query = `select idcliente, nombres, ruc, telefono from cliente where estado=0 and nombres!='' and LENGTH(nombres) > 10 and nombres like '%${buscar}%' group by nombres order by nombres`;
+    emitirRespuesta_RES(read_query, res); 
+}
+module.exports.getAllClienteBySearchName = getAllClienteBySearchName;
+
 const getLastComisionEntrega = async function (req, res) {    
     const code_postal = req.body.codigo_postal;
         

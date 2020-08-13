@@ -74,7 +74,8 @@ const getComercioXCalificar = async function (req, res) {
     const read_query = `SELECT p.idpedido, p.idsede, s.nombre nomestablecimiento
 						from pedido p
 							inner join sede s on s.idsede = p.idsede
-						where p.idcliente = ${idcliente} and p.flag_calificado = 0`;
+						where p.idcliente = ${idcliente} and p.flag_calificado = 0
+						GROUP by p.idsede`;
     emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getComercioXCalificar = getComercioXCalificar;

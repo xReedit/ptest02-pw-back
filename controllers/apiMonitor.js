@@ -194,14 +194,14 @@ const deleteItemDescuentosSede = function (req, res) {
 module.exports.deleteItemDescuentosSede = deleteItemDescuentosSede;
 
 const getAllSedesServiceExpress = function (req, res) {		
-	const idsede_descuento = req.body.idsede_descuento;
+	// const idsede_descuento = req.body.idsede_descuento;
     const read_query = `SELECT * from sede_config_service_delivery where estado = 0`;
     emitirRespuesta_RES(read_query, res);  
 }
 module.exports.getAllSedesServiceExpress = getAllSedesServiceExpress;
 
 const getTablaPrecipitacion = function (req, res) {		
-	const idsede_descuento = req.body.idsede_descuento;
+	// const idsede_descuento = req.body.idsede_descuento;
     const read_query = `SELECT * from comision_intensidad_lluvia where estado = 0`;
     emitirRespuesta_RES(read_query, res);  
 }
@@ -251,6 +251,21 @@ const setRegistrarDescuento = function (req, res) {
     emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.setRegistrarDescuento = setRegistrarDescuento;
+
+
+
+const getPedidosMandados = function (req, res) {		
+	const fini = req.body.fromDate;
+	const ffin = req.body.toDate;
+    const read_query = `SELECT pm.*, c.nombres nom_cliente, c.f_registro, c.ruc, c.telefono,c.calificacion, TIMESTAMPDIFF(MINUTE, pm.fecha_hora, now()) min_transcurridos
+    		, r.nombre as nom_repartidor, r.telefono as telefono_repartidor
+			from pedido_mandado pm
+				inner join cliente c on c.idcliente = pm.pedido_json->>'$.idcliente'
+				LEFT join repartidor r on r.idrepartidor = pm.idrepartidor
+			where cast(pm.fecha_hora as date) BETWEEN cast('${fini}' as date) and cast('${ffin}' as date)`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getPedidosMandados = getPedidosMandados;
 
 
 

@@ -80,6 +80,29 @@ const getComercioXCalificar = async function (req, res) {
 }
 module.exports.getComercioXCalificar = getComercioXCalificar;
 
+const getTipoVehiculo = async function (req, res) {	
+    const read_query = `Select * from tipo_vehiculo where estado=0`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getTipoVehiculo = getTipoVehiculo;
+
+
+const getAllSedesServiceExpress = function (req, res) {		
+	const ciudad = req.body.ciudad;
+    const read_query = `SELECT * from sede_config_service_delivery where estado = 0 and upper(ciudad) = upper('${ciudad}')`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getAllSedesServiceExpress = getAllSedesServiceExpress;
+
+const setPedidoMandado = async function (req, res) {
+	const obj = req.body.dataInfo;
+    const read_query = `call procedure_guardar_pedido_mandado('${JSON.stringify(obj)}')`;
+    emitirRespuestaSP_RES(read_query, res);       
+}
+module.exports.setPedidoMandado = setPedidoMandado;
+
+
+
 
 
 function emitirRespuesta(xquery, res) {

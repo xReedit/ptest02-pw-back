@@ -40,7 +40,7 @@ const getOrdenesPedientes = function (req, res) {
     							) as metodoPagoRegistro
 						from pedido p
 						LEFT join repartidor r on p.idrepartidor=r.idrepartidor
-						where p.idsede = ${idsede} and p.is_from_client_pwa=1 and p.cierre=0 and p.pwa_estado in (${filtro});`;    
+						where p.idsede = ${idsede} and cast(p.fecha_hora as date) = CURDATE() and p.is_from_client_pwa=1 and p.cierre=0 and p.pwa_estado in (${filtro});`;    
     emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getOrdenesPedientes = getOrdenesPedientes;

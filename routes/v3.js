@@ -80,6 +80,8 @@ routerV3.post('/delivery/get-direccion-cliente', apiPwaAppDelivery.getDireccionC
 routerV3.post('/delivery/get-mis-pedidos', apiPwaAppDelivery.getMisPedido);
 routerV3.post('/delivery/calificar-servicio', apiPwaAppDelivery.setCalificarServicio);
 routerV3.get('/delivery/get-categorias', apiPwaAppDelivery.getCategorias);
+routerV3.post('/delivery/get-sede-servicio-express', apiPwaAppDelivery.getAllSedesServiceExpress);
+routerV3.post('/delivery/set-pedido-mandado', apiPwaAppDelivery.setPedidoMandado);
 
 
 // mensajes
@@ -88,6 +90,7 @@ routerV3.post('/delivery/send-sms-confirmation', auth.verificarTokenSms, apiPwaS
 routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepartidorTEST);
 routerV3.post('/delivery/send-sms-test', apiPwaSMS.sendMsjSMSNewPedido);
 routerV3.post('/delivery/get-comercio-x-calificar', apiPwaAppDelivery.getComercioXCalificar);
+routerV3.get('/delivery/get-tipo-vehiculo', apiPwaAppDelivery.getTipoVehiculo);
 
 // notificaciones push
 // guardar suscripcion
@@ -193,6 +196,7 @@ routerV3.post('/monitor/delete-item-sedes-descuentos', auth.verificarToken, apiP
 routerV3.get('/monitor/get-sede-con-servicio-express', auth.verificarToken, apiPwaAppMonitor.getAllSedesServiceExpress);
 routerV3.get('/monitor/get-tabla-precipitacion', auth.verificarToken, apiPwaAppMonitor.getTablaPrecipitacion);
 routerV3.post('/monitor/set-importe-comsion-lluvia', auth.verificarToken, apiPwaAppMonitor.setImporteComisionLluvia);
+routerV3.post('/monitor/get-pedidos-mandados', auth.verificarToken, apiPwaAppMonitor.getPedidosMandados);
 //// MONITOR ///
 
 

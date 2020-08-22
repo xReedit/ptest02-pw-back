@@ -357,6 +357,23 @@ const setFinPedidoEntregado = function (req, res) {
 }
 module.exports.setFinPedidoEntregado = setFinPedidoEntregado;
 
+const setFinPedidoExpressEntregado = function (req, res) {
+	const idpedido = req.body.idpedido_mandado;
+	const pedidos_quedan = req.body.pedidos_quedan;
+	const num_quedan = req.body.num_quedan;
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
+
+	var read_query = '';
+	if ( num_quedan > 0 ) {
+		read_query = `update pedido_mandado set pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now()), pwa_estado='E' where idpedido_mandado = ${idpedido}; update repartidor set pedido_por_aceptar='${JSON.stringify(pedidos_quedan)}' where idrepartidor = ${idrepartidor}`;
+	}
+	else {
+		read_query = `update pedido_mandado set pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now()), pwa_estado='E' where idpedido_mandado = ${idpedido}; update repartidor set ocupado = 0, pedido_por_aceptar=null where idrepartidor = ${idrepartidor}`;
+	}
+    execSqlQueryNoReturn(read_query, res);
+}
+module.exports.setFinPedidoExpressEntregado = setFinPedidoExpressEntregado;
+
 const getPedidosEntregadoDia = function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	

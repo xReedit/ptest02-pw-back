@@ -119,6 +119,7 @@ routerV3.post('/repartidor/set-asignar-pedido', auth.verificarToken, apiPwaAppRe
 routerV3.post('/repartidor/set-paso-pedido-va', auth.verificarToken, apiPwaAppRepartidor.setPasoVaPedido);
 routerV3.post('/repartidor/get-estado-pedido', auth.verificarToken, apiPwaAppRepartidor.getEstadoPedido);
 routerV3.post('/repartidor/set-fin-pedido-entregado', auth.verificarToken, apiPwaAppRepartidor.setFinPedidoEntregado);
+routerV3.post('/repartidor/set-fin-pedido-express-entregado', auth.verificarToken, apiPwaAppRepartidor.setFinPedidoExpressEntregado);
 routerV3.get('/repartidor/get-pedidos-entregados-dia', auth.verificarToken, apiPwaAppRepartidor.getPedidosEntregadoDia);
 routerV3.get('/repartidor/get-pedidos-resumen-entregados-dia', auth.verificarToken, apiPwaAppRepartidor.getPedidosResumenEntregadoDia);
 routerV3.get('/repartidor/get-repartidor-propio-mis-pedidos', auth.verificarToken, apiPwaAppRepartidor.getPropioPedidos);

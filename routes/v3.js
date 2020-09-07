@@ -34,6 +34,7 @@ routerV3.post('/login-usuario-autorizado', login.loggerUsAutorizado);
 routerV3.post('/verificarToken', auth.verificarToken);
 routerV3.post('/pedido/lacuenta', auth.verificarToken, apiPwaAppPedidos.getLaCuenta);
 routerV3.post('/pedido/lacuenta-zona-delivery', apiPwaAppPedidos.getLaCuenta);
+routerV3.post('/pedido/register-scan', apiPwaAppPedidos.setRegisterScanQr);
 //  para usuario autorizado - colaboradores --->>
 
 // para usuario cliente

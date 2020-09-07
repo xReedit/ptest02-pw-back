@@ -150,8 +150,9 @@ module.exports.getLaCuentaFromCliente = getLaCuentaFromCliente;
 const getLaCuentaFromClienteTotales = async function (req, res) {	
 	const idsede = req.body.idsede;
     const idcliente = req.body.idcliente;
+    const idpedido = req.body.idpedido ? req.body.idpedido : null;
 
-	const read_query = `call procedure_pwa_cuenta_cliente_totales(${idcliente}, ${idsede});`;	
+	const read_query = `call procedure_pwa_cuenta_cliente_totales(${idcliente}, ${idsede}, ${idpedido});`;	
     emitirRespuestaSP_RES(read_query, res); 
 }
 module.exports.getLaCuentaFromClienteTotales = getLaCuentaFromClienteTotales;
@@ -334,6 +335,18 @@ const getLastComisionEntrega = async function (req, res) {
     emitirRespuesta_RES(read_query, res);  
 }
 module.exports.getLastComisionEntrega = getLastComisionEntrega;
+
+
+const setRegisterScanQr = async function (req, res) {    
+    const idsede = req.body.idsede;
+    const canal = req.body.canal;
+    const idscan = req.body.idscan || 0;
+        
+    const read_query = `call procedure_register_scan_qr(${idsede}, '${canal}', ${idscan})`;
+    // return emitirRespuestaSP(read_query);      
+    emitirRespuestaSP_RES(read_query, res);  
+}
+module.exports.setRegisterScanQr = setRegisterScanQr;
 
 
 

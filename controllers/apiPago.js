@@ -23,18 +23,21 @@ const getEmailClient = function (req, res) {
 }
 module.exports.getEmailClient = getEmailClient;
 
-const setRegistrarPago = function (req, res) {
+const setRegistrarPago = function (req, res) {	
 	const idcliente = req.body.idcliente;
 	const idorg = req.body.idorg;
 	const idsede = req.body.idsede;
 	const importe = req.body.importe;
 	const isdelivery = req.body.isdelivery;
+	const isdeliveryInt = req.body.isdelivery ? 1 : 0;	
+
+	req.body.objOperacion.isdelivery = isdeliveryInt;
 	const objSubTotal = JSON.stringify(req.body.objSubTotal);
 	const objTransaction = JSON.stringify(req.body.objTransaction);
 	const objCliente = JSON.stringify(req.body.objCliente);
 	const objOperacion = JSON.stringify(req.body.objOperacion);
 
-    const read_query = `call procedure_pwa_registrar_pago(${idcliente},${idorg},${idsede},'${importe}','${objTransaction}','${objSubTotal}', '${objCliente}', '${objOperacion}', ${isdelivery})`;
+    const read_query = `call procedure_pwa_registrar_pago(${idcliente},${idorg},${idsede},'${importe}','${objTransaction}','${objSubTotal}', '${objCliente}', '${objOperacion}', ${isdelivery}, ${isdeliveryInt})`;
     emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.setRegistrarPago = setRegistrarPago;

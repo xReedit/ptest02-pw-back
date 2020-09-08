@@ -33,6 +33,7 @@ routerV3.get('/', function (req, res, next) {
 routerV3.post('/login-usuario-autorizado', login.loggerUsAutorizado);
 routerV3.post('/verificarToken', auth.verificarToken);
 routerV3.post('/pedido/lacuenta', auth.verificarToken, apiPwaAppPedidos.getLaCuenta);
+routerV3.post('/pedido/printer-precuenta', auth.verificarToken, apiPwaAppPedidos.setPrinterOtherDocs);
 routerV3.post('/pedido/lacuenta-zona-delivery', apiPwaAppPedidos.getLaCuenta);
 routerV3.post('/pedido/register-scan', apiPwaAppPedidos.setRegisterScanQr);
 //  para usuario autorizado - colaboradores --->>

@@ -122,13 +122,25 @@ const setPrintComanda = async function (dataCLiente, dataPrint) {
 }
 module.exports.setPrintComanda = setPrintComanda;
 
+const setPrinterOtherDocs = async function (req, res) {
+    const idorg = managerFilter.getInfoToken(req,'idorg');
+    const idsede = managerFilter.getInfoToken(req, 'idsede');
+    const idusuario = managerFilter.getInfoToken(req, 'idusuario');
+    const dataPrint = req.body.dataPrint;
+    const isprecuenta = req.body.isprecuenta || 0;
+    const read_query = `call procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}', ${isprecuenta})`;
+    return emitirRespuestaSP(read_query);        
+
+}
+module.exports.setPrinterOtherDocs = setPrinterOtherDocs;
+
 const getLaCuenta = async function (req, res) {
 	const idorg = req.body.idorg || managerFilter.getInfoToken(req,'idorg');
 	const idsede = req.body.idsede || managerFilter.getInfoToken(req, 'idsede');
     const mesa = req.body.mesa ? req.body.mesa : '';
     const idpedido = req.body.idpedido ? req.body.idpedido : '';
     
-	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', '${idpedido}', ${idorg}, ${idsede});`;	
+	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', '${idpedido}', ${idorg}, ${idsede}, 0);`;	
     emitirRespuestaSP_RES(read_query, res);
 
     // const read_query = `call procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}')`;

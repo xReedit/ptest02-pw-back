@@ -96,9 +96,17 @@ module.exports.setItemCarta = setItemCarta;
 
 
 const setNuevoPedido = async function (dataCLiente, dataPedido) {
-	const idorg = dataCLiente.idorg;
-    const idsede = dataCLiente.idsede;		              
-    const idusuario = dataCLiente.idusuario;		              
+    
+	// const idorg = dataCLiente.idorg;
+ //    const idsede = dataCLiente.idsede;		              
+ //    const idusuario = dataCLiente.idusuario;		              
+
+    // tomamos los datos del cliente del pedido y no del socket, puede estar haciendo conflicto
+    // y enviando a otros comercios
+    const _dataCliente = dataPedido.dataUsuario
+    const idorg = _dataCliente.idorg;
+    const idsede = _dataCliente.idsede;                    
+    const idusuario = _dataCliente.idusuario;                      
     var _json = JSON.stringify(dataPedido).replace(/\\n/g, '')
                                       .replace(/\\'/g, '')
                                       .replace(/\\"/g, '')

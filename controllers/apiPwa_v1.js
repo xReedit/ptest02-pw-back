@@ -121,6 +121,36 @@ const setNuevoPedido = async function (dataCLiente, dataPedido) {
 }
 module.exports.setNuevoPedido = setNuevoPedido;
 
+
+// para evitar pedidos perdidos cuando el socket pierde conexion
+const setNuevoPedido2 = async function (req, res) {
+    
+    // const idorg = dataCLiente.idorg;
+ //    const idsede = dataCLiente.idsede;                     
+ //    const idusuario = dataCLiente.idusuario;                   
+
+    // tomamos los datos del cliente del pedido y no del socket, puede estar haciendo conflicto
+    // y enviando a otros comercios
+    const dataPedido = req.body;    
+    const _dataCliente = dataPedido.dataUsuario
+    const idorg = _dataCliente.idorg;
+    const idsede = _dataCliente.idsede;                    
+    const idusuario = _dataCliente.idusuario;                      
+    var _json = JSON.stringify(dataPedido).replace(/\\n/g, '')
+                                      .replace(/\\'/g, '')
+                                      .replace(/\\"/g, '')
+                                      .replace(/\\&/g, '')
+                                      .replace(/\\r/g, '')
+                                      .replace(/\\t/g, '')
+                                      .replace(/\\b/g, '')
+                                      .replace(/\\f/g, '');
+
+    const read_query = `call procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
+    // console.log(read_query);
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.setNuevoPedido2 = setNuevoPedido2;
+
 const setPrintComanda = async function (dataCLiente, dataPrint) {
 	const idorg = dataCLiente.idorg;
     const idsede = dataCLiente.idsede;		              

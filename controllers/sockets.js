@@ -337,6 +337,47 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socket.broadcast.to(chanelConect).emit('printerComanda', rpt);
 		});
 
+		// esta funcion no guarda solo notifica del nuevo pedido
+		// solo envia el data pedido con el id del pedido registrado por http		
+		// para evitar pedidos perdidos cuando el socket pierde conexion
+		socket.on('nuevoPedido2', async (dataSend) => {
+			console.log('nuevoPedido2 ', dataSend);			
+			// const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
+
+			// console.log('respuesta guardar pedido ', JSON.stringify(rpt[0].idpedido));
+
+
+			// dataSend.dataPedido.idpedido = rpt[0].idpedido; // para buscar el pedido en comercio
+
+			// si es delivery app // dataSend.isClienteRecogeLocal si el cliente recoge el pedido en el local
+			if ( dataSend.isDeliveryAPP ) {
+
+				if ( !dataSend.isClienteRecogeLocal ) {
+					// run proceso de busqueda repartidor
+					apiPwaRepartidor.runLoopSearchRepartidor(io, dataCliente.idsede);
+				}				
+
+
+				// notificamos push al comercio
+				const socketIdComercio = await apiPwaComercio.getSocketIdComercio(dataCliente.idsede);
+				// notifica mensaje texto si tiene teleono
+				if ( socketIdComercio[0].telefono_notifica !== undefined ) {
+					if ( socketIdComercio[0].telefono_notifica !== '' ) {
+						apiPwaComercio.sendNotificacionNewPedidoSMS(socketIdComercio[0].telefono_notifica);
+					}
+					// console.log(' ==== notifica sms comercio =====', socketIdComercio[0].telefono_notifica);					
+				} 
+
+				// notificacion push
+				apiPwaComercio.sendOnlyNotificaPush(socketIdComercio[0].key_suscripcion_push, 0);				
+
+			}
+
+
+			io.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
+			socket.broadcast.to(chanelConect).emit('printerComanda', dataSend.dataPrint);
+		});
+
 		// no guarda lo que envia el cliente solo notifica que hay un nuevo pedido, para imprimir en patalla o ticketera
 		// para imprmir solo la comanda desde control pedidos, venta rapida, zona despacho
 		socket.on('printerOnly', (dataSend) => {			

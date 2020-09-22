@@ -252,6 +252,13 @@ const setRegistrarDescuento = function (req, res) {
 }
 module.exports.setRegistrarDescuento = setRegistrarDescuento;
 
+const setOptionPlaza = function (req, res) {	
+	const obj = req.body.obj;	
+    const read_query = `call procedure_monitor_set_option_plaza('${JSON.stringify(obj)}')`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.setOptionPlaza = setOptionPlaza;
+
 
 
 const getPedidosMandados = function (req, res) {		

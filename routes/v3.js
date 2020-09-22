@@ -203,6 +203,8 @@ routerV3.get('/monitor/get-sede-con-servicio-express', auth.verificarToken, apiP
 routerV3.get('/monitor/get-tabla-precipitacion', auth.verificarToken, apiPwaAppMonitor.getTablaPrecipitacion);
 routerV3.post('/monitor/set-importe-comsion-lluvia', auth.verificarToken, apiPwaAppMonitor.setImporteComisionLluvia);
 routerV3.post('/monitor/get-pedidos-mandados', auth.verificarToken, apiPwaAppMonitor.getPedidosMandados);
+routerV3.post('/monitor/set-options-plaza', auth.verificarToken, apiPwaAppMonitor.setOptionPlaza);
+
 //// MONITOR ///
 
 

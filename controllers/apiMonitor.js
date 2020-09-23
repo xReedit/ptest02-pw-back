@@ -274,6 +274,19 @@ const getPedidosMandados = function (req, res) {
 }
 module.exports.getPedidosMandados = getPedidosMandados;
 
+// calificacion de parte del cliente
+const getCalificacionComercio = function (req, res) {	
+    const read_query = `SELECT * , sc.calificacion calificacion_cliente, s.nombre nom_sede, s.ciudad ciudad_sede, s.direccion dir_sede
+		from sede_calificacion sc
+			inner join sede s on s.idsede = sc.idsede
+			inner join cliente c on c.idcliente = sc.idcliente
+			inner join pedido p on p.idpedido = sc.idpedido
+			left join repartidor r on r.idrepartidor = p.idrepartidor
+		order by sc.idsede_calificacion desc`;
+    emitirRespuesta_RES(read_query, res); 
+}
+module.exports.getCalificacionComercio = getCalificacionComercio;
+
 
 
 

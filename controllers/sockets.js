@@ -329,6 +329,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			io.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
 
+			// notifica al monitor nuevo pedido para emitir alerta
+			io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
+			// io.to('MONITOR').emit('nuevoPedido', dataCliente);
+
 
 			// registrar comanda en print_server_detalle
 			// console.log('printerComanda', rpt);
@@ -375,6 +379,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 			io.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
+
+			// notifica al monitor nuevo pedido para emitir alerta
+			console.log(' ====== notifica al monitor =====');
+			io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
+
 			socket.broadcast.to(chanelConect).emit('printerComanda', dataSend.dataPrint);
 		});
 

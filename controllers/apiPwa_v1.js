@@ -167,7 +167,8 @@ const setPrinterOtherDocs = async function (req, res) {
     const dataPrint = req.body.dataPrint;
     const isprecuenta = req.body.isprecuenta || 0;
     const read_query = `call procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}', ${isprecuenta})`;
-    return emitirRespuestaSP(read_query);        
+    // return emitirRespuestaSP(read_query);        
+    emitirRespuestaSP_RES(read_query, res);
 
 }
 module.exports.setPrinterOtherDocs = setPrinterOtherDocs;

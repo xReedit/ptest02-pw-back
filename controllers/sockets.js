@@ -384,7 +384,18 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			console.log(' ====== notifica al monitor =====');
 			io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
 
-			socket.broadcast.to(chanelConect).emit('printerComanda', dataSend.dataPrint);
+			// data print
+			const _dataPrint = dataSend.dataPrint[1].print;
+			var dataPrintSend = {
+				detalle_json: JSON.stringify(_dataPrint.detalle_json),
+				idprint_server_estructura: 1,
+				tipo: 'comanda',
+				descripcion_doc: 'comanda',
+				nom_documento: 'comanda',
+				idprint_server_detalle: _dataPrint.idprint_server_detalle
+			}
+
+			socket.broadcast.to(chanelConect).emit('printerComanda', dataPrintSend);
 		});
 
 		// no guarda lo que envia el cliente solo notifica que hay un nuevo pedido, para imprimir en patalla o ticketera

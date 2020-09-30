@@ -41,11 +41,13 @@ module.exports.getSocketIdCliente = getSocketIdCliente;
 
 
 const getObjCarta = async function (dataCLiente) {
-	// console.log( 'getObjCarta data cliente', dataCLiente )
+	console.log( 'getObjCarta data cliente', dataCLiente )
 	const idorg = dataCLiente.idorg;
     const idsede = dataCLiente.idsede;           
+    const iscliente = dataCLiente.iscliente == 'true' ? 1 : 0;
+    console.log( 'getObjCarta data cliente iscliente', iscliente );
         
-    const read_query = `call porcedure_pwa_pedido_carta(${idorg},${idsede})`;
+    const read_query = `call porcedure_pwa_pedido_carta(${idorg},${idsede},${iscliente})`;
     return emitirRespuestaSP(read_query);        
 }
 module.exports.getObjCarta = getObjCarta;

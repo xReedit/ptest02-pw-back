@@ -287,6 +287,15 @@ const getCalificacionComercio = function (req, res) {
 }
 module.exports.getCalificacionComercio = getCalificacionComercio;
 
+const setOnComercio = function (req, res) {		
+	const idsede = req.body.idsede;    
+	const estado = req.body.estado;    
+    const read_query = `update sede set pwa_delivery_comercio_online = ${estado} where idsede = ${idsede}`;
+    execSqlQueryNoReturn(read_query, res);  
+}
+module.exports.setOnComercio = setOnComercio;
+
+
 
 
 
@@ -300,6 +309,8 @@ function execSqlQueryNoReturn(xquery, res) {
 		});
 	});
 }
+
+
 
 
 

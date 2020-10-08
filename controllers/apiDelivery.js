@@ -96,6 +96,8 @@ const getAllSedesServiceExpress = function (req, res) {
 module.exports.getAllSedesServiceExpress = getAllSedesServiceExpress;
 
 const setPedidoMandado = async function (req, res) {
+	console.log('pedido_mandado === ', req.body.dataInfo);
+
 	const obj = req.body.dataInfo;
     const read_query = `call procedure_guardar_pedido_mandado('${JSON.stringify(obj)}')`;
     emitirRespuestaSP_RES(read_query, res);       

@@ -385,17 +385,22 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
 
 			// data print
-			const _dataPrint = dataSend.dataPrint[1].print;
-			var dataPrintSend = {
-				detalle_json: JSON.stringify(_dataPrint.detalle_json),
-				idprint_server_estructura: 1,
-				tipo: 'comanda',
-				descripcion_doc: 'comanda',
-				nom_documento: 'comanda',
-				idprint_server_detalle: _dataPrint.idprint_server_detalle
-			}
+			const _dataPrint = dataSend.dataPrint;
+			dataSend.dataPrint.map(x => {
+				if ( x.print ) {
+					var dataPrintSend = {
+						detalle_json: JSON.stringify(x.print.detalle_json),
+						idprint_server_estructura: 1,
+						tipo: 'comanda',
+						descripcion_doc: 'comanda',
+						nom_documento: 'comanda',
+						idprint_server_detalle: x.print.idprint_server_detalle
+					}
 
-			socket.broadcast.to(chanelConect).emit('printerComanda', dataPrintSend);
+					console.log(' ====== printerComanda =====', dataPrintSend);
+					socket.broadcast.to(chanelConect).emit('printerComanda', dataPrintSend);
+				}				
+			});			
 		});
 
 		// no guarda lo que envia el cliente solo notifica que hay un nuevo pedido, para imprimir en patalla o ticketera
@@ -404,6 +409,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			dataSend.hora = n;
 			console.log('printerOnly', dataSend);
 			socket.broadcast.to(chanelConect).emit('printerOnly', dataSend);
+		});
+
+		// notifica que se mando a imprimir precuenta para refrescar en el control de pedidos del comercio
+		socket.on('notificar-impresion-precuenta', (dataSend) => {						
+			console.log('notificar-impresion-precuenta ', chanelConect);
+			socket.broadcast.to(chanelConect).emit('notifica-impresion-precuenta', 1);
 		});
 
 		// cuando cancela la cuenta // para usuario cliente

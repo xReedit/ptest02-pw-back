@@ -205,6 +205,7 @@ routerV3.post('/monitor/set-importe-comsion-lluvia', auth.verificarToken, apiPwa
 routerV3.post('/monitor/get-pedidos-mandados', auth.verificarToken, apiPwaAppMonitor.getPedidosMandados);
 routerV3.post('/monitor/set-options-plaza', auth.verificarToken, apiPwaAppMonitor.setOptionPlaza);
 routerV3.get('/monitor/get-calificaciones-comercios', auth.verificarToken, apiPwaAppMonitor.getCalificacionComercio);
+routerV3.post('/monitor/set-oncombercio', auth.verificarToken, apiPwaAppMonitor.setOnComercio);
 
 //// MONITOR ///
 

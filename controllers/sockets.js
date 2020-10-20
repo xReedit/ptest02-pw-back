@@ -411,6 +411,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socket.broadcast.to(chanelConect).emit('printerOnly', dataSend);
 		});
 
+		// marca el pedido como impresor // enviado desde servidor de impresion		
+		socket.on('printer-flag-impreso', (id) => {				
+			console.log('aaaaaaaaa on ', id);
+			apiPwa.setFlagPrinter(id);
+		});
+
 		// notifica que se mando a imprimir precuenta para refrescar en el control de pedidos del comercio
 		socket.on('notificar-impresion-precuenta', (dataSend) => {						
 			console.log('notificar-impresion-precuenta ', chanelConect);

@@ -461,7 +461,7 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 		listPedidos.map(p => {
 			console.log( 'p.paso', p.paso );
 			console.log( 'p.idpedido', p.idpedido );
-			if ( !p.paso && p.isshow == 1 ){
+			if ( !p.paso && p.isshow == 1 || pp.json_datos_delivery == ''){
 				const _idsede = p.idsede;
 
 				console.log( '_idsede', _idsede );

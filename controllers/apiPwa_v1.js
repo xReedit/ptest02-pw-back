@@ -401,6 +401,14 @@ const setRegisterScanQr = async function (req, res) {
 }
 module.exports.setRegisterScanQr = setRegisterScanQr;
 
+// enviado desde el servidor de impresion
+const setFlagPrinter = function (id) {                
+    const read_query = `update print_server_detalle set impreso=1 where idprint_server_detalle=${id}`;    
+    emitirRespuestaSP(read_query);
+}
+module.exports.setFlagPrinter = setFlagPrinter;
+
+
 
 
 function emitirRespuesta_RES(xquery, res) {

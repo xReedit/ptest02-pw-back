@@ -115,6 +115,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			console.log('emitido a ', chanelConect);
 			socket.emit('getLaCarta', objCarta);
+			console.log('=========emitido carta=====', chanelConect);
 			socket.emit('getTipoConsumo', objTipoConsumo);
 			socket.emit('getReglasCarta', objReglasCarta);
 			socket.emit('getDataSede', objDataSede);
@@ -269,10 +270,21 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 		// hay un nuevo pedido - guardar
-		socket.on('nuevoPedido', async (dataSend) => {
+		socket.on('nuevoPedido', async (dataSend, callback) => {
+			console.log('tipo dato', typeof dataSend);
 			console.log('nuevoPedido ', dataSend);			
+			if ( typeof dataSend === 'string' ) {
+				dataSend = JSON.parse(dataSend);
+			}
 			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
 
+			console.log('respuesta del socket ', rpt);
+			callback(rpt);
+
+			// error
+			if ( rpt === false ) {
+				return;
+			}
 			// console.log('respuesta guardar pedido ', JSON.stringify(rpt[0].idpedido));
 
 

@@ -307,7 +307,8 @@ module.exports.setPasoVaPedido = setPasoVaPedido;
 
 /// desde el comercio
 const setUpdateEstadoPedido = function (idpedido, estado, tiempo = null) {	
-	const savePwaEstado = estado === 4 ? ", pwa_estado = 'E', estado=2 " : '';	 // estado = 2 => pagado
+	// const savePwaEstado = estado === 4 ? ", pwa_estado = 'E', estado=2 " : '';	 // estado = 2 => pagado
+	const savePwaEstado = estado === 4 ? ", pwa_estado = 'E' " : '';	 // estado = 2 => pagado // quitamos estado 2 para que no se desaparesca del control de pedidos
     const read_query = `update pedido set pwa_delivery_status = '${estado}' ${savePwaEstado} where idpedido = ${idpedido};`;
     emitirRespuesta(read_query);        
 }
@@ -461,7 +462,7 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 		listPedidos.map(p => {
 			console.log( 'p.paso', p.paso );
 			console.log( 'p.idpedido', p.idpedido );
-			if ( !p.paso && p.isshow == 1){
+			if ( !p.paso && p.isshow == 1 ){
 				const _idsede = p.idsede;
 
 				console.log( '_idsede', _idsede );

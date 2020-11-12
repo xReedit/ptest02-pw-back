@@ -133,7 +133,7 @@ const setNuevoPedido2 = async function (req, res) {
 
     // tomamos los datos del cliente del pedido y no del socket, puede estar haciendo conflicto
     // y enviando a otros comercios
-    const dataPedido = req.body;    
+    const dataPedido = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;    
     const _dataCliente = dataPedido.dataUsuario
     const idorg = _dataCliente.idorg;
     const idsede = _dataCliente.idsede;                    

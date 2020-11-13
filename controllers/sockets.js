@@ -94,19 +94,24 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		if ( dataSocket.isFromApp == 1 ) {
 
 			// ni bien el cliente se conecta sirve la carta
-			const objCarta = await apiPwa.getObjCarta(dataCliente);
+			const objCarta = await apiPwa.getObjCarta(dataCliente);			
+			socket.emit('getLaCarta', objCarta);
 
 			// obtener tipos de consumo
 			const objTipoConsumo = await apiPwa.getTipoConsumo(dataCliente);
+			socket.emit('getTipoConsumo', objTipoConsumo);
 
 			// obtener reglas de la carta y subtotales
 			const objReglasCarta = await apiPwa.getReglasCarta(dataCliente);
+			socket.emit('getReglasCarta', objReglasCarta);
 
 			// data del la sede
 			const objDataSede = await apiPwa.getDataSede(dataCliente);
+			socket.emit('getDataSede', objDataSede);
 
 			// data descuentos
 			const objDescuentos = await apiPwa.getDataSedeDescuentos(dataCliente);
+			socket.emit('getDataSedeDescuentos', objDescuentos);
 
 			// console.log('tipo consumo', objTipoConsumo);
 			// console.log('reglas carta y subtotales', objReglasCarta);
@@ -114,12 +119,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// console.log('a user connected sokecontroller - servimos datos de la sede', objDataSede );
 
 			console.log('emitido a ', chanelConect);
-			socket.emit('getLaCarta', objCarta);
+			// socket.emit('getLaCarta', objCarta);
 			console.log('=========emitido carta=====', chanelConect);
-			socket.emit('getTipoConsumo', objTipoConsumo);
-			socket.emit('getReglasCarta', objReglasCarta);
-			socket.emit('getDataSede', objDataSede);
-			socket.emit('getDataSedeDescuentos', objDescuentos);
+			// socket.emit('getTipoConsumo', objTipoConsumo);
+			// socket.emit('getReglasCarta', objReglasCarta);
+			// socket.emit('getDataSede', objDataSede);
+			// socket.emit('getDataSedeDescuentos', objDescuentos);
 
 			// socket.emit('finishLoadDataInitial');
 
@@ -267,6 +272,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					io.to(chanelConect).emit('itemResetCant-pwa', rpt);
 				}
 			});
+		});
+
+		// buscar subitems del item seleccionado
+		socket.on('search-subitems-del-item', async (iditem, callback) => {
+			const rpt = await apiPwa.getSearchSubitemsItem(iditem);
+			console.log('respuesta del socket ', rpt);
+			callback(rpt);
 		});
 
 		// hay un nuevo pedido - guardar

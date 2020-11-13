@@ -409,6 +409,17 @@ const setFlagPrinter = function (id) {
 module.exports.setFlagPrinter = setFlagPrinter;
 
 
+const getSearchSubitemsItem = async function (iditem) {    
+    // const iditem = req.body.iditem;
+        
+    const read_query = `call porcedure_pwa_pedido_carta_get_subitens(${iditem})`;
+    // return emitirRespuestaSP(read_query);      
+    // emitirRespuestaSP_RES(read_query, res);
+    return emitirRespuestaSP(read_query);  
+}
+module.exports.getSearchSubitemsItem = getSearchSubitemsItem;
+
+
 
 
 function emitirRespuesta_RES(xquery, res) {

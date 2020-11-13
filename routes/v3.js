@@ -65,6 +65,7 @@ routerV3.post('/encuesta/las-opciones', apiPwaAppPedidos.getEncuestaOpRespuesta)
 routerV3.post('/encuesta/guardar', apiPwaAppPedidos.setEncuestaGuardar);
 
 routerV3.post('/pedido/calc-time-despacho', apiPwaAppPedidos.getCalcTimeDespacho);
+routerV3.post('/pedido/search-subitems-del-item', apiPwaAppPedidos.getSearchSubitemsItem);
 
 routerV3.post('/ini/register-cliente-login', apiPwaAppPedidos.setRegisterClienteLogin);
 

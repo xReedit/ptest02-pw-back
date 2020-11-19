@@ -410,6 +410,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			// data print
 			const _dataPrint = dataSend.dataPrint;
+			if ( _dataPrint == null ) { return }
 			dataSend.dataPrint.map(x => {
 				if ( x.print ) {
 					var dataPrintSend = {

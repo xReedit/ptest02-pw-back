@@ -48,6 +48,10 @@ module.exports.sendMsjConfirmacion = sendMsjConfirmacion;
 
 // sms mensaje avisa nuevo pedido
 const sendMsjSMSNewPedido = async function (numberPhone, dato = 'Repartidor ') {	
+
+	// 191120 verificar esta enviando mensajes nulos y esta duplicando los envios
+	return true;
+
 	// const numberPhone = req.body.numberphone;
     // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
     // emitirRespuesta_RES(read_query, res);        

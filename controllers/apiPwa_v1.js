@@ -409,6 +409,7 @@ const setFlagPrinter = function (id) {
 module.exports.setFlagPrinter = setFlagPrinter;
 
 
+// busca los subitems del item seleccionado, para hacer mas rapida la consulta
 const getSearchSubitemsItem = async function (iditem) {    
     // const iditem = req.body.iditem;
         

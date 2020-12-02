@@ -359,10 +359,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 			// registrar comanda en print_server_detalle
-			// console.log('printerComanda', rpt);
+			console.log('printerComanda', JSON.stringify(rpt[0].data));
 			//apiPwa.setPrintComanda(dataCliente, dataSend.dataPrint);
 			// emitimos para print server
-			socket.broadcast.to(chanelConect).emit('printerComanda', rpt);
+			// socket.broadcast.to(chanelConect).emit('printerComanda', rpt);
+			xMandarImprimirComanda (rpt[0].data, socket, chanelConect);
 		});
 
 		// esta funcion no guarda solo notifica del nuevo pedido
@@ -409,7 +410,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
 
 			// data print
-			const _dataPrint = dataSend.dataPrint;
+			const _dataPrint = dataSend.dataPrint;			
 			if ( _dataPrint == null ) { return }
 			dataSend.dataPrint.map(x => {
 				if ( x.print ) {
@@ -535,6 +536,28 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 	});
+
+	
+	function xMandarImprimirComanda(dataPrint, socket, chanelConect) {
+		// data print
+			const _dataPrint = dataPrint;
+			if ( _dataPrint == null ) { return }
+			_dataPrint.map(x => {
+				if ( x.print ) {
+					var dataPrintSend = {
+						detalle_json: JSON.stringify(x.print.detalle_json),
+						idprint_server_estructura: 1,
+						tipo: 'comanda',
+						descripcion_doc: 'comanda',
+						nom_documento: 'comanda',
+						idprint_server_detalle: x.print.idprint_server_detalle
+					}
+
+					console.log(' ====== printerComanda =====', dataPrintSend);
+					socket.broadcast.to(chanelConect).emit('printerComanda', dataPrintSend);
+				}				
+			});	
+	}
 
 
 	async function socketRepartidor(dataCliente, socket) {

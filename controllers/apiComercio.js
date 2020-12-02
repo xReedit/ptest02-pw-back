@@ -231,7 +231,7 @@ const getSinToken = function (req, res) {
 }
 module.exports.getSinToken = getSinToken;
 
-// registro de comercio
+// registro de comercio 
 const getProcedure = function (req, res) {
     const read_query = `call procedure_pwa_get_all_categorias()`;
     emitirRespuestaSP_RES(read_query, res);          

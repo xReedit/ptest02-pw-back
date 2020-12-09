@@ -291,7 +291,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
 
 			console.log('respuesta del socket ', rpt);
-			callback(rpt);
+
+			if ( callback ) {
+				callback(rpt);			
+			}
+			
 
 			// error
 			if ( rpt === false ) {
@@ -359,7 +363,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 			// registrar comanda en print_server_detalle
-			console.log('printerComanda', JSON.stringify(rpt[0].data));
+			// console.log('printer comanda', JSON.stringify(rpt[0]));
+			// console.log('printerComanda', JSON.stringify(rpt[0].data));
 			//apiPwa.setPrintComanda(dataCliente, dataSend.dataPrint);
 			// emitimos para print server
 			// socket.broadcast.to(chanelConect).emit('printerComanda', rpt);
@@ -435,6 +440,25 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			dataSend.hora = n;
 			console.log('printerOnly', dataSend);
 			socket.broadcast.to(chanelConect).emit('printerOnly', dataSend);
+
+			// verificar si es delivery que viene de venta rapida para actualizar monitor			
+			let isNotificaMonitor = false;
+			
+			try {
+				const jsonPedido = JSON.parse(dataSend.detalle_json);
+    			isNotificaMonitor = jsonPedido.Array_enca.delivery === 1;
+			} catch (error) {
+			    isNotificaMonitor = false;
+			}
+
+			console.log('nuevoPedidoUpdateVista', isNotificaMonitor)
+
+			if ( isNotificaMonitor ) {
+				console.log('nuevoPedidoUpdateVista', chanelConect)
+				io.to(chanelConect).emit('nuevoPedidoUpdateVista', true);				
+			}
+
+			
 		});
 
 		// marca el pedido como impresor // enviado desde servidor de impresion		

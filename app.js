@@ -46,9 +46,10 @@ app.use(function(err, req, res, next) {
 var server = http.createServer(app);
 
 // // desarrollo
+// 271220 cambiamos pingTimeout: 5000, a 30000
 var io = socketIo(server, {
     pingInterval: 10000,
-    pingTimeout: 5000,
+    pingTimeout: 30000,
     cookie: false
 }).listen(config.portSocket);
 

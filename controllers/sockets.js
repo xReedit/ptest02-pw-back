@@ -462,9 +462,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 		// marca el pedido como impresor // enviado desde servidor de impresion		
-		socket.on('printer-flag-impreso', (id) => {				
-			console.log('aaaaaaaaa on ', id);
-			apiPwa.setFlagPrinter(id);
+		socket.on('printer-flag-impreso', (dataPedido) => {				
+			console.log('==== notifica-impresion-comanda ', dataPedido);
+			socket.broadcast.to(chanelConect).emit('notifica-impresion-comanda', dataPedido);
+			// apiPwa.setFlagPrinter(dataPedido);
 		});
 
 		// notifica que se mando a imprimir precuenta para refrescar en el control de pedidos del comercio

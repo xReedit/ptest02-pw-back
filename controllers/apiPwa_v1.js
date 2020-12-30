@@ -178,8 +178,10 @@ module.exports.setPrinterOtherDocs = setPrinterOtherDocs;
 const getLaCuenta = async function (req, res) {
 	const idorg = req.body.idorg || managerFilter.getInfoToken(req,'idorg');
 	const idsede = req.body.idsede || managerFilter.getInfoToken(req, 'idsede');
-    const mesa = req.body.mesa ? req.body.mesa : '';
+    const mesa = req.body.mesa ? req.body.mesa : '0';
     const idpedido = req.body.idpedido ? req.body.idpedido : '';
+
+    console.log('req.body', req.body)
     
 	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', '${idpedido}', ${idorg}, ${idsede}, 0);`;	
     emitirRespuestaSP_RES(read_query, res);

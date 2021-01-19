@@ -284,7 +284,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// hay un nuevo pedido - guardar
 		socket.on('nuevoPedido', async (dataSend, callback) => {
 			console.log('tipo dato', typeof dataSend);
-			console.log('nuevoPedido ', dataSend);			
+			// console.log('nuevoPedido ', dataSend);			
 			if ( typeof dataSend === 'string' ) {
 				dataSend = JSON.parse(dataSend);
 			}

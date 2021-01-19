@@ -1,7 +1,9 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
+// const atob = require('atob');
 const config = require('../config');
 const webpush = require('web-push');
 let Sequelize = require('sequelize');
+
 
 webpush.setVapidDetails(
   'mailto:papaya.restobar@gmail.com',
@@ -44,7 +46,17 @@ const sendMsjConfirmacion = async function (req, res) {
 module.exports.sendMsjConfirmacion = sendMsjConfirmacion;
 
 
+const sendMsjWhatsAp = function (numberPhone) {
+	var client = require('twilio')(config.accountSidSms, config.authTokenSms);
+	client.messages.create({
+	  from: 'whatsapp:+14155238886',
+	  to: 'whatsapp:+51960518915',
+	  body: 'Hola desde api whatsapp!'
 
+	}).then(message => console.log(message.sid));	
+
+}
+module.exports.sendMsjWhatsAp = sendMsjWhatsAp;
 
 // sms mensaje avisa nuevo pedido
 const sendMsjSMSNewPedido = async function (numberPhone, dato = 'Repartidor ') {	
@@ -77,6 +89,59 @@ const sendMsjSMSNewPedido = async function (numberPhone, dato = 'Repartidor ') {
 	});
 }
 module.exports.sendMsjSMSNewPedido = sendMsjSMSNewPedido;
+
+// sms mensaje sms a clientes
+const sendMsjSMS = async function (req, res) {	
+	const numberPhone = req.body.phone;
+	const contenido = req.body.contenido;
+
+	console.log(contenido);
+
+    var clientSMS = require('twilio')(config.accountSidSms, config.authTokenSms);
+
+    clientSMS.messages.create({
+    	body: contenido,
+    	to: '+51'+numberPhone,  // Text this number
+    	from: '+17852279308' // From a valid Twilio number
+	})
+	.then((message) => {	
+		console.log(message.sid);
+		return res.json({success:true});
+	})
+	.catch(err => {
+		console.log('error al enviar mensaje');
+		return res.json({success:false});
+	});
+}
+module.exports.sendMsjSMS = sendMsjSMS;
+
+const sendEmailSendGrid = async function (req, res) {
+
+	const _msj = req.body.msj;
+
+	const sgMail = require('@sendgrid/mail')	
+	sgMail.setApiKey(config.SEED_EMAIL)
+	const msg = {
+	  to: _msj.to, // Change to your recipient
+	  from: 'papaya.restobar@gmail.com', // Change to your verified sender
+	  subject: _msj.asunto,
+	  text: _msj.titulo,
+	  html: _msj.htmlContent,
+	}
+
+	sgMail
+	  .send(msg)
+	  .then(() => {
+	    console.log('Email sent')
+	    return res.json({success:true});
+	  })
+	  .catch((error) => {
+	    console.error(error)
+	    return res.json({success:false});
+	  })
+
+}
+module.exports.sendEmailSendGrid = sendEmailSendGrid;
 
 
 // notificaciones push

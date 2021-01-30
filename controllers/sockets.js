@@ -250,13 +250,20 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					if ( rptCantidad[0].listSubItems ) {
 						rptCantidad[0].listSubItems.map(subitem => {
 							// item.subitems.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0].cantidad = subitem.cantidad;
-							item.subitems.map(s => {							
-								let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
+							if ( item.subitems ) {
 
-								if ( itemFind ) {
-									itemFind.cantidad = subitem.cantidad;
-								}
-							});
+								if (item.subitems.length > 0) {
+
+									item.subitems.map(s => {							
+										let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
+
+										if ( itemFind ) {
+											itemFind.cantidad = subitem.cantidad;
+										}
+									});
+
+								}								
+							}							
 						});
 					}
 

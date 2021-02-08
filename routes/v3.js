@@ -97,6 +97,7 @@ routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepa
 routerV3.post('/delivery/send-sms-test', apiPwaSMS.sendMsjSMSNewPedido);
 routerV3.post('/delivery/send-sms', apiPwaSMS.sendMsjSMS);
 routerV3.post('/delivery/send-email', apiPwaSMS.sendEmailSendGrid);
+routerV3.post('/delivery/send-email-ses', apiPwaSMS.sendEmailSendAWSSES);
 routerV3.post('/delivery/send-msj-whatsapp', apiPwaSMS.sendMsjWhatsAp);
 routerV3.post('/delivery/get-comercio-x-calificar', apiPwaAppDelivery.getComercioXCalificar);
 routerV3.get('/delivery/get-tipo-vehiculo', apiPwaAppDelivery.getTipoVehiculo);
@@ -213,6 +214,9 @@ routerV3.post('/monitor/set-oncombercio', auth.verificarToken, apiPwaAppMonitor.
 
 //// MONITOR ///
 
+
+// test
+routerV3.post('/delivery/test-hora', apiPwaAppDelivery.testHora);
 
 // errores
 routerV3.post('/error/set-error', apiPwaAppPedidos.setHistoryError);

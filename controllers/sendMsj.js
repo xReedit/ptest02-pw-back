@@ -4,6 +4,8 @@ const config = require('../config');
 const webpush = require('web-push');
 let Sequelize = require('sequelize');
 
+const nodemailer = require("nodemailer");
+
 
 webpush.setVapidDetails(
   'mailto:papaya.restobar@gmail.com',
@@ -142,6 +144,56 @@ const sendEmailSendGrid = async function (req, res) {
 
 }
 module.exports.sendEmailSendGrid = sendEmailSendGrid;
+
+const sendEmailSendAWSSES = async function (req, res) {
+
+	const _msj = req.body.msj;
+
+	async function main() {
+	  // Generate test SMTP service account from ethereal.email
+	  // Only needed if you don't have a real mail account for testing
+	  // let testAccount = await nodemailer.createTestAccount();
+
+	  // create reusable transporter object using the default SMTP transport
+	  let transporter = nodemailer.createTransport({
+	    host: "email-smtp.us-east-2.amazonaws.com",
+	    port: 587,
+	    secure: false, // true for 465, false for other ports
+	    auth: {
+	      user: config.SEED_SES_USER, // generated ethereal user
+	      pass: config.SEED_SES_PASS, // generated ethereal password
+	    },
+	  });
+
+	  // send mail with defined transport object
+	  let info = await transporter.sendMail({
+	    from: 'papaya.restobar@gmail.com', // sender address
+	    to: _msj.to, // list of receivers
+	    subject: _msj.asunto, // Subject line
+	    text: _msj.titulo, // plain text body
+	    html: _msj.htmlContent, // html body
+	  });
+
+	  console.log("Message sent: %s", info.messageId);
+	  // Message sent: <b658f8ca-6296-ccf4-8306-87d57a0b4321@example.com>
+
+	  // Preview only available when sending through an Ethereal account
+	  // console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+	  // Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
+	}
+
+	main().catch((error) => {
+		console.error(error)
+	    return res.json({success:false});
+	});
+
+	res.status(200).json({
+		ok: true,
+		message: 'Envio correcto'
+	});
+
+}
+module.exports.sendEmailSendAWSSES = sendEmailSendAWSSES;
 
 
 // notificaciones push
@@ -310,6 +362,9 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 
 }
 module.exports.sendPushNotificactionOneRepartidorTEST = sendPushNotificactionOneRepartidorTEST;
+
+
+
 
 
 function emitirRespuestaSP(xquery) {

@@ -475,6 +475,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// apiPwa.setFlagPrinter(dataPedido);
 		});
 
+
+		// update impreso print_detalle
+		socket.on('printer-flag-impreso-update', (id) => {										
+			apiPwa.setFlagPrinter(id);
+		});
+
 		// notifica que se mando a imprimir precuenta para refrescar en el control de pedidos del comercio
 		socket.on('notificar-impresion-precuenta', (dataSend) => {						
 			console.log('notificar-impresion-precuenta ', chanelConect);

@@ -104,7 +104,12 @@ const setPedidoMandado = async function (req, res) {
 }
 module.exports.setPedidoMandado = setPedidoMandado;
 
-
+const testHora = function (req, res) {		
+	const ciudad = req.body.ciudad;
+    const read_query = `SELECT now(), DATE_FORMAT(NOW( ), "%H:%i:%S" )`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.testHora = testHora;
 
 
 

@@ -58,7 +58,7 @@ routerV3.get('/pedido/get-all-clientes', auth.verificarToken, apiPwaAppPedidos.g
 routerV3.post('/pedido/get-find-cliente-by-name', auth.verificarToken, apiPwaAppPedidos.getAllClienteBySearchName);
 
 routerV3.post('/service/consulta-dni-ruc', auth.verificarToken, apiPwaAppPedidos.getConsultaDatosCliente);
-routerV3.post('/service/consulta-dni-ruc-no-tk', apiPwaAppPedidos.getConsultaDatosCliente);
+routerV3.post('/service/consulta-dni-ruc-no-tk', apiPwaAppPedidos.getConsultaDatosClienteNoTk);
 
 
 routerV3.post('/encuesta/la-encuesta', apiPwaAppPedidos.getEncuesta);

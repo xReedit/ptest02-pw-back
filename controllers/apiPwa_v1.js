@@ -233,6 +233,18 @@ const getConsultaDatosCliente = async function (req, res) {
 }
 module.exports.getConsultaDatosCliente = getConsultaDatosCliente;
 
+const getConsultaDatosClienteNoTk = async function (req, res) {
+    // const idorg = managerFilter.getInfoToken(req,'idorg');
+    // const idsede = managerFilter.getInfoToken(req, 'idsede');
+    const doc = req.body.documento;
+
+    console.log('doc cliente: ', doc);
+    // idorg=${idorg}) AND 
+    const read_query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' order by pwa_id desc, telefono desc limit 1`;    
+    emitirRespuesta_RES(read_query, res);
+}
+module.exports.getConsultaDatosClienteNoTk = getConsultaDatosClienteNoTk;
+
 
 
 // datos al inicio despues de escanear codigo

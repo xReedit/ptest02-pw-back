@@ -222,11 +222,11 @@ module.exports.getLaCuentaFromPedidoTotales = getLaCuentaFromPedidoTotales;
 
 
 const getConsultaDatosCliente = async function (req, res) {
-	const idorg = managerFilter.getInfoToken(req,'idorg');
-	const idsede = managerFilter.getInfoToken(req, 'idsede');
+	// const idorg = managerFilter.getInfoToken(req,'idorg');
+	// const idsede = managerFilter.getInfoToken(req, 'idsede');
     const doc = req.body.documento;
 
-    // console.log('cuenta de mesa: ', mesa);
+    console.log('doc cliente: ', doc);
     // idorg=${idorg}) AND 
 	const read_query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' order by nombres limit 1`;	
     emitirRespuesta_RES(read_query, res);
@@ -258,7 +258,7 @@ const getConsAppDelivery = async function (req, res) {
 module.exports.getConsAppDelivery = getConsAppDelivery;
 
 
-const setRegisterClienteLogin = async function (req, res) {	
+const setRegisterClienteLogin = async function (req, res) {
 	// const idorg = req.body.idorg;
 	const dataLogin = req.body;
 	const read_query = `call procedure_pwa_register_cliente_login('${JSON.stringify(dataLogin)}')`;

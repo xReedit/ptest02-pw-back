@@ -183,6 +183,7 @@ routerV3.post('/monitor/get-pedidos-abono', auth.verificarToken, apiPwaAppMonito
 routerV3.get('/monitor/get-repartidores', auth.verificarToken, apiPwaAppMonitor.getRepartidores);
 routerV3.get('/monitor/get-clientes', auth.verificarToken, apiPwaAppMonitor.getCientes);
 routerV3.get('/monitor/get-pedidos-pendientes', auth.verificarToken, apiPwaAppMonitor.getPedidosPendientesRepartidor);
+routerV3.post('/monitor/get-clientes-scan-qr', auth.verificarToken, apiPwaAppMonitor.getCientesScanQr);
 routerV3.post('/monitor/set-reset-repartidor', auth.verificarToken, apiPwaAppMonitor.setResetRepartidor);
 routerV3.post('/monitor/set-liberar-repartidor', auth.verificarToken, apiPwaAppMonitor.setLiberarRepartidor);
 routerV3.post('/monitor/set-check-liquidado', auth.verificarToken, apiPwaAppMonitor.setCheckLiquidado);

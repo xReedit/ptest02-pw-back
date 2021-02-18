@@ -33,6 +33,15 @@ const getRepartidores = function (req, res) {
 }
 module.exports.getRepartidores = getRepartidores;
 
+const getCientesScanQr = async function (req, res) {	
+	const op = req.body.fromDate === 0 ? 0 : 1;    
+    const fini = req.body.fromDate || '';
+	const ffin = req.body.toDate || '';
+    const read_query = `call procedure_pwa_delivery_monitor_get_scan_qr('${fini}', '${ffin}', ${op})`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.getCientesScanQr = getCientesScanQr;
+
 const getCientes = async function (req, res) {	
     const read_query = `SELECT * from cliente where pwa_id != '' order by idcliente desc`;    
     emitirRespuesta_RES(read_query, res);  

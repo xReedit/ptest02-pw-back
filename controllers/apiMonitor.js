@@ -34,7 +34,7 @@ const getRepartidores = function (req, res) {
 module.exports.getRepartidores = getRepartidores;
 
 const getCientesScanQr = async function (req, res) {	
-	const op = req.body.fromDate === 0 ? 0 : 1;    
+	const op = req.body.fromDate.toString === "0" ? 0 : 1;    
     const fini = req.body.fromDate || '';
 	const ffin = req.body.toDate || '';
     const read_query = `call procedure_pwa_delivery_monitor_get_scan_qr('${fini}', '${ffin}', ${op})`;

@@ -743,6 +743,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 	function socketClienteDeliveryEstablecimientos(dataCliente, socket) {
 		console.log('desde func socketClienteDeliveryEstablecimientos', dataCliente);
 
+		const chanelConectPatioDelivery = 'roomPatioDelivery';
+		console.log('conectado al room ', chanelConectPatioDelivery);
+		socket.join(chanelConectPatioDelivery);
+
 		// mantener el socket id
 		// if (dataCliente.firts_socketid) {
 		// 	dataCliente.socketid = dataCliente.firts_socketid;
@@ -824,6 +828,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// notificacion push nuevo pedido
 			apiPwaRepartidor.sendOnlyNotificaPush(pedioPendienteAceptar[0].key_suscripcion_push, 0);
 		});		
+
+
+		// cerarr comercio desde el pacman
+		socket.on('set-cerrar-comercio-from-pacman', async (comercioId) => {
+			console.log('set-cerrar-comercio-from-pacman', comercioId);
+			socket.to('roomPatioDelivery').emit('set-comercio-open-change-from-monitor', comercioId);
+		});
 
 	}
 }

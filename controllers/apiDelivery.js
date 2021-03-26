@@ -95,6 +95,20 @@ const getAllSedesServiceExpress = function (req, res) {
 }
 module.exports.getAllSedesServiceExpress = getAllSedesServiceExpress;
 
+const getComnisionAtm = function (req, res) {		
+	const importe = req.body.importe;
+    const read_query = `call procedure_calc_comsion_visa_atm(${importe})`;
+    emitirRespuestaSP_RES(read_query, res);  
+}
+module.exports.getComnisionAtm = getComnisionAtm;
+
+const setCashAtm = function (req, res) {		
+	const obj = req.body;
+    const read_query = `call procedure_set_cash_atm('${JSON.stringify(obj)}')`;
+    emitirRespuestaSP_RES(read_query, res);  
+}
+module.exports.setCashAtm = setCashAtm;
+
 const setPedidoMandado = async function (req, res) {
 	console.log('pedido_mandado === ', req.body.dataInfo);
 

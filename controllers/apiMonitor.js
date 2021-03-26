@@ -304,7 +304,13 @@ const setOnComercio = function (req, res) {
 }
 module.exports.setOnComercio = setOnComercio;
 
-
+const getRetirosCashAtm = function (req, res) {	
+	const fini = req.body.fromDate;
+	const ffin = req.body.toDate;
+    const read_query = `SELECT *, DATE_FORMAT(fecha_hora_registro, "%d/%m/%Y %H:%m:%i") fecha_hora, TIMESTAMPDIFF(MINUTE, fecha_hora_registro, now()) as min_transcurridos,r.nombre nom_repartidor from atm_retiros a left join repartidor r on a.idrepartidor = r.idrepartidor where cast(fecha_hora_registro as date) BETWEEN cast('${fini}' as date) and cast('${ffin}' as date) order by idatm_retiros desc;`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getRetirosCashAtm = getRetirosCashAtm;
 
 
 

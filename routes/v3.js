@@ -89,6 +89,8 @@ routerV3.post('/delivery/calificar-servicio', apiPwaAppDelivery.setCalificarServ
 routerV3.get('/delivery/get-categorias', apiPwaAppDelivery.getCategorias);
 routerV3.post('/delivery/get-sede-servicio-express', apiPwaAppDelivery.getAllSedesServiceExpress);
 routerV3.post('/delivery/set-pedido-mandado', apiPwaAppDelivery.setPedidoMandado);
+routerV3.post('/delivery/get-comsion-atm', apiPwaAppDelivery.getComnisionAtm);
+routerV3.post('/delivery/set-cash-atm', apiPwaAppDelivery.setCashAtm);
 
 
 // mensajes
@@ -213,6 +215,7 @@ routerV3.post('/monitor/get-pedidos-mandados', auth.verificarToken, apiPwaAppMon
 routerV3.post('/monitor/set-options-plaza', auth.verificarToken, apiPwaAppMonitor.setOptionPlaza);
 routerV3.get('/monitor/get-calificaciones-comercios', auth.verificarToken, apiPwaAppMonitor.getCalificacionComercio);
 routerV3.post('/monitor/set-oncombercio', auth.verificarToken, apiPwaAppMonitor.setOnComercio);
+routerV3.post('/monitor/get-retiros-cash-atm', auth.verificarToken, apiPwaAppMonitor.getRetirosCashAtm);
 
 //// MONITOR ///
 

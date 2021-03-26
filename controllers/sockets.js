@@ -65,6 +65,16 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socketClienteDeliveryEstablecimientos(dataCliente,socket);
 			return;
 		}
+
+		// atm cash
+		if (dataCliente.isCashAtm === 'true') {
+			// socketMaster = socket; 
+			socketClienteCashAtm(dataCliente,socket);
+			return;
+		}
+
+
+		
 		
 		
 		// si viene desde app pedidos
@@ -770,12 +780,23 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// notifica al repartidor para que califique cliente
 			io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-fin-pedido', dataPedido);
 		});		
-
-
-
+		
 
 		
 
+	}
+
+
+	// retiros cash atm
+	function socketClienteCashAtm(dataCliente, socket) {
+		console.log('desde func socketClienteCashAtm', dataCliente);	
+
+		// retiro cash atm
+		socket.on('nuevo-retiro-cash-atm', async () => {
+			// notifica al monitor
+			console.log('nuevo-retiro-cash-atm notifica monitor');
+			io.to('MONITOR').emit('monitor-nuevo-retiro-cash-atm');
+		});
 	}
 
 

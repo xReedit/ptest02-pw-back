@@ -125,6 +125,12 @@ const testHora = function (req, res) {
 }
 module.exports.testHora = testHora;
 
+const getCiudadesDelivery = function (req, res) {			
+    const read_query = `select ciudad , codigo_postal from sede_config_service_delivery where estado = 0;`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getCiudadesDelivery = getCiudadesDelivery;
+
 
 
 function emitirRespuesta(xquery, res) {

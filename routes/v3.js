@@ -104,6 +104,7 @@ routerV3.post('/delivery/send-email-ses', apiPwaSMS.sendEmailSendAWSSES);
 routerV3.post('/delivery/send-msj-whatsapp', apiPwaSMS.sendMsjWhatsAp);
 routerV3.post('/delivery/get-comercio-x-calificar', apiPwaAppDelivery.getComercioXCalificar);
 routerV3.get('/delivery/get-tipo-vehiculo', apiPwaAppDelivery.getTipoVehiculo);
+routerV3.get('/delivery/get-ciudades-delivery', apiPwaAppDelivery.getCiudadesDelivery);
 
 // notificaciones push
 // guardar suscripcion

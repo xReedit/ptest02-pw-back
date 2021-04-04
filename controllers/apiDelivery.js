@@ -135,7 +135,7 @@ const getCalificacionSede = function (req, res) {
 	const idsede = req.body.idsede;
     const read_query = `select SUBSTRING_INDEX(c.nombres, ' ',1) nomcliente, count(sc.idcliente) numpedidos, sc.calificacion, sc.comentario from sede_calificacion sc
 			inner join cliente c on c.idcliente  = sc.idcliente 
-		where sc.idsede = ${idsede}
+		where sc.idsede = ${idsede} and sc.calificacion >= 3
 		GROUP by sc.idcliente
 		order by sc.idsede_calificacion desc`;
     emitirRespuesta_RES(read_query, res);  

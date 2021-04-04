@@ -131,6 +131,17 @@ const getCiudadesDelivery = function (req, res) {
 }
 module.exports.getCiudadesDelivery = getCiudadesDelivery;
 
+const getCalificacionSede = function (req, res) {		
+	const idsede = req.body.idsede;
+    const read_query = `select SUBSTRING_INDEX(c.nombres, ' ',1) nomcliente, count(sc.idcliente) numpedidos, sc.calificacion, sc.comentario from sede_calificacion sc
+			inner join cliente c on c.idcliente  = sc.idcliente 
+		where sc.idsede = ${idsede}
+		GROUP by sc.idcliente
+		order by sc.idsede_calificacion desc`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.getCalificacionSede = getCalificacionSede;
+
 
 
 function emitirRespuesta(xquery, res) {

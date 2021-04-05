@@ -91,6 +91,7 @@ routerV3.post('/delivery/get-sede-servicio-express', apiPwaAppDelivery.getAllSed
 routerV3.post('/delivery/set-pedido-mandado', apiPwaAppDelivery.setPedidoMandado);
 routerV3.post('/delivery/get-comsion-atm', apiPwaAppDelivery.getComnisionAtm);
 routerV3.post('/delivery/set-cash-atm', apiPwaAppDelivery.setCashAtm);
+routerV3.post('/delivery/get-shared-url-carta', apiPwaAppDelivery.getSharedUrlCarta);
 
 
 // mensajes

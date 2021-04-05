@@ -126,7 +126,7 @@ const testHora = function (req, res) {
 module.exports.testHora = testHora;
 
 const getCiudadesDelivery = function (req, res) {			
-    const read_query = `select ciudad , codigo_postal from sede_config_service_delivery where estado = 0;`;
+    const read_query = `select ciudad , codigo_postal, isreserva from sede_config_service_delivery where estado = 0;`;
     emitirRespuesta_RES(read_query, res);  
 }
 module.exports.getCiudadesDelivery = getCiudadesDelivery;
@@ -135,12 +135,20 @@ const getCalificacionSede = function (req, res) {
 	const idsede = req.body.idsede;
     const read_query = `select SUBSTRING_INDEX(c.nombres, ' ',1) nomcliente, count(sc.idcliente) numpedidos, sc.calificacion, sc.comentario from sede_calificacion sc
 			inner join cliente c on c.idcliente  = sc.idcliente 
-		where sc.idsede = ${idsede} and sc.calificacion >= 3
+		where sc.idsede = ${idsede} and sc.calificacion >= 2
 		GROUP by sc.idcliente
 		order by sc.idsede_calificacion desc`;
     emitirRespuesta_RES(read_query, res);  
 }
 module.exports.getCalificacionSede = getCalificacionSede;
+
+
+const getSharedUrlCarta = async function (req, res) {
+	const idsede = req.body.idsede;
+    const read_query = `call procedure_generator_qr_mesa(${idsede})`;
+    emitirRespuestaSP_RES(read_query, res);       
+}
+module.exports.getSharedUrlCarta = getSharedUrlCarta;
 
 
 

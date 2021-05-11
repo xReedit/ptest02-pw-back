@@ -183,7 +183,7 @@ const getLaCuenta = async function (req, res) {
 
     console.log('req.body', req.body)
     
-	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', '${idpedido}', ${idorg}, ${idsede}, 0);`;	
+	const read_query = `call procedure_bus_pedido_bd_3051(${mesa}, '', '${idpedido}', ${idorg}, ${idsede}, 0, -1);`;	
     emitirRespuestaSP_RES(read_query, res);
 
     // const read_query = `call procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}')`;

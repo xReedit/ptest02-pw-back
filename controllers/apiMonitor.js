@@ -169,7 +169,12 @@ const getAllPedidosComercio = function (req, res) {
 	const idsede = req.body.idsede;
 	const fdesde = req.body.desde;
 	const fhasta = req.body.hasta;
-    const read_query = `SELECT * from pedido where idsede = ${idsede} and  STR_TO_DATE(fecha, '%d/%m/%Y') BETWEEN STR_TO_DATE('${fdesde}', '%d/%m/%Y') and STR_TO_DATE('${fhasta}', '%d/%m/%Y') and pwa_is_delivery = 1`;
+    // const read_query = `SELECT * from pedido where idsede = ${idsede} and  STR_TO_DATE(fecha, '%d/%m/%Y') BETWEEN STR_TO_DATE('${fdesde}', '%d/%m/%Y') and STR_TO_DATE('${fhasta}', '%d/%m/%Y') and pwa_is_delivery = 1`;
+    const read_query = `
+    	SELECT p.*, r.nombre as nom_repartidor, r.telefono as telefono_repartidor 
+		from pedido p
+			left join repartidor r on r.idrepartidor = p.idrepartidor 
+		where p.idsede = ${idsede} and  STR_TO_DATE(p.fecha, '%d/%m/%Y') BETWEEN STR_TO_DATE('${fdesde}', '%d/%m/%Y') and STR_TO_DATE('${fhasta}', '%d/%m/%Y') and p.pwa_is_delivery = 1`;
     emitirRespuesta_RES(read_query, res);  
 }
 module.exports.getAllPedidosComercio = getAllPedidosComercio;
@@ -311,6 +316,14 @@ const getRetirosCashAtm = function (req, res) {
     emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getRetirosCashAtm = getRetirosCashAtm;
+
+
+const setPedidoNoAntendido = async function (req, res) {
+	const idpedido = req.body.idpedido;
+	const read_query = `update pedido set pwa_delivery_atendido = 1 where idpedido = ${idpedido};`;
+    execSqlQueryNoReturn(read_query, res);       
+}
+module.exports.setPedidoNoAntendido = setPedidoNoAntendido;
 
 
 

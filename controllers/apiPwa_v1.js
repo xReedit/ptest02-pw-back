@@ -422,6 +422,12 @@ const setFlagPrinter = function (id) {
 }
 module.exports.setFlagPrinter = setFlagPrinter;
 
+const setFlagPrinterChangeEstadoPedido = function (id) {                
+    const read_query = `update pedido set pwa_estado='A' where idpedido=${id}`;    
+    emitirRespuestaSP(read_query);
+}
+module.exports.setFlagPrinterChangeEstadoPedido = setFlagPrinterChangeEstadoPedido;
+
 
 // busca los subitems del item seleccionado, para hacer mas rapida la consulta
 const getSearchSubitemsItem = async function (iditem) {    

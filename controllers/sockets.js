@@ -432,8 +432,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
 
 			// data print
+			
 			const _dataPrint = dataSend.dataPrint;			
 			if ( _dataPrint == null ) { return }
+			console.log('!!!! ====== notifica al dataSend del mandar imprimir =====', JSON.stringify(dataSend));
 			dataSend.dataPrint.map(x => {
 				if ( x.print ) {
 					var dataPrintSend = {
@@ -483,6 +485,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			console.log('==== notifica-impresion-comanda ', dataPedido);
 			socket.broadcast.to(chanelConect).emit('notifica-impresion-comanda', dataPedido);
 			// apiPwa.setFlagPrinter(dataPedido);
+
+			// notifica a monitor
+			io.to('MONITOR').emit('notifica-impresion-comanda', dataPedido);
+			apiPwa.setFlagPrinterChangeEstadoPedido(dataPedido);
 		});
 
 
@@ -604,7 +610,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 						idprint_server_detalle: x.print.idprint_server_detalle
 					}
 
-					console.log(' ====== printerComanda =====', dataPrintSend);
+					console.log(' ====== printerComanda ===== xMandarImprimirComanda', dataPrintSend);
 					socket.broadcast.to(chanelConect).emit('printerComanda', dataPrintSend);
 				}				
 			});	

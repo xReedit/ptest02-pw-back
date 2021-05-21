@@ -375,7 +375,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
 
 			// notifica al monitor nuevo pedido para emitir alerta
-			io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
+			if ( dataSend.dataPedido.p_header.delivery === 1 ) {
+				io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
+			}
 			// io.to('MONITOR').emit('nuevoPedido', dataCliente);
 
 
@@ -429,7 +431,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			// notifica al monitor nuevo pedido para emitir alerta
 			console.log(' ====== notifica al monitor =====');
-			io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
+			if ( dataSend.dataPedido.p_header.delivery === 1 ) {
+				io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
+			}
 
 			// data print
 			
@@ -636,11 +640,23 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.emit('finishLoadDataInitial');
 
 		// notifica que el repartidor esta online
-		io.to('MONITOR').emit('notifica-repartidor-online', dataCliente);
+		// 20052021 quitamos porque esto suscede cuando abren la aplicacion es decir cuando el socket se conecta
+		// io.to('MONITOR').emit('notifica-repartidor-online', dataCliente);
 		
 
 		// registrar como conectado en cliente_socketid
 		apiPwaRepartidor.setRepartidorConectado(dataCliente);		
+
+		// notificador online ofline
+		socket.on('notifica-repartidor-online', (socketId) => {
+			console.log('notifica-repartidor-online');
+			io.to('MONITOR').emit('notifica-repartidor-online', dataCliente);
+		});
+
+		socket.on('notifica-repartidor-ofline', (socketId) => {
+			console.log('notifica-repartidor-ofline');
+			io.to('MONITOR').emit('notifica-repartidor-online', dataCliente);
+		});
 
 		// ver si tenemos un pedido pendiente de aceptar // ver si solicito libear pedido
 		const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataCliente.idrepartidor);
@@ -789,6 +805,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		
 
 		
+		// nuevo pedido mandado
+		socket.on('nuevo-pedido-mandado', async () => {
+			// notifica al monitor
+			console.log('nuevo-pedido-mandado');
+			io.to('MONITOR').emit('monitor-nuevo-pedido-mandado', true);
+		});
 
 	}
 
@@ -801,7 +823,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('nuevo-retiro-cash-atm', async () => {
 			// notifica al monitor
 			console.log('nuevo-retiro-cash-atm notifica monitor');
-			io.to('MONITOR').emit('monitor-nuevo-retiro-cash-atm');
+			io.to('MONITOR').emit('monitor-nuevo-retiro-cash-atm', true);
 		});
 	}
 
@@ -836,6 +858,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('set-solicitar-repartidor-papaya', () => {
 			apiPwaRepartidor.runLoopSearchRepartidor(io, dataCliente.idsede);
 		});		
+
+
 
 				
 

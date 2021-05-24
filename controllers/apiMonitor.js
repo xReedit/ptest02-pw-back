@@ -9,12 +9,21 @@ let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
 };
 
+// primer idpedido de la fecha seleccionada
+const getFirtsIdPedidoDate = function (req, res) {
+	const fini = req.body.fromDate;	
+    const read_query = `select COALESCE(min(idpedido), 0) idpedido from pedido where cast(fecha_hora as date) = cast('${fini}' as date) order by idpedido desc`;    ;   
+    emitirRespuesta_RES(read_query, res);      
+}
+module.exports.getFirtsIdPedidoDate = getFirtsIdPedidoDate;
+
 
 // registro de comercio
 const getPedidos = function (req, res) {
 	const fini = req.body.fromDate;
 	const ffin = req.body.toDate;
-    const read_query = `call procedure_pwa_delivery_monitor_pedidos('${fini}', '${ffin}', 0)`;
+	const firtsIdPedidoDate = req.body.firtsIdPedidoDate;
+    const read_query = `call procedure_pwa_delivery_monitor_pedidos('${fini}', '${ffin}', 0, ${firtsIdPedidoDate})`;
     emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.getPedidos = getPedidos;
@@ -22,7 +31,8 @@ module.exports.getPedidos = getPedidos;
 const getPedidosAbono = function (req, res) {
 	const fini = req.body.fromDate;
 	const ffin = req.body.toDate;
-    const read_query = `call procedure_pwa_delivery_monitor_pedidos('${fini}', '${ffin}', 1)`;
+	const firtsIdPedidoDate = req.body.firtsIdPedidoDate;
+    const read_query = `call procedure_pwa_delivery_monitor_pedidos('${fini}', '${ffin}', 1, ${firtsIdPedidoDate})`;
     emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.getPedidosAbono = getPedidosAbono;
@@ -43,7 +53,7 @@ const getCientesScanQr = async function (req, res) {
 module.exports.getCientesScanQr = getCientesScanQr;
 
 const getCientes = async function (req, res) {	
-    const read_query = `SELECT * from cliente where pwa_id != '' order by idcliente desc`;    
+    const read_query = `SELECT * from cliente where pwa_id != '' order by idcliente desc limit 100`;    
     emitirRespuesta_RES(read_query, res);  
 }
 module.exports.getCientes = getCientes;

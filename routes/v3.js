@@ -183,6 +183,7 @@ routerV3.post('/service/facturacion-e', auth.verificarToken, apiServiceFacturaci
 
 //// MONITOR PACMAN ///
 routerV3.post('/login-usuario-autorizado-pacman', login.loggerUsAutorizadoPacman);
+routerV3.post('/monitor/get-idpedido-firts-date', auth.verificarToken, apiPwaAppMonitor.getFirtsIdPedidoDate);
 routerV3.post('/monitor/get-pedidos', auth.verificarToken, apiPwaAppMonitor.getPedidos);
 routerV3.post('/monitor/get-pedidos-abono', auth.verificarToken, apiPwaAppMonitor.getPedidosAbono);
 routerV3.get('/monitor/get-repartidores', auth.verificarToken, apiPwaAppMonitor.getRepartidores);

@@ -221,6 +221,7 @@ routerV3.get('/monitor/get-calificaciones-comercios', auth.verificarToken, apiPw
 routerV3.post('/monitor/set-oncombercio', auth.verificarToken, apiPwaAppMonitor.setOnComercio);
 routerV3.post('/monitor/get-retiros-cash-atm', auth.verificarToken, apiPwaAppMonitor.getRetirosCashAtm);
 routerV3.post('/monitor/set-pedido-no-atendido', auth.verificarToken, apiPwaAppMonitor.setPedidoNoAntendido);
+routerV3.get('/monitor/get-load-list-programations', auth.verificarToken, apiPwaAppMonitor.getlistProgramations);
 
 
 

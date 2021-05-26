@@ -336,6 +336,14 @@ const setPedidoNoAntendido = async function (req, res) {
 module.exports.setPedidoNoAntendido = setPedidoNoAntendido;
 
 
+const getlistProgramations = function (req, res) {	
+	const fini = req.body.fromDate;
+	const ffin = req.body.toDate;
+    const read_query = `SELECT * from sede_config_service_delivery`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getlistProgramations = getlistProgramations;
+
 
 function execSqlQueryNoReturn(xquery, res) {
 	console.log(xquery);

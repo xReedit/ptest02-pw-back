@@ -330,10 +330,18 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 			            "body": `Te llego un pedido.`,
 			            "icon": "./favicon.ico",
 			            "lang": "es",
-			            "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]
-			       //      ,"data": { 
-        		// 				"url" : "http://reparto.papaya.com.pe/"
-    						// }
+			            "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50],
+			            "actions": [
+                            {"action": "foo", "title": "Enviar Mensaje"},
+                            {"action": "foo2", "title": "Llamar"}
+                        ],
+                        "data": {
+                            "onActionClick": {
+                                "foo": {"operation": "openWindow", "url": "https://api.whatsapp.com/send?phone=51934746830"},
+                                "foo2": {"operation": "openWindow", "url": "tel:934746830"}      
+                            }
+			            }
+			       		
 			        }
 			    // }
 			}       

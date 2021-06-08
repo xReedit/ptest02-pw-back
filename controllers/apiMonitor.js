@@ -3,6 +3,8 @@ let Sequelize = require('sequelize');
 let config = require('../config');
 let managerFilter = require('../utilitarios/filters');
 
+const serviceTimerChangeCosto = require('./timerChangeCosto.js');
+
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
 let mysql_clean = function (string) {
@@ -343,6 +345,14 @@ const getlistProgramations = function (req, res) {
     emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getlistProgramations = getlistProgramations;
+
+
+const runTimerChangeCosto = function (req, res) {	
+	_list = req.body.list;
+	serviceTimerChangeCosto.runTimerCosto(_list);
+}
+module.exports.runTimerChangeCosto = runTimerChangeCosto;
+
 
 
 function execSqlQueryNoReturn(xquery, res) {

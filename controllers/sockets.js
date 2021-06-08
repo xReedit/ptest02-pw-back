@@ -60,6 +60,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			return;
 		}
 
+		/// sever send msj
+		if (dataCliente.isServerSendMsj === '1') {
+			// socketMaster = socket; 
+			socketServerSendMsj(dataCliente,socket);
+			return;
+		}
+
 		if (dataCliente.isOutCarta === 'true') {
 			// socketMaster = socket; 
 			socketClienteDeliveryEstablecimientos(dataCliente,socket);
@@ -377,6 +384,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// notifica al monitor nuevo pedido para emitir alerta
 			if ( dataSend.dataPedido.p_header.delivery === 1 ) {
 				io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
+
+				console.log(' ====== notifica al servidor de mensajes =====', dataCliente.idsede);
+				io.to('SERVERMSJ').emit('nuevoPedido', dataCliente.idsede); // para enviar el url del pedido
 			}
 			// io.to('MONITOR').emit('nuevoPedido', dataCliente);
 
@@ -433,7 +443,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			console.log(' ====== notifica al monitor =====');
 			if ( dataSend.dataPedido.p_header.delivery === 1 ) {
 				io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
+
+
+				console.log(' ====== notifica al servidor de mensajes =====', dataCliente.idsede);
+				io.to('SERVERMSJ').emit('nuevoPedido', dataCliente.idsede); // para enviar el url del pedido
 			}
+
 
 			// data print
 			
@@ -745,6 +760,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// notifica a comercio			
 			const socketidComercio = await apiPwaComercio.getSocketIdComercio(dataPedido.datosComercio.idsede);
 			io.to(socketidComercio[0].socketid).emit('repartidor-propio-notifica-fin-pedido', dataPedido);
+
+
+			io.to('MONITOR').emit('repartidor-notifica-fin-pedido', {idrepartidor: dataPedido.idrepartidor, idpedido: dataPedido.idpedido});
 		});
 
 		// notifica fin de solo un pedido de grupo de pedidos
@@ -759,6 +777,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			const idComercio = dataPedido.datosComercio ? dataPedido.datosComercio.idsede : dataPedido.idsede;
 			const socketidComercio = await apiPwaComercio.getSocketIdComercio(idComercio);
 			io.to(socketidComercio[0].socketid).emit('repartidor-notifica-fin-pedido', dataPedido);
+
+			io.to('MONITOR').emit('repartidor-notifica-fin-pedido', {idrepartidor: dataPedido.idrepartidor, idpedido: dataPedido.idpedido});
 		});
 
 
@@ -767,6 +787,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('repartidor-grupo-pedido-finalizado', (idrepartidor) => {
 			console.log('repartidor-grupo-pedido-finalizado', idrepartidor);			
 			apiPwaRepartidor.setUpdateRepartidorOcupado(idrepartidor, 0);
+
+			// notifica a monitor
+			io.to('MONITOR').emit('repartidor-grupo-pedido-finalizado', idrepartidor);
 		});
 
 
@@ -872,12 +895,16 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notifica al repartidor del pedido asinado manualmente
 		socket.on('set-asigna-pedido-repartidor-manual', async (dataPedido) => {				
+			console.log('set-asigna-pedido-repartidor-manual');
 			const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataPedido.idrepartidor);
 			const socketIdRepartidor = pedioPendienteAceptar[0].socketid;
 			io.to(socketIdRepartidor).emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
 
 			// notificacion push nuevo pedido
 			apiPwaRepartidor.sendOnlyNotificaPush(pedioPendienteAceptar[0].key_suscripcion_push, 0);
+
+			// notifica a monitor para refesh vista
+			io.to('MONITOR').emit('set-asigna-pedido-repartidor-manual', {idrepartidor: dataPedido.idrepartidor});
 		});		
 
 
@@ -887,5 +914,19 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socket.to('roomPatioDelivery').emit('set-comercio-open-change-from-monitor', comercioId);
 		});
 
+	}
+
+
+	function socketServerSendMsj(dataCliente, socket) {
+		socket.join('SERVERMSJ');
+		console.log('desde func server send msjs conectado a SERVERMSJ', dataCliente);
+
+		io.to('SERVERMSJ').emit('connect', true);
+
+		setTimeout(function(){ 
+			console.log('enviado-send-msj')
+			io.to('SERVERMSJ').emit('enviado-send-msj', {idsede: 10000});
+		}, 3000);
+		
 	}
 }

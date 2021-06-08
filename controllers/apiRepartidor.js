@@ -495,14 +495,17 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 								importePagar += parseFloat(pp.total);
 							}
 							
-							console.log('push ', pp.idpedido);
+							// console.log('push ', pp.idpedido);
 							_last_id_repartidor_reasigno = _last_id_repartidor_reasigno ? _last_id_repartidor_reasigno : pp.last_id_repartidor_reasigno;
 							_num_reasignaciones = _num_reasignaciones ? _num_reasignaciones : pp.num_reasignaciones;
 
-							listGroup.push(pp.idpedido);
+							// listGroup.push(pp.idpedido);
 						} else {
 							importeAcumula -= parseFloat(pp.total);
 						}
+
+						// si el monto es mayor al acumulado tambien agrega
+						listGroup.push(pp.idpedido);
 						
 					});				
 
@@ -519,7 +522,9 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 				console.log('listLastRepartidor', listLastRepartidor);			
 
 				const _rowPedidoAdd = {
-					pedidos: listGroup,					
+					pedidos: listGroup,	
+					cantidad_pedidos_aceptados: listGroup.length,				
+					cantidad_entregados: 0,
 					importe_acumula: importeAcumula,
 					importe_pagar: importePagar,
 					last_id_repartidor_reasigno: _last_id_repartidor_reasigno,
@@ -534,7 +539,7 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 				console.log('idpedidos', _rowPedidoAdd.pedidos.join(','));
 
 				listGruposPedidos.push(_rowPedidoAdd);
-				console.log( 'ListGruposPedidos', listGruposPedidos );
+				// console.log( 'ListGruposPedidos', listGruposPedidos );
 
 			}
 		});

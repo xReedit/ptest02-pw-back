@@ -1,6 +1,7 @@
 const apiPwa = require('./apiPwa_v1.js');
 const apiPwaRepartidor = require('./apiRepartidor.js');
 const apiPwaComercio = require('./apiComercio.js');
+var btoa = require('btoa');
 //const auth = require('../middleware/autentificacion');
 
 // var onlineUsers = {};
@@ -308,6 +309,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// hay un nuevo pedido - guardar
 		socket.on('nuevoPedido', async (dataSend, callback) => {
 			console.log('tipo dato', typeof dataSend);
+
+			var telefonoComercio = '';
+
 			// console.log('nuevoPedido ', dataSend);			
 			if ( typeof dataSend === 'string' ) {
 				dataSend = JSON.parse(dataSend);
@@ -343,17 +347,21 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				}				
 
 
+				// quitamos, se remplazo por msj whatapp => sendMsjSocketWsp 030621
 				// notificamos push al comercio
-				const socketIdComercio = await apiPwaComercio.getSocketIdComercio(dataCliente.idsede);
-				// notifica mensaje texto si tiene teleono
-				if ( socketIdComercio[0].telefono_notifica !== undefined ) {
-					if ( socketIdComercio[0].telefono_notifica !== '' ) {
-						apiPwaComercio.sendNotificacionNewPedidoSMS(socketIdComercio[0].telefono_notifica);
-					}
-					// console.log(' ==== notifica sms comercio =====', socketIdComercio[0].telefono_notifica);					
-				} 
+				// const socketIdComercio = await apiPwaComercio.getSocketIdComercio(dataCliente.idsede);
+				// const telefonoComercio = socketIdComercio[0].telefono_notifica;
+				// // notifica mensaje texto si tiene teleono
+				// if ( telefonoComercio !== undefined ) {
+				// 	if ( telefonoComercio !== '' ) {
+				// 		apiPwaComercio.sendNotificacionNewPedidoSMS(telefonoComercio);
+				// 	}
+				// 	// console.log(' ==== notifica sms comercio =====', socketIdComercio[0].telefono_notifica);					
+				// } 
 
 				// notificacion push
+				const socketIdComercio = await apiPwaComercio.getSocketIdComercio(dataCliente.idsede);
+				telefonoComercio = socketIdComercio[0].telefono_notifica;
 				apiPwaComercio.sendOnlyNotificaPush(socketIdComercio[0].key_suscripcion_push, 0);				
 
 			// 	const _dataPedido = {
@@ -385,8 +393,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			if ( dataSend.dataPedido.p_header.delivery === 1 ) {
 				io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
 
-				console.log(' ====== notifica al servidor de mensajes =====', dataCliente.idsede);
-				io.to('SERVERMSJ').emit('nuevoPedido', dataCliente.idsede); // para enviar el url del pedido
+				console.log(' ====== notifica al servidor de mensajes ===== telefono notifica ====> ', telefonoComercio);
+
+				if ( telefonoComercio !== '' ) {
+					const _sendServerMsj = `{"tipo":0, "s": "${dataCliente.idorg}.${dataCliente.idsede}", "p": ${dataSend.dataPedido.idpedido}, "h": "${new Date().toISOString()}", "t":"${telefonoComercio}"}`;					
+					sendMsjSocketWsp(_sendServerMsj);
+				}				
 			}
 			// io.to('MONITOR').emit('nuevoPedido', dataCliente);
 
@@ -404,7 +416,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// solo envia el data pedido con el id del pedido registrado por http		
 		// para evitar pedidos perdidos cuando el socket pierde conexion
 		socket.on('nuevoPedido2', async (dataSend) => {
-			console.log('nuevoPedido2 ', dataSend);			
+			console.log('nuevoPedido2 ', dataSend);	
+
+			var telefonoComercio = '';		
 			// const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
 
 			// console.log('respuesta guardar pedido ', JSON.stringify(rpt[0].idpedido));
@@ -421,17 +435,21 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				}				
 
 
+				// quitamos, se remplazo por msj whatapp => sendMsjSocketWsp 030621
 				// notificamos push al comercio
-				const socketIdComercio = await apiPwaComercio.getSocketIdComercio(dataCliente.idsede);
-				// notifica mensaje texto si tiene teleono
-				if ( socketIdComercio[0].telefono_notifica !== undefined ) {
-					if ( socketIdComercio[0].telefono_notifica !== '' ) {
-						apiPwaComercio.sendNotificacionNewPedidoSMS(socketIdComercio[0].telefono_notifica);
-					}
-					// console.log(' ==== notifica sms comercio =====', socketIdComercio[0].telefono_notifica);					
-				} 
+				// const socketIdComercio = await apiPwaComercio.getSocketIdComercio(dataCliente.idsede);
+				// // notifica mensaje texto si tiene teleono
+				// const telefonoComercio = socketIdComercio[0].telefono_notifica;
+				// if ( telefonoComercio !== undefined ) {
+				// 	if ( telefonoComercio !== '' ) {
+				// 		apiPwaComercio.sendNotificacionNewPedidoSMS(telefonoComercio);
+				// 	}
+				// 	// console.log(' ==== notifica sms comercio =====', socketIdComercio[0].telefono_notifica);					
+				// } 
 
 				// notificacion push
+				const socketIdComercio = await apiPwaComercio.getSocketIdComercio(dataCliente.idsede);
+				telefonoComercio = socketIdComercio[0].telefono_notifica;
 				apiPwaComercio.sendOnlyNotificaPush(socketIdComercio[0].key_suscripcion_push, 0);				
 
 			}
@@ -445,8 +463,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
 
 
-				console.log(' ====== notifica al servidor de mensajes =====', dataCliente.idsede);
-				io.to('SERVERMSJ').emit('nuevoPedido', dataCliente.idsede); // para enviar el url del pedido
+				console.log(' ====== notifica al servidor de mensajes ===== telefono notifica ====> ', telefonoComercio);
+				if ( telefonoComercio !== '' ) {
+					const _sendServerMsj = `{"tipo":0, "s": "${dataCliente.idorg}.${dataCliente.idsede}", "p": ${dataSend.dataPedido.idpedido}, "h": "${new Date().toISOString()}", "t":"${telefonoComercio}"}`;
+					// io.to('SERVERMSJ').emit('nuevoPedido', _sendServerMsj); // para enviar el url del pedido
+					sendMsjSocketWsp(_sendServerMsj);
+				}
 			}
 
 
@@ -745,7 +767,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to(socketidComercio[0].socketid).emit('repartidor-notifica-a-comercio-pedido-aceptado', dataPedido);	
 
 			// NOTIFICA a la central
-			io.to('MONITOR').emit('repartidor-notifica-a-comercio-pedido-aceptado', dataPedido);
+			io.to('MONITOR').emit('repartidor-notifica-a-comercio-pedido-aceptado', true);
 
 		});
 
@@ -921,12 +943,44 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.join('SERVERMSJ');
 		console.log('desde func server send msjs conectado a SERVERMSJ', dataCliente);
 
+		socket.on('mensaje-test-w', async (val) => {
+			console.log('mensaje-test-w', val);			
+			io.to('SERVERMSJ').emit('mensaje-test-w', val);
+		});
+
 		io.to('SERVERMSJ').emit('connect', true);
 
-		setTimeout(function(){ 
-			console.log('enviado-send-msj')
-			io.to('SERVERMSJ').emit('enviado-send-msj', {idsede: 10000});
-		}, 3000);
+		// setTimeout(function(){ 
+		// 	console.log('enviado-send-msj')
+
+		// 	const _sendServerMsj = `{"tipo": 0, "s": "16.13", "p": 20630, "h": "${new Date().toISOString()}", "t": "960518915"}`;
+		// 	sendMsjSocketWsp(_sendServerMsj);
+		// 	// io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
+		// }, 3000);
 		
+	}
+
+
+	// evniar mensajes al whatsapp 130621
+	function sendMsjSocketWsp(dataMsj) {
+		// 0: nuevo pedido notifica comercio
+		// 1: repartidor aceptó pedido notifica cliente
+		console.log('dataMsj ===========> ', dataMsj);
+		dataMsj = JSON.parse(dataMsj);
+		const tipo = dataMsj.tipo;
+
+		var _sendServerMsj = {telefono: 0, msj: ''};
+		var msj;
+		var url = '';
+		var _dataUrl = `{"s": "${dataMsj.s}", "p": ${dataMsj.p}, "h": "${dataMsj.h}"}`;
+
+		if ( tipo === 0 ) {
+			url = `http://localhost:1800/order-last?p=${btoa(_dataUrl)}`;
+			msj = `🎉 🎉 Tienes un nuevo pedido por Papaya Express, chequealo aqui: ${url}`;
+			_sendServerMsj.telefono = dataMsj.t;
+			_sendServerMsj.msj = msj;
+		}
+
+		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
 	}
 }

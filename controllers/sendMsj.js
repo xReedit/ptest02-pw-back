@@ -307,6 +307,52 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 }
 module.exports.sendPushNotificactionOneRepartidor = sendPushNotificactionOneRepartidor;
 
+// TEST
+// envia notificacion push a repartidor de que tiene un pedido
+const sendPushNotificactionRepartidorAceptaPedido = function (_dataMsjs) {
+	const key_suscripcion_push = _dataMsjs.key_suscripcion_push;
+	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
+	
+	console.log('push key_push', key_suscripcion_push);
+	// const key_suscripcion_push = Repartidor.key_suscripcion_push;	
+	// const notificationPayload = payload;
+	let payload;	
+	let iconPush = '';	
+	// if ( !_payload ) {
+		switch (_dataMsjs.tipo_msj) {
+	      case 0: // notifica a repartidor nuevo pedido
+	      	  iconPush = 'https://img-premium.flaticon.com/png/512/2332/2332139.png?token=exp=1622510180~hmac=2023e4941f54e545cee8d8d1f5ef279c';
+		      payload = {
+				"notification": {
+				        // "notification": {
+				            "title": _dataMsjs.msj,
+				            "body": _dataMsjs.titulo,
+				            "icon": iconPush,
+				            "lang": "es",
+				            "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50],
+				            "actions": _dataMsjs._actions,
+	                        "data": _dataMsjs._data				       		
+				        }
+				    }
+				// }       
+	        break;
+	    }
+	// } 
+	
+    // Promise.all(
+    webpush.sendNotification(
+    	key_suscripcion_push, JSON.stringify(payload) )
+		.then(() => 
+			res.status(200).json({message: 'mensaje enviado con exito'})
+		)
+        .catch(err => {
+           	console.error("Error sending notification, reason: ", err);
+           	res.sendStatus(500);
+        });
+
+}
+module.exports.sendPushNotificactionRepartidorAceptaPedido = sendPushNotificactionRepartidorAceptaPedido;
+
 
 // TEST
 // envia notificacion push a repartidor de que tiene un pedido

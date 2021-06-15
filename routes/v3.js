@@ -167,6 +167,7 @@ routerV3.get('/comercio/get-mis-repartidores', auth.verificarToken, apiPwaAppCom
 routerV3.post('/comercio/set-registrar-repartidor', auth.verificarToken, apiPwaAppComercio.setRegistrarRepartidor);
 routerV3.post('/comercio/borrar-mi-repartidor', auth.verificarToken, apiPwaAppComercio.borrarMiReparidor);
 routerV3.post('/comercio/set-flag-solicita-repartidor-papaya', auth.verificarToken, apiPwaAppComercio.setFlagSolicitaRepartidorPapaya);
+routerV3.post('/comercio/get-last-pedido-url', apiPwaAppComercio.getLastPedidoUrl); // url directo a ver el pedido
 
 
 // comercio registro

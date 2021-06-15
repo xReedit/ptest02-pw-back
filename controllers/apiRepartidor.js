@@ -279,20 +279,55 @@ module.exports.sendOnlyNotificaPush = sendOnlyNotificaPush;
 // module.exports.sendPedidoRepartidor = sendPedidoRepartidor;
 
 // cuando el repartidor acepta el pedido -- se asigna el pedido al repartitor
-const setAsignarPedido = function (req, res) {  
+const setAsignarPedido = async function (req, res) {  
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	const idpedido = req.body.idpedido;           
+	const elRepartidor = req.body.repartidor;
 	const firstPedido = idpedido.split(',')[0];
 	
 	// si acepta no borra
 	// , pedido_por_aceptar=null
-    const read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido in (${idpedido});
+    let read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido in (${idpedido});
     					update repartidor set ocupado = 1, pedido_paso_va = 1 where idrepartidor = ${idrepartidor};
     					update repartidor set flag_paso_pedido=0 where flag_paso_pedido=${firstPedido}`;
 
 	// const read_query = `call procedure_delivery_asignar_pedido(${idrepartidor}, ${idpedido})`;    					
     execSqlQueryNoReturn(read_query, res);     
     // return emitirRespuesta_RES(read_query, res);   
+
+
+    // enviar mensajes PUSH a los clientes de los pedidos aceptados
+    read_query = `select DISTINCT c.idcliente, c.nombres, c.telefono, cs.key_suscripcion_push from pedido p
+						inner join cliente_socketid cs on cs.idcliente = p.idcliente 
+						inner join cliente c on c.idcliente = p.idcliente 
+						where p.idpedido in (${idpedido})`;
+
+	const lisClientesPedido = await emitirRespuestaSP(read_query);
+	var _dataMsjs, actions, data, _key_suscripcion_push;
+	lisClientesPedido.map(c => {
+
+		_key_suscripcion_push = c.key_suscripcion_push;
+
+		actions = [{"action": "foo", "title": "Enviar Mensaje"},{"action": "foo2", "title": "Llamar"}];
+		data = {"onActionClick": {
+                                "foo": {"operation": "openWindow", "url": `https://api.whatsapp.com/send?phone=51${elRepartidor.telefono}`},
+                                "foo2": {"operation": "openWindow", "url": `tel:${elRepartidor.telefono}`}      
+                            }};
+
+        _dataMsjs = {
+        	tipo_msj: 0,
+        	titulo: 'Repartidor Asignado',
+        	msj: `Hola soy ${elRepartidor.nombre} repartidor de Papaya Express, estaré encargado de su pedido, le llamare a su celular cuando este cerca.`,
+        	key_suscripcion_push: _key_suscripcion_push,
+        	_actions: actions,
+        	_data: data
+        }
+
+        // enviar mensaje
+        sendMsjsService.sendPushNotificactionRepartidorAceptaPedido(_dataMsjs);
+        
+	});
+
 }
 module.exports.setAsignarPedido = setAsignarPedido;
 

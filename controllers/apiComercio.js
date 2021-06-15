@@ -53,6 +53,16 @@ const getOrdenesByid = function (req, res) {
 module.exports.getOrdenesByid = getOrdenesByid;
 
 
+// obtner pedido desde los datos del url
+// mensaje directo ver el pedido
+const getLastPedidoUrl = function (req, res) {  
+	const _payload = req.body;	
+    const read_query = `SELECT * from pedido where idpedido=${_payload.p} and idsede = ${_payload.s};`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getLastPedidoUrl = getLastPedidoUrl;
+
+
 const setEstadoPedido = function (req, res) {  	
 	const estado = req.body.estado;	
 	const idpedido = req.body.idpedido;

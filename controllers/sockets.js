@@ -741,9 +741,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// notifica a cliente
 			if ( datosUbicacion.idcliente ) {
 				const socketIdCliente = await apiPwa.getSocketIdCliente(datosUbicacion.idcliente);
-				if ( socketIdCliente[0]?.socketid ) { // puede ser un pedido que el comercio llamo repartidor
+				if ( socketIdCliente[0].socketid ) { // puede ser un pedido que el comercio llamo repartidor
 					console.log('repartidor-notifica-ubicacion ==> al cliente', socketIdCliente[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
-					io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas);										
+					io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas);
 				}				
 			}			
 

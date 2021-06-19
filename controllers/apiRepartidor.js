@@ -306,25 +306,29 @@ const setAsignarPedido = async function (req, res) {
 	var _dataMsjs, actions, data, _key_suscripcion_push;
 	lisClientesPedido.map(c => {
 
-		_key_suscripcion_push = c.key_suscripcion_push;
+		if (c.key_suscripcion_push) {
 
-		actions = [{"action": "foo", "title": "Enviar Mensaje"},{"action": "foo2", "title": "Llamar"}];
-		data = {"onActionClick": {
-                                "foo": {"operation": "openWindow", "url": `https://api.whatsapp.com/send?phone=51${elRepartidor.telefono}`},
-                                "foo2": {"operation": "openWindow", "url": `tel:${elRepartidor.telefono}`}      
-                            }};
 
-        _dataMsjs = {
-        	tipo_msj: 0,
-        	titulo: 'Repartidor Asignado',
-        	msj: `Hola soy ${elRepartidor.nombre} repartidor de Papaya Express, estaré encargado de su pedido, le llamare a su celular cuando este cerca.`,
-        	key_suscripcion_push: _key_suscripcion_push,
-        	_actions: actions,
-        	_data: data
-        }
+			_key_suscripcion_push = c.key_suscripcion_push;
 
-        // enviar mensaje
-        sendMsjsService.sendPushNotificactionRepartidorAceptaPedido(_dataMsjs);
+			actions = [{"action": "foo", "title": "Enviar Mensaje"},{"action": "foo2", "title": "Llamar"}];
+			data = {"onActionClick": {
+	                                "foo": {"operation": "openWindow", "url": `https://api.whatsapp.com/send?phone=51${elRepartidor.telefono}`},
+	                                "foo2": {"operation": "openWindow", "url": `tel:${elRepartidor.telefono}`}      
+	                            }};
+
+	        _dataMsjs = {
+	        	tipo_msj: 0,
+	        	titulo: 'Repartidor Asignado',
+	        	msj: `Hola soy ${elRepartidor.nombre} repartidor de Papaya Express, estaré encargado de su pedido, le llamare a su celular cuando este cerca.`,
+	        	key_suscripcion_push: _key_suscripcion_push,
+	        	_actions: actions,
+	        	_data: data
+	        }
+
+	        // enviar mensaje
+	        sendMsjsService.sendPushNotificactionRepartidorAceptaPedido(_dataMsjs);
+	    }
         
 	});
 

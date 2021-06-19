@@ -47,6 +47,19 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		const dataCliente = dataSocket;
 
+		// mensaje de confirmacion de telefono
+		socket.on('msj-confirma-telefono', async (data) => {
+			console.log('msj-confirma-telefono', data);
+			const codigoVerificacion = Math.round(Math.random()* (9000 - 1)+parseInt(1000));
+			const _sendServerMsj = `{"tipo": 1, "cod": ${codigoVerificacion}, "t": "${data.numberphone}", "idcliente": ${data.idcliente}, "idsocket": "${data.idsocket}"}`;
+
+			data.cod = codigoVerificacion;
+			// guardamos codigo en bd
+			apiPwa.setCodigoVerificacionTelefonoCliente(data);
+
+			sendMsjSocketWsp(_sendServerMsj);
+		});
+
 		/// repartidor
 		if (dataCliente.isRepartidor) {
 			// socketMaster = socket; 
@@ -95,6 +108,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		console.log('conectado al room ', chanelConect);
 
 		socket.join(chanelConect);
+
+
+		
 
 
 		if (dataCliente.isComercio === 'true') {
@@ -633,6 +649,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 
+
+
+
 	});
 
 	
@@ -722,8 +741,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// notifica a cliente
 			if ( datosUbicacion.idcliente ) {
 				const socketIdCliente = await apiPwa.getSocketIdCliente(datosUbicacion.idcliente);
-				console.log('repartidor-notifica-ubicacion ==> al cliente', socketIdCliente[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
-				io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas);					
+				if ( socketIdCliente[0]?.socketid ) { // puede ser un pedido que el comercio llamo repartidor
+					console.log('repartidor-notifica-ubicacion ==> al cliente', socketIdCliente[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
+					io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas);										
+				}				
 			}			
 
 			// notifica a comercio
@@ -948,6 +969,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to('SERVERMSJ').emit('mensaje-test-w', val);
 		});
 
+
+		socket.on('mensaje-verificacion-telefono-rpt', async (val) => {
+			console.log('mensaje-verificacion-telefono-rpt', val);			
+			io.to(val.idsocket).emit('mensaje-verificacion-telefono-rpt', val);
+		});
+
 		io.to('SERVERMSJ').emit('connect', true);
 
 		// setTimeout(function(){ 
@@ -969,16 +996,27 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		dataMsj = JSON.parse(dataMsj);
 		const tipo = dataMsj.tipo;
 
-		var _sendServerMsj = {telefono: 0, msj: ''};
+		var _sendServerMsj = {telefono: 0, msj: '', tipo: 0};
 		var msj;
 		var url = '';
-		var _dataUrl = `{"s": "${dataMsj.s}", "p": ${dataMsj.p}, "h": "${dataMsj.h}"}`;
+		var _dataUrl = '';
 
 		if ( tipo === 0 ) {
+			_dataUrl = `{"s": "${dataMsj.s}", "p": ${dataMsj.p}, "h": "${dataMsj.h}"}`;
 			url = `https://comercio.papaya.com.pe/#/order-last?p=${btoa(_dataUrl)}`;
 			msj = `🎉 🎉 Tienes un nuevo pedido por Papaya Express, chequealo aqui: ${url}`;
+			_sendServerMsj.tipo = 0;
 			_sendServerMsj.telefono = dataMsj.t;
 			_sendServerMsj.msj = msj;
+		}
+
+		// verificar telefono
+		if ( tipo === 1 ) {			
+			_sendServerMsj.tipo = 1;
+			_sendServerMsj.telefono = dataMsj.t;
+			_sendServerMsj.msj = '📞🔐 Papaya Express, su codigo de verificacion es: ' + dataMsj.cod;
+			_sendServerMsj.idcliente = dataMsj.idcliente;
+			_sendServerMsj.idsocket = dataMsj.idsocket;
 		}
 
 		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);

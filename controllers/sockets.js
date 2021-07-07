@@ -793,6 +793,15 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 
+		// notifica al cliente que repartidor tomo su pedido
+		socket.on('repartidor-notifica-cliente-acepto-pedido', async (listClienteNotifica) => {
+			listClienteNotifica.map(c => {
+				c.tipo = 2;
+				sendMsjSocketWsp(c)
+			});
+		});
+
+
 		// repartidor propio
 		socket.on('repartidor-propio-notifica-fin-pedido', async (dataPedido) => {
 			console.log('repartidor-propio-notifica-fin-pedido', dataPedido);
@@ -991,9 +1000,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 	// evniar mensajes al whatsapp 130621
 	function sendMsjSocketWsp(dataMsj) {
 		// 0: nuevo pedido notifica comercio
-		// 1: repartidor aceptó pedido notifica cliente
+		// 1: verificar telefono
+		// 2: notifica al cliente el repartidor que acepto pedido
 		console.log('dataMsj ===========> ', dataMsj);
-		dataMsj = JSON.parse(dataMsj);
+		dataMsj = typeof dataMsj !== 'object' ? JSON.parse(dataMsj) : dataMsj;
 		const tipo = dataMsj.tipo;
 
 		var _sendServerMsj = {telefono: 0, msj: '', tipo: 0};
@@ -1004,7 +1014,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		if ( tipo === 0 ) {
 			_dataUrl = `{"s": "${dataMsj.s}", "p": ${dataMsj.p}, "h": "${dataMsj.h}"}`;
 			url = `https://comercio.papaya.com.pe/#/order-last?p=${btoa(_dataUrl)}`;
-			msj = `🎉 🎉 Tienes un nuevo pedido por Papaya Express, chequealo aqui: ${url}`;
+			msj = `🤖 🎉 🎉 Tienes un nuevo pedido por Papaya Express, chequealo aqui: ${url}`;
 			_sendServerMsj.tipo = 0;
 			_sendServerMsj.telefono = dataMsj.t;
 			_sendServerMsj.msj = msj;
@@ -1014,9 +1024,17 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		if ( tipo === 1 ) {			
 			_sendServerMsj.tipo = 1;
 			_sendServerMsj.telefono = dataMsj.t;
-			_sendServerMsj.msj = '📞🔐 Papaya Express, su codigo de verificacion es: ' + dataMsj.cod;
+			_sendServerMsj.msj = '📞🔐 Papaya Express, su código de verificación es: ' + dataMsj.cod;
 			_sendServerMsj.idcliente = dataMsj.idcliente;
 			_sendServerMsj.idsocket = dataMsj.idsocket;
+		}
+
+
+		// notifica al cliente el repartidor que acepto pedido
+		if ( tipo === 2 ) {			
+			_sendServerMsj.tipo = 2;
+			_sendServerMsj.telefono = dataMsj.telefono;
+			_sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre}, el repartidor que está a cargo de su pedido #${dataMsj.idpedido} de ${dataMsj.establecimiento} es: ${dataMsj.repartidor_nom} (${dataMsj.repartidor_telefono})🙋‍♂️\n\nLe llamará cuando este cerca ó para informarle de su pedido.`			
 		}
 
 		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);

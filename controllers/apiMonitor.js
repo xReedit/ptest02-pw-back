@@ -347,6 +347,13 @@ const getlistProgramations = function (req, res) {
 module.exports.getlistProgramations = getlistProgramations;
 
 
+const getComisionesVisaCalc = function (req, res) {  
+    const read_query = `SELECT * from comisiones_visa`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getComisionesVisaCalc = getComisionesVisaCalc;
+
+
 const runTimerChangeCosto = function (req, res) {	
 	_list = req.body.list;
 	serviceTimerChangeCosto.runTimerCosto(_list);

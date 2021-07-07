@@ -60,6 +60,14 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			sendMsjSocketWsp(_sendServerMsj);
 		});
 
+
+		// nuevo pedido mandado
+		socket.on('nuevo-pedido-mandado', async () => {
+			// notifica al monitor
+			console.log('nuevo-pedido-mandado');
+			io.to('MONITOR').emit('monitor-nuevo-pedido-mandado', true);
+		});
+
 		/// repartidor
 		if (dataCliente.isRepartidor) {
 			// socketMaster = socket; 
@@ -795,6 +803,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notifica al cliente que repartidor tomo su pedido
 		socket.on('repartidor-notifica-cliente-acepto-pedido', async (listClienteNotifica) => {
+			console.log('repartidor-notifica-cliente-acepto-pedido ===========', listClienteNotifica)
 			listClienteNotifica.map(c => {
 				c.tipo = 2;
 				sendMsjSocketWsp(c)
@@ -880,12 +889,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		
 
 		
-		// nuevo pedido mandado
-		socket.on('nuevo-pedido-mandado', async () => {
-			// notifica al monitor
-			console.log('nuevo-pedido-mandado');
-			io.to('MONITOR').emit('monitor-nuevo-pedido-mandado', true);
-		});
+		// nuevo pedido mandado - > arriba
+		// socket.on('nuevo-pedido-mandado', async () => {
+		// 	// notifica al monitor
+		// 	console.log('nuevo-pedido-mandado');
+		// 	io.to('MONITOR').emit('monitor-nuevo-pedido-mandado', true);
+		// });
 
 	}
 
@@ -964,6 +973,16 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('set-cerrar-comercio-from-pacman', async (comercioId) => {
 			console.log('set-cerrar-comercio-from-pacman', comercioId);
 			socket.to('roomPatioDelivery').emit('set-comercio-open-change-from-monitor', comercioId);
+		});
+
+
+		// notifica al cliente que repartidor tomo su pedido
+		socket.on('repartidor-notifica-cliente-acepto-pedido', async (listClienteNotifica) => {
+			console.log('repartidor-notifica-cliente-acepto-pedido ===========', listClienteNotifica)
+			listClienteNotifica.map(c => {
+				c.tipo = 2;
+				sendMsjSocketWsp(c)
+			});
 		});
 
 	}

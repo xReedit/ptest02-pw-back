@@ -225,6 +225,7 @@ routerV3.post('/monitor/set-pedido-no-atendido', auth.verificarToken, apiPwaAppM
 routerV3.get('/monitor/get-load-list-programations', auth.verificarToken, apiPwaAppMonitor.getlistProgramations);
 routerV3.post('/monitor/run-timer-change-costo-delivery', auth.verificarToken, apiPwaAppMonitor.runTimerChangeCosto);
 routerV3.get('/monitor/get-comisiones-visa-calc', auth.verificarToken, apiPwaAppMonitor.getComisionesVisaCalc);
+routerV3.get('/monitor/get-confirmacion-pago-servicio', auth.verificarToken, apiPwaAppMonitor.getPendientesConfirmacionPagoServicio);
 
 
 

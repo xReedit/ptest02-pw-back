@@ -98,7 +98,9 @@ module.exports.setCheckLiquidado = setCheckLiquidado;
 
 const setCheckAbonado = function (req, res) {  
 	const idpedido = req.body.idpedido;
-    const read_query = `update pedido set check_pagado = '1', check_pago_fecha = now() where idpedido = ${idpedido};`;
+    const idtransaccion = req.body.idpwa_pago_transaction;
+    const read_query = `update pedido set check_pagado = '1', check_pago_fecha = now() where idpedido = ${idpedido}; 
+                        update pwa_pago_transaction set abonado = 1 where idpwa_pago_transaction = ${idtransaccion}`;
     execSqlQueryNoReturn(read_query, res);     
 }
 module.exports.setCheckAbonado = setCheckAbonado;
@@ -332,7 +334,11 @@ module.exports.getRetirosCashAtm = getRetirosCashAtm;
 
 const setPedidoNoAntendido = async function (req, res) {
 	const idpedido = req.body.idpedido;
-	const read_query = `update pedido set pwa_delivery_atendido = 1 where idpedido = ${idpedido};`;
+    const idpwa_pago_transaction = req.body.idpwa_pago_transaction;
+	let read_query = `update pedido set pwa_delivery_atendido = 1 where idpedido = ${idpedido};`;
+    if ( idpwa_pago_transaction ) {
+        read_query = read_query + ` update pwa_pago_transaction set anulado = 1 where idpwa_pago_transaction = ${idpwa_pago_transaction};`;
+    }
     execSqlQueryNoReturn(read_query, res);       
 }
 module.exports.setPedidoNoAntendido = setPedidoNoAntendido;
@@ -359,6 +365,17 @@ const runTimerChangeCosto = function (req, res) {
 	serviceTimerChangeCosto.runTimerCosto(_list);
 }
 module.exports.runTimerChangeCosto = runTimerChangeCosto;
+
+
+const getPendientesConfirmacionPagoServicio = function (req, res) {      
+    const read_query = `select spc.*, s.nombre, s.ciudad, cp.banco, if(spc.ispago_tarjeta = 0, 'Deposito', 'Tarjeta') tipo_pago 
+                    from sede_pago_confirmacion spc 
+                        inner join sede s on s.idsede = spc.idsede 
+                        inner join cuenta_papaya cp ON cp.idcuenta_papaya = spc.idcuenta_papaya 
+                    order by spc.idsede_pago_confirmacion desc limit 50`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getPendientesConfirmacionPagoServicio = getPendientesConfirmacionPagoServicio;
 
 
 

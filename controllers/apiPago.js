@@ -37,7 +37,14 @@ const setRegistrarPago = function (req, res) {
 	const objCliente = JSON.stringify(req.body.objCliente);
 	const objOperacion = JSON.stringify(req.body.objOperacion);
 
-    const read_query = `call procedure_pwa_registrar_pago(${idcliente},${idorg},${idsede},'${importe}','${objTransaction}','${objSubTotal}', '${objCliente}', '${objOperacion}', ${isdelivery}, ${isdeliveryInt})`;
+	const constoEntrega = req.body.objSubTotal
+									.filter(x => x.descripcion.toLowerCase() === 'entrega' || x.descripcion.toLowerCase() === 'propina')
+									.map(x => parseFloat(x.importe))
+									.reduce((a,b) => a + b, 0);
+
+	const importeNeto = parseFloat(importe) - constoEntrega;
+
+    const read_query = `call procedure_pwa_registrar_pago(${idcliente},${idorg},${idsede},'${importe}','${objTransaction}','${objSubTotal}', '${objCliente}', '${objOperacion}', ${isdelivery}, ${isdeliveryInt}, '${importeNeto}')`;
     emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.setRegistrarPago = setRegistrarPago;

@@ -245,6 +245,18 @@ const setImporteComisionLluvia = function (req, res) {
 }
 module.exports.setImporteComisionLluvia = setImporteComisionLluvia;
 
+// datos al inicio despues de escanear codigo
+const getDataSedeInfoFacById = async function (req, res) {  
+    const idsede = req.body.idsede;
+    // console.log('cuenta de mesa: ', mesa);
+    const read_query = `SELECT s.idsede, s.idorg, o.nombre, o.ruc, o.direccion, s.ciudad, o.tipo_contribuyente 
+                from sede s
+                    inner join org o on o.idorg = s.idorg
+                where (s.idsede=${idsede}) AND s.estado=0`;    
+    emitirRespuesta_RES(read_query, res);
+}
+module.exports.getDataSedeInfoFacById = getDataSedeInfoFacById;
+
 
 const getAplicaA = async function (req, res) {
 	const aplica = req.body.op;
@@ -368,14 +380,42 @@ module.exports.runTimerChangeCosto = runTimerChangeCosto;
 
 
 const getPendientesConfirmacionPagoServicio = function (req, res) {      
-    const read_query = `select spc.*, s.nombre, s.ciudad, cp.banco, if(spc.ispago_tarjeta = 0, 'Deposito', 'Tarjeta') tipo_pago 
+    const read_query = `select spc.*, s.nombre, s.nombre nombres, s.ciudad, cp.banco, if(spc.ispago_tarjeta = 0, 'Deposito', 'Tarjeta') tipo_pago, spco.descripcion plan, spco.idsede_plan_contratado 
                     from sede_pago_confirmacion spc 
                         inner join sede s on s.idsede = spc.idsede 
                         inner join cuenta_papaya cp ON cp.idcuenta_papaya = spc.idcuenta_papaya 
+                        inner join sede_plan_contratado spco on spco.idsede_plan_contratado = s.idsede_plan_contratado 
                     order by spc.idsede_pago_confirmacion desc limit 50`;
     emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getPendientesConfirmacionPagoServicio = getPendientesConfirmacionPagoServicio;
+
+
+const getInfoSedeFacturacionById = function (req, res) {   
+    const ruc = req.body.ruc;
+    const read_query = `select s.* from sede s inner join org o on o.idorg = s.idorg where o.ruc = '${ruc}'`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getInfoSedeFacturacionById = getInfoSedeFacturacionById;
+
+
+const setFacturaConfirmarPagoServicio = async function (req, res) {
+    const idconfirmacion = req.body.idconfirmacion;    
+    const external_id = req.body.external_id;    
+    let read_query = `update sede_pago_confirmacion set external_id = '${external_id}', confirmado=1 where idsede_pago_confirmacion = ${idconfirmacion};`;
+    execSqlQueryNoReturn(read_query, res);       
+}
+module.exports.setFacturaConfirmarPagoServicio = setFacturaConfirmarPagoServicio;
+
+const setAnularPagoServicio = async function (req, res) {
+    const umf_pago = req.body.umf_pago;    
+    const idsede = req.body.idsede;    
+    const idsede_pago_confirmacion = req.body.idsede_pago_confirmacion;
+    let read_query = `update sede set umf_pago = '${umf_pago}' where idsede = ${idsede}; update sede_pago_confirmacion set no_confirmado = 1 where idsede_pago_confirmacion = ${idsede_pago_confirmacion};`;
+    execSqlQueryNoReturn(read_query, res);       
+}
+module.exports.setAnularPagoServicio = setAnularPagoServicio;
+
 
 
 

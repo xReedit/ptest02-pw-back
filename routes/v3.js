@@ -226,6 +226,10 @@ routerV3.get('/monitor/get-load-list-programations', auth.verificarToken, apiPwa
 routerV3.post('/monitor/run-timer-change-costo-delivery', auth.verificarToken, apiPwaAppMonitor.runTimerChangeCosto);
 routerV3.get('/monitor/get-comisiones-visa-calc', auth.verificarToken, apiPwaAppMonitor.getComisionesVisaCalc);
 routerV3.get('/monitor/get-confirmacion-pago-servicio', auth.verificarToken, apiPwaAppMonitor.getPendientesConfirmacionPagoServicio);
+routerV3.post('/monitor/get-sede-info-fact', auth.verificarToken, apiPwaAppMonitor.getDataSedeInfoFacById);
+routerV3.post('/monitor/get-sede-info-facturacion-by-ruc', auth.verificarToken, apiPwaAppMonitor.getInfoSedeFacturacionById);
+routerV3.post('/monitor/set-factura-confirmacion-pago-servicio', auth.verificarToken, apiPwaAppMonitor.setFacturaConfirmarPagoServicio);
+routerV3.post('/monitor/set-anular-confirmacion-pago-servicio', auth.verificarToken, apiPwaAppMonitor.setAnularPagoServicio);
 
 
 

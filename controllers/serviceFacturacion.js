@@ -22,7 +22,7 @@ let mysql_clean = function (string) {
 
 var f_idorg, f_idsede, f_idusuario;
 
-const cocinarFactura = function (req, res) {  
+const cocinarFactura = async function (req, res) {  
     f_idsede = managerFilter.getInfoToken(req,'idsede');
     f_idorg = managerFilter.getInfoToken(req,'idorg');
     f_idusuario = managerFilter.getInfoToken(req,'idusuario');
@@ -33,7 +33,7 @@ const cocinarFactura = function (req, res) {
     const xArrayCliente = req.body.cliente;
     const xArraySede = req.body.sede;
 
-    const xjsonXml = xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComprobante, xArrayCliente, xArraySede);
+    const xjsonXml = await xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComprobante, xArrayCliente, xArraySede);
     return ReS(res, {
                 data: xjsonXml
             });
@@ -46,8 +46,10 @@ module.exports.cocinarFactura = cocinarFactura;
 async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComprobante, xArrayCliente, xArraySede, showPrint=true) {
 
     const xArrayEncabezado =  xArraySede; // this.comercioService.getSedeInfo();
+    // const isFacturacionElectronica = xArrayEncabezado.facturacion_e_activo === "0" ? false : true; // si se emiten comprobantes electronicos    
     const valIGV = xArrayEncabezado.porcentaje_igv;
     const isExoneradoIGV = xArrayEncabezado.is_exonerado_igv.toString() === '1' ? true : false;
+    // const isExoneradoIGV = xArrayEncabezado.activo === "1" ? true : false; //1 = desactivado => exonerado
 
     // xCartaSubtotales.filter(x => x.descripcion.indexOf('I.G.V') > -1)
     //     .map(x => procentajeIGV = x);
@@ -87,25 +89,38 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
     // const isExoneradoIGV = true;
     // let total_valor_de_venta_operaciones_gravadas = 0,total_valor_de_venta_operaciones_exoneradas = 0, leyenda = [];
     let totales = {};
+    let descuento = [];
+    let descuentoEnTotal = 0;
 
     if ( isExoneradoIGV ) { // exonerado del igv
         // totales
         totales = {
+            "total_descuentos": descuentoEnTotal,
             "total_exportacion": 0.00,
             "total_operaciones_gravadas": 0.00,
             "total_operaciones_inafectas": 0.00,
-            "total_operaciones_exoneradas": importe_total_pagar,
+            "total_operaciones_exoneradas": parseFloat(importe_total_pagar) + descuentoEnTotal,
             "total_operaciones_gratuitas": 0.00,
             "total_igv": 0.00,
             "total_impuestos": 0.00,
             "total_valor": importe_total_pagar,
             "total_venta": importe_total_pagar
         };
+
+
+        
     } else {
 
-        const total_operaciones_gravadas = xArraySubTotales[0].importe; // el subtotal
+        const total_operaciones_gravadas = descuentoEnTotal > 0 ? (importe_total_pagar_calc_igv - parseFloat(importe_total_igv)) + descuentoEnTotal : xArraySubTotales[0].importe; // el subtotal
+        // const total_operaciones_gravadas = xArraySubTotales[0].importe; // el subtotal
+        const _total_valor = descuentoEnTotal > 0 ? _base - descuentoEnTotal : importe_total_pagar - parseFloat(importe_total_igv);
+        const _total_venta = importe_total_pagar_calc_igv;
+
+
 
         totales = {
+             "total_descuentos": descuentoEnTotal,
+            "total_descuentos": 0.00,
             "total_exportacion": 0.00,
             "total_operaciones_gravadas": total_operaciones_gravadas,
             "total_operaciones_inafectas": 0.00,
@@ -113,10 +128,13 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
             "total_operaciones_gratuitas": 0.00,
             "total_igv": importe_total_igv,
             "total_impuestos": importe_total_igv,
-            "total_valor": total_operaciones_gravadas,
-            "total_venta": importe_total_pagar
+            "total_valor": _total_valor,
+            "total_venta": _total_venta
         };
     }
+
+
+        totales.total_descuentos = descuentoEnTotal;
 
         const rptDate = new Date().toLocaleString().split(' ');
         const fecha_manual = xArrayComprobante.fecha_manual || null; // para regularizar desde facturador
@@ -132,11 +150,11 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
         var direccionEmisor = xArrayEncabezado.sededireccion === '' ? xArrayEncabezado.direccion : xArrayEncabezado.sededireccion;
         direccionEmisor = direccionEmisor === undefined ? xArrayEncabezado.direccion: direccionEmisor;
 
-        xArrayComprobante.correlativo = xReturnCorrelativoComprobante(xArrayComprobante);
+    
 
-        const jsonData = {
+        var jsonData = {                    
             "serie_documento": `${abreviaCo}${xArrayComprobante.serie}`,
-            "numero_documento": xArrayComprobante.correlativo,
+            "numero_documento": "#",
             "fecha_de_emision": `${fecha_actual}`,
             "hora_de_emision": `${hora_actual}`,
             "codigo_tipo_operacion": "0101",
@@ -147,24 +165,25 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
             "datos_del_emisor": {
                 "codigo_pais": "PE",
                 "ubigeo": xArrayEncabezado.ubigeo,
-                "direccion": `${direccionEmisor} ` + ' | ' + `${xArrayEncabezado.sedeciudad}`,
+                "direccion": `${direccionEmisor} `+ ' | ' + `${xArrayEncabezado.sedeciudad}`,
                 "correo_electronico": "",
                 "telefono": `${xArrayEncabezado.telefono}`,
                 "codigo_del_domicilio_fiscal": xArrayEncabezado.codigo_del_domicilio_fiscal
             },
-            "datos_del_cliente_o_receptor": {
+            "datos_del_cliente_o_receptor":{
                 "codigo_tipo_documento_identidad": `${xtipo_de_documento_identidad_cliente}`,
                 "numero_documento": `${xnum_doc_cliente}`,
                 "apellidos_y_nombres_o_razon_social": `${xArrayCliente.nombres === "" ? "PUBLICO EN GENERAL" : xArrayCliente.nombres}`,
                 "codigo_pais": "PE",
-                "ubigeo": "220101",
+                "ubigeo": "150101",
                 "direccion": xArrayCliente.direccion,
                 "correo_electronico": "",
                 "telefono": ""
             },
+            "descuentos": descuento,
             "totales": totales,
             "items": xitems,
-            "extras": {
+            "extras":{
                 "forma_de_pago": "",
                 "observaciones": "",
                 "vendedor": "",
@@ -172,7 +191,7 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
                 "idcliente": xArrayCliente.idcliente
             }
 
-        };
+        }
 
         console.log(jsonData);
 
@@ -186,19 +205,23 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
     // mandamos a imprimir 
     if ( !showPrint ) { return rptPrint; }
 
-    const xImpresoraPrint = xArrayEncabezado.datos_impresion;
+    const xImpresoraPrint = xArrayEncabezado?.datos_impresion || null;
 
-    xArrayComprobante.pie_pagina_comprobante = xImpresoraPrint.pie_pagina_comprobante;
-    xArrayEncabezado.hash = rptPrint.hash; // que es realidad el qr
-    xArrayEncabezado.external_id = rptPrint.external_id;
-    // correlativo comprobante; 
-    xArrayComprobante.correlativo = rptPrint.correlativo_comprobante || xArrayComprobante.correlativo;
-    xArrayComprobante.facturacion_correlativo_api = rptPrint.facturacion_correlativo_api || xArrayComprobante.facturacion_correlativo_api;
+    if ( xImpresoraPrint ) {
+        xArrayComprobante.pie_pagina_comprobante = xImpresoraPrint.pie_pagina_comprobante;
+        xArrayEncabezado.hash = rptPrint.hash; // que es realidad el qr
+        xArrayEncabezado.external_id = rptPrint.external_id;
+        // correlativo comprobante; 
+        xArrayComprobante.correlativo = rptPrint.correlativo_comprobante || xArrayComprobante.correlativo;
+        xArrayComprobante.facturacion_correlativo_api = rptPrint.facturacion_correlativo_api || xArrayComprobante.facturacion_correlativo_api;
 
 
 
 
-    xImprimirComprobanteAhora(xArrayEncabezado,xArrayCuerpo,xArraySubTotales,xArrayComprobante,xArrayCliente, xImpresoraPrint);
+        xImprimirComprobanteAhora(xArrayEncabezado,xArrayCuerpo,xArraySubTotales,xArrayComprobante,xArrayCliente, xImpresoraPrint);
+    }
+
+
     return rptPrint;
 
     // return jsonData;
@@ -210,6 +233,7 @@ function xJsonSunatCocinarItemDetalle(orden, ValorIGV, isExoneradoIGV) {
     const xListItemsRpt = [];
     const procentaje_IGV = parseFloat(parseFloat(ValorIGV)/100);
 
+    console.log('orden ============= > ', orden);
     // var valor_referencial_unitario_por_item_en_operaciones_no_onerosas_y_codigo = {"monto_de_valor_referencial_unitario": "01", "codigo_de_tipo_de_precio": "02"};
     // orden[0].items.map(items => {
         orden[0].items.map( (x, index) => {
@@ -220,16 +244,26 @@ function xJsonSunatCocinarItemDetalle(orden, ValorIGV, isExoneradoIGV) {
             let total_base_igv = 0;
             let total_igv = 0;
             let total_valor_item = parseFloat(x.precio_total).toFixed(2); // x.precio_total;
+            let _precio_unitario = x.punitario || x.precio_total;
+            let _valor_unitario = _precio_unitario;
+
             if (!isExoneradoIGV) {// con igv
             //   valor_referencial_unitario_por_item_en_operaciones_no_onerosas_y_codigo = { monto_de_valor_referencial_unitario: "01" };
-              codigo_tipo_afectacion_igv = "10";
+              // codigo_tipo_afectacion_igv = "10";
               // total_igv = parseFloat(x.precio_total) * procentaje_IGV;
               // total_base_igv = parseFloat(x.precio_total) - total_igv;
               // total_valor_item = total_base_igv;
 
+              // total_igv = parseFloat(parseFloat(x.precio_total) * procentaje_IGV).toFixed(2);
+              // total_base_igv = parseFloat(x.precio_total) - total_igv;
+              // total_valor_item = parseFloat(total_base_igv);
+
+
+              codigo_tipo_afectacion_igv = "10";
               total_igv = parseFloat(parseFloat(x.precio_total) * procentaje_IGV).toFixed(2);
-              total_base_igv = parseFloat(x.precio_total) - total_igv;
-              total_valor_item = parseFloat(total_base_igv);
+              _valor_unitario = parseFloat(_precio_unitario) - (parseFloat(_precio_unitario) * procentaje_IGV); 
+              total_base_igv = parseFloat(_precio_unitario) * x.cantidad;
+              total_valor_item = _valor_unitario *  x.cantidad;
             } else {
                 total_base_igv = parseFloat(x.precio_total); // cambio x error 3105 IGV
             }

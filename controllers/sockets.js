@@ -68,6 +68,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to('MONITOR').emit('monitor-nuevo-pedido-mandado', true);
 		});
 
+
 		/// repartidor
 		if (dataCliente.isRepartidor) {
 			// socketMaster = socket; 
@@ -658,7 +659,19 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 
+		// restobar envia notificacion de pago de servcio
+		socket.on('restobar-pago-servicio-on', async (payload) => {
+			console.log('restobar-pago-servicio-on', payload);
+			io.to('MONITOR').emit('restobar-pago-servicio-on', true);
+		});
 
+		// restobar envia url pdf comprobante para enviar a whastapp		
+		socket.on('restobar-send-comprobante-url-ws', async (payload) => {
+			payload.tipo = 3;			
+			console.log('restobar-send-comprobante-url-ws', payload);			
+			sendMsjSocketWsp(payload);
+			
+		});
 
 	});
 
@@ -1054,6 +1067,14 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			_sendServerMsj.tipo = 2;
 			_sendServerMsj.telefono = dataMsj.telefono;
 			_sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre}, el repartidor que está a cargo de su pedido #${dataMsj.idpedido} de ${dataMsj.establecimiento} es: ${dataMsj.repartidor_nom} (${dataMsj.repartidor_telefono})🙋‍♂️\n\nLe llamará cuando este cerca ó para informarle de su pedido.`			
+		}
+
+		// notifica url descarga pdf comprobante
+		if ( tipo === 3 ) {
+			const _ulrComprobante = `https://apifac.papaya.com.pe/downloads/document/pdf/${dataMsj.external_id}`;
+			_sendServerMsj.tipo = 3;
+			_sendServerMsj.telefono = dataMsj.telefono;
+			_sendServerMsj.msj = `🤖 Hola, adjuntamos el link de descarga de su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. \n\n 📄👆 ${_ulrComprobante} \n\nTambién lo puede consultar en: papaya.com.pe`;			
 		}
 
 		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);

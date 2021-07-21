@@ -205,7 +205,7 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
     // mandamos a imprimir 
     if ( !showPrint ) { return rptPrint; }
 
-    const xImpresoraPrint = xArrayEncabezado?.datos_impresion || null;
+    const xImpresoraPrint = xArrayEncabezado.datos_impresion || null;
 
     if ( xImpresoraPrint ) {
         xArrayComprobante.pie_pagina_comprobante = xImpresoraPrint.pie_pagina_comprobante;

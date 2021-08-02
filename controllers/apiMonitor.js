@@ -373,6 +373,7 @@ module.exports.getComisionesVisaCalc = getComisionesVisaCalc;
 
 
 const runTimerChangeCosto = function (req, res) {	
+    
 	_list = req.body.list;
 	serviceTimerChangeCosto.runTimerCosto(_list);
 }

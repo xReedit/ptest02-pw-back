@@ -96,7 +96,8 @@ routerV3.post('/delivery/get-shared-url-carta', apiPwaAppDelivery.getSharedUrlCa
 
 // mensajes
 routerV3.post('/delivery/verificar-codigo-sms', apiPwaAppDelivery.verificarCodigoSMS);
-routerV3.post('/delivery/send-sms-confirmation', auth.verificarTokenSms, apiPwaSMS.sendMsjConfirmacion);
+// routerV3.post('/delivery/send-sms-confirmation', auth.verificarTokenSms, apiPwaSMS.sendMsjConfirmacion);
+routerV3.post('/delivery/send-sms-confirmation', apiPwaSMS.sendMsjConfirmacion);
 routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepartidorTEST);
 routerV3.post('/delivery/send-sms-test', apiPwaSMS.sendMsjSMSNewPedido);
 routerV3.post('/delivery/send-sms', apiPwaSMS.sendMsjSMS);
@@ -107,6 +108,7 @@ routerV3.post('/delivery/get-comercio-x-calificar', apiPwaAppDelivery.getComerci
 routerV3.get('/delivery/get-tipo-vehiculo', apiPwaAppDelivery.getTipoVehiculo);
 routerV3.get('/delivery/get-ciudades-delivery', apiPwaAppDelivery.getCiudadesDelivery);
 routerV3.post('/delivery/get-calificacion-sede', apiPwaAppDelivery.getCalificacionSede);
+routerV3.post('/delivery/search-cliente-by-phone', apiPwaAppDelivery.SearchClienteByPhone);
 
 // notificaciones push
 // guardar suscripcion

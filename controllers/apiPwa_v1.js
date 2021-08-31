@@ -443,8 +443,8 @@ module.exports.getSearchSubitemsItem = getSearchSubitemsItem;
 
 const setCodigoVerificacionTelefonoCliente =  function (data) {    
     // const iditem = req.body.iditem;
-        
-    const read_query = `call porcedure_pwa_update_phono_sms_cliente(${data.idcliente},'', '${data.cod}')`;    
+    const numTelefono = parseInt(data.idcliente) < 0 ? data.numberphone : '';
+    const read_query = `call porcedure_pwa_update_phono_sms_cliente(${data.idcliente},'${numTelefono}', '${data.cod}')`;    
     emitirRespuestaSP(read_query);  
 }
 module.exports.setCodigoVerificacionTelefonoCliente = setCodigoVerificacionTelefonoCliente;

@@ -33,7 +33,8 @@ const sendMsjConfirmacion = async function (req, res) {
 	})
 	.then((message) => {
 		// genera codigo y guarda
-		const read_query = `call porcedure_pwa_update_phono_sms_cliente(${idcliente},'', '${codigoVerificacion}')`;
+		const numTelefono = parseInt(idcliente) < 0 ? numberPhone : '';
+		const read_query = `call porcedure_pwa_update_phono_sms_cliente(${idcliente},'${numTelefono}', '${codigoVerificacion}')`;
     	emitirRespuestaSP(read_query);
 		return ReS(res, {
 			msj: true

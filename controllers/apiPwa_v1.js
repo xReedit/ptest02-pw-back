@@ -404,6 +404,13 @@ const getLastComisionEntrega = async function (req, res) {
 module.exports.getLastComisionEntrega = getLastComisionEntrega;
 
 
+const getCanalesConsumo = async function (req, res) {    
+    const idsede = req.body.idsede;
+    const read_query = `SELECT idtipo_consumo, descripcion, titulo from tipo_consumo where idsede=${idsede} and estado=0`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getCanalesConsumo = getCanalesConsumo;
+
 const setRegisterScanQr = async function (req, res) {    
     const idsede = req.body.idsede;
     const canal = req.body.canal;

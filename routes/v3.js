@@ -16,6 +16,8 @@ const apiPwaSMS = require('../controllers/sendMsj');
 const login = require('../controllers/login');
 const auth = require('../middleware/autentificacion');
 
+const apiSpeech = require('../controllers/speech');
+
 routerV3.get('/', function (req, res, next) {
 	res.json({
 		status: "success",
@@ -235,8 +237,12 @@ routerV3.post('/monitor/set-factura-confirmacion-pago-servicio', auth.verificarT
 routerV3.post('/monitor/set-anular-confirmacion-pago-servicio', auth.verificarToken, apiPwaAppMonitor.setAnularPagoServicio);
 
 
-
 //// MONITOR ///
+
+
+// speech //
+routerV3.get('/speech/comandos', apiSpeech.getComandosVoz);
+
 
 
 // test

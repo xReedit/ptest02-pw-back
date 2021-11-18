@@ -60,6 +60,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			sendMsjSocketWsp(_sendServerMsj);
 		});
 
+		// obtener date
+		socket.on('date-now-info', (e) =>{
+			socket.emit('date-now-info', new Date());
+		});
+
 
 		// nuevo pedido mandado
 		socket.on('nuevo-pedido-mandado', async () => {

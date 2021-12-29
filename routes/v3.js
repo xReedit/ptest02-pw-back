@@ -12,6 +12,9 @@ const apiPwaAppMonitor = require('../controllers/apiMonitor');
 
 const apiConsultaDniRuc = require('../controllers/apiConsultaDniRuc');
 const apiServiceFacturacion = require('../controllers/serviceFacturacion');
+
+const apiServiceSendCPE = require('../controllers/serviceSendCPE');
+
 const apiPwaSMS = require('../controllers/sendMsj');
 const login = require('../controllers/login');
 const auth = require('../middleware/autentificacion');
@@ -243,6 +246,9 @@ routerV3.post('/monitor/set-anular-confirmacion-pago-servicio', auth.verificarTo
 // speech //
 routerV3.get('/speech/comandos', apiSpeech.getComandosVoz);
 
+
+// send facturacion cpe
+routerV3.get('/cpe/cocinar', apiServiceSendCPE.cocinarRespuestaResumenCPE);
 
 
 // test

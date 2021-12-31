@@ -1084,8 +1084,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			const _ulrComprobante = `https://apifac.papaya.com.pe/downloads/document/pdf/${dataMsj.external_id}`;
 			_sendServerMsj.tipo = 3;
 			_sendServerMsj.telefono = dataMsj.telefono;
-			_sendServerMsj.msj = `🤖 Hola, adjuntamos el link de descarga de su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. \n\n 📄👆 ${_ulrComprobante} \n\nTambién lo puede consultar en: papaya.com.pe`;			
-			_sendServerMsj.msj2 = `🤖 Hola, adjuntamos el link de descarga de su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. \n\n También lo puede consultar en: papaya.com.pe`;
+			// _sendServerMsj.msj = `🤖 Hola, adjuntamos el link de descarga de su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. \n\n 📄👆 ${_ulrComprobante} \n\nTambién lo puede consultar en: papaya.com.pe`;			
+			_sendServerMsj.msj = `🤖 Hola, adjuntamos su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. También lo puede consultar en: papaya.com.pe`;			
+			// _sendServerMsj.msj2 = `🤖 Hola, adjuntamos su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. También lo puede consultar en: papaya.com.pe`;
 			_sendServerMsj.url_comprobante = _ulrComprobante;
 			_sendServerMsj.nombre_file = dataMsj.numero_comprobante;
 		}

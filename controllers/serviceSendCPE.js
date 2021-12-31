@@ -22,6 +22,7 @@ var cocinandoEnvioCPE = false;
 
 
 const activarEnvioCpe = async function () {	
+	console.log('ingreso cocinar cpe')
 	const minInterval = 600000; // cada 10min
 
 	setInterval(() => {
@@ -29,13 +30,13 @@ const activarEnvioCpe = async function () {
 		const hoursNow = date_now.getHours();
 		console.log('hora',hoursNow)
 
-		if ( hoursNow === 2 && !cocinandoEnvioCPE ) {// 02:00
+		if ( hoursNow === 1 && !cocinandoEnvioCPE ) {// 02:00
 			cocinandoEnvioCPE = true;
 			console.log('cocinando envio cpe', date_now.toLocaleDateString());
 			cocinarEnvioCPE();
 		}
 
-		if ( hoursNow === 3 && cocinandoEnvioCPE ) {// 03:00
+		if ( hoursNow === 2 && cocinandoEnvioCPE ) {// 03:00
 			console.log('cambia condicion', date_now.toLocaleDateString());
 			cocinandoEnvioCPE = false;
 		}
@@ -85,8 +86,8 @@ const cocinarEnvioCPE = async function () {
 				}				
 			}
 
-			// 3) enviamos (se envian uno por uno) - los que fueron registrados pero no enviados a la sunat x problemas de conexion con el servicio. o offline
-			list_cpe_nr = listCpe.filter(c => c.estado_sunat === 1);
+			// 3) enviamos (se envian uno por uno) solo facturas - los que fueron registrados pero no enviados a la sunat x problemas de conexion con el servicio. o offline
+			list_cpe_nr = listCpe.filter(c => c.estado_sunat === 1 && c.numero.indexOf('F') > -1 );
 			numRowListNR = list_cpe_nr.length;
 			if ( numRowListNR > 0 ) {
 				// enviamos al api
@@ -175,7 +176,7 @@ module.exports.cocinarRespuestaResumenCPE = cocinarRespuestaResumenCPE;
 
 async function getSedesCPE() {
 	// pruebas solo san carlos y papaya express
-	const sql_sedes = "select idorg,idsede,nombre,ciudad, authorization_api_comprobante, id_api_comprobante from sede where idsede in (154) and facturacion_e_activo = 1 and authorization_api_comprobante != '' and estado=0 order by idsede";
+	const sql_sedes = "select idorg,idsede,nombre,ciudad, authorization_api_comprobante, id_api_comprobante from sede where idsede = 1 and facturacion_e_activo = 1 and authorization_api_comprobante != '' and estado=0 order by idsede";
 	return await emitirRespuesta(sql_sedes);
 }
 

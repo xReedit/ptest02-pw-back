@@ -678,6 +678,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			
 		});
 
+		socket.on('restobar-notifica-pay-pedido', async (payload) => {			
+			console.log('restobar-notifica-pay-pedido-res', payload);	
+			socket.broadcast.to(chanelConect).emit('restobar-notifica-pay-pedido-res', payload);					
+		});
+
 	});
 
 	
@@ -1080,6 +1085,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			_sendServerMsj.tipo = 3;
 			_sendServerMsj.telefono = dataMsj.telefono;
 			_sendServerMsj.msj = `🤖 Hola, adjuntamos el link de descarga de su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. \n\n 📄👆 ${_ulrComprobante} \n\nTambién lo puede consultar en: papaya.com.pe`;			
+			_sendServerMsj.msj2 = `🤖 Hola, adjuntamos el link de descarga de su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. \n\n También lo puede consultar en: papaya.com.pe`;
+			_sendServerMsj.url_comprobante = _ulrComprobante;
+			_sendServerMsj.nombre_file = dataMsj.numero_comprobante;
 		}
 
 		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);

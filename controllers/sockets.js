@@ -683,6 +683,16 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socket.broadcast.to(chanelConect).emit('restobar-notifica-pay-pedido-res', payload);					
 		});
 
+
+		// respuesta solicitud de cierre
+		socket.on('restobar-permiso-cierre-remoto-respuesta', async (payload) => {			
+			console.log('restobar-permiso-cierre-remoto-respuesta', payload);	
+			socket.broadcast.to(chanelConect).emit('restobar-permiso-cierre-remoto-respuesta', payload);					
+		});
+
+
+		
+
 	});
 
 	
@@ -1086,7 +1096,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			_sendServerMsj.telefono = dataMsj.telefono;
 			// _sendServerMsj.msj = `🤖 Hola, adjuntamos el link de descarga de su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. \n\n 📄👆 ${_ulrComprobante} \n\nTambién lo puede consultar en: papaya.com.pe`;			
 			_sendServerMsj.msj = `🤖 Hola, adjuntamos su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. También lo puede consultar en: papaya.com.pe`;			
-			// _sendServerMsj.msj2 = `🤖 Hola, adjuntamos su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. También lo puede consultar en: papaya.com.pe`;
+			
 			_sendServerMsj.url_comprobante = _ulrComprobante;
 			_sendServerMsj.nombre_file = dataMsj.numero_comprobante;
 		}

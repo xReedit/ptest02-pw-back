@@ -143,7 +143,7 @@ const cocinarRespuestaResumenCPE = async function () {
 		const cpe_userid = sede.id_api_comprobante;
 
 		// 1) verificar el resumen si es aceptado
-		const sqlResumenCpe = `SELECT * from ce_resumen where fecha_resumen = '${fecha_resumen_yymmdd}' and idsede = ${idsede} and estado_sunat = 0 order by idce_resumen desc limit 1;`;		
+		const sqlResumenCpe = `SELECT * from ce_resumen where fecha_resumen = '${fecha_resumen_yymmdd}' and idsede = ${idsede} and estado_sunat = 0 order by idce_resumen;`;		
 		const resumenEvaluarCpe = await emitirRespuesta(sqlResumenCpe);
 		console.log('sqlResumenCpe', sqlResumenCpe)
 		console.log('resumenEvaluarCpe', resumenEvaluarCpe)

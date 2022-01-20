@@ -49,7 +49,7 @@ module.exports.activarEnvioCpe = activarEnvioCpe;
 
 // se ejecuta a las 02:00 horas
 const cocinarEnvioCPE = async function () {
-
+	console.log('cocinarEnvioCPE');	
 	// obtener sedes con facturacion
 	const lista_sedes = await getSedesCPE();
 
@@ -68,14 +68,15 @@ const cocinarEnvioCPE = async function () {
 
 		// 1) verificamos si hay comprobantes emitidos en la fecha resumen
 		const sqlCpe = `select * from ce where idsede = ${idsede} and fecha = '${fecha_resumen}' and (estado=0 and anulado=0);`;
-		const listCpe = await emitirRespuesta(sqlCpe);
+		const listCpe = await emitirRespuesta(sqlCpe);		
 		const numRowsCpe = listCpe.length;
+		console.log('sqlCpe', sqlCpe);
+		// console.log('listCpe', listCpe);
 
 		if ( numRowsCpe > 0 ) { // si hay comprobantes
 
 			// 2) buscar comprobantes no registrados en api		
 			let list_cpe_nr = listCpe.filter(c => c.estado_api === 1);
-
 			let numRowListNR = list_cpe_nr.length;
 			if ( numRowListNR > 0 ) {
 				// enviamos al api
@@ -99,7 +100,8 @@ const cocinarEnvioCPE = async function () {
 			}
 
 			// 3) creamos el resumen de boletas			
-		    let rpt_resumen = await sendResumen(fecha_resumen, cpe_token);		    
+		    let rpt_resumen = await sendResumen(fecha_resumen, cpe_token);		
+		    console.log('rpt_resumen', rpt_resumen)    
 		    if (rpt_resumen.success) {
 		    	if ( rpt_resumen.tiket === null ) {// si es null intenta nuevamente
 		    		rpt_resumen = await sendResumen(fecha_resumen, cpe_token);		    
@@ -122,6 +124,7 @@ module.exports.cocinarEnvioCPE = cocinarEnvioCPE;
 // se ejecuta a las 03:00 horas
 const cocinarRespuestaResumenCPE = async function () {
 	// obtener sedes con facturacion
+	console.log('cocinarRespuestaResumenCPE');
 	const lista_sedes = await getSedesCPE();
 
 	// fecha resumen	
@@ -140,12 +143,15 @@ const cocinarRespuestaResumenCPE = async function () {
 		const cpe_userid = sede.id_api_comprobante;
 
 		// 1) verificar el resumen si es aceptado
-		const sqlResumenCpe = `SELECT * from ce_resumen where fecha_resumen = '${fecha_resumen_yymmdd}' and idsede = ${idsede} and estado_sunat = 0 order by idce_resumen desc limit 1;`;
+		const sqlResumenCpe = `SELECT * from ce_resumen where fecha_resumen = '${fecha_resumen_yymmdd}' and idsede = ${idsede} and estado_sunat = 0 order by idce_resumen desc limit 1;`;		
 		const resumenEvaluarCpe = await emitirRespuesta(sqlResumenCpe);
+		console.log('sqlResumenCpe', sqlResumenCpe)
+		console.log('resumenEvaluarCpe', resumenEvaluarCpe)
 		if (resumenEvaluarCpe.length > 0) {
 			// consultamos ticket}
 			const elResumen = resumenEvaluarCpe[0];			
 			const rptConsultaResumen = await consultaTicketResumen(elResumen, cpe_token);
+			console.log('rptConsultaResumen', rptConsultaResumen);
 
 			if (rptConsultaResumen.success) {
 				// marca aceptado a todas las boletas
@@ -158,6 +164,7 @@ const cocinarRespuestaResumenCPE = async function () {
 					for (var i = numRowsCpe - 1; i >= 0; i--) {
 						const el_cpe = listCpe[i];		
 						const rpt_cpe = await sendRetryOneCpe(el_cpe.external_id, cpe_token);
+						console.log('rpt_cpe', rpt_cpe)
 						await updateStatusCpe(el_cpe, rpt_cpe, false);					
 					}				
 				}
@@ -176,14 +183,15 @@ module.exports.cocinarRespuestaResumenCPE = cocinarRespuestaResumenCPE;
 
 async function getSedesCPE() {
 	// pruebas solo san carlos y papaya express
-	const sql_sedes = "select idorg,idsede,nombre,ciudad, authorization_api_comprobante, id_api_comprobante from sede where facturacion_e_activo = 1 and authorization_api_comprobante != '' and estado=0 order by idsede";
+	const sql_sedes = "select idorg,idsede,nombre,ciudad, authorization_api_comprobante, id_api_comprobante from sede where idsede=13 and facturacion_e_activo = 1 and authorization_api_comprobante != '' and estado=0 order by idsede";
 	return await emitirRespuesta(sql_sedes);
 }
 
 function getFechaDiaAnterior() {
 	const fechaNow = new Date();
-	const fecha_resumen = new Date(fechaNow.setDate(fechaNow.getDate() - 2));
-	return fecha_resumen.toLocaleDateString();
+	const fecha_resumen = new Date(fechaNow.setDate(fechaNow.getDate() - 1)); // produccion
+	// const fecha_resumen = new Date(fechaNow.setDate(fechaNow.getDate())); // desarrollo
+	return fecha_resumen.toJSON().slice(0, 10).split('-').reverse().join('/');
 }
 
 async function getBoletasResumenError(fecha_resumen) {
@@ -227,7 +235,7 @@ async function updateStatusCpe(el_cpe, rpt_cpe, isNoRegistrado = true) {
 	const _estadoSunat = isNoRegistrado ? isBoleta ? 1 : 0 : 0; // si es boleta aun no esta registrado lo mandaremos en resumen	 // si es envio de boletas del resumen si es correcto debe ir 0
 	const _mensaje = isSuccess ? isNoRegistrado ? isBoleta ? 'Registrado' : 'Aceptado' : 'Aceptado' : rpt_cpe.message;
 	const _cdr = isBoleta ? 0 : 1;
-	const isRegistroPrevio = rpt_cpe.message.indexOf('ya se encuentra registrado') > -1 ? true : false;
+	const isRegistroPrevio = rpt_cpe.response.description.indexOf('ya se encuentra registrado') > -1 ? true : false;
 	let sql_update = '';
 
 	if (isRegistroPrevio) {
@@ -272,6 +280,7 @@ async function sendResumen(fecha_resumen, token) {
 
 async function saveResumen(idorg, idsede, fecha_resumen, external_id, tiket ) {
 	const sql_resumen =`call procedure_register_resumen_cpe(${idorg}, ${idsede}, '${fecha_resumen.split('/').reverse().join('-')}', '${external_id}', '${tiket}');`
+	console.log('saveResumen', sql_resumen)
 	await emitirRespuesta(sql_resumen);
 }
 
@@ -297,6 +306,7 @@ async function consultaTicketResumen(resumen, token) {
 
 async function marcarBoletasAceptas(idsede, fecha_resumen, idce_resumen) {
 	const sql = `call procedure_register_resumen_cpe_ok(${idsede},'${fecha_resumen}',${idce_resumen})`;
+	console.log('sql_marcarBoletasAceptas', sql)
 	await emitirRespuesta(sql);
 }
 

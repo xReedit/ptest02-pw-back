@@ -248,7 +248,8 @@ routerV3.get('/speech/comandos', apiSpeech.getComandosVoz);
 
 
 // send facturacion cpe
-routerV3.get('/cpe/cocinar', apiServiceSendCPE.cocinarRespuestaResumenCPE);
+routerV3.get('/cpe/cocinar', apiServiceSendCPE.cocinarEnvioCPE);
+routerV3.get('/cpe/verificar_resumen', apiServiceSendCPE.cocinarRespuestaResumenCPE);
 
 
 // test

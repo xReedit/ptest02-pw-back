@@ -143,7 +143,7 @@ const cocinarRespuestaResumenCPE = async function () {
 		const cpe_userid = sede.id_api_comprobante;
 
 		// 1) verificar el resumen si es aceptado
-		const sqlResumenCpe = `SELECT * from ce_resumen where fecha_resumen = '${fecha_resumen_yymmdd}' and idsede = ${idsede} and estado_sunat = 0 order by idce_resumen;`;		
+		const sqlResumenCpe = `SELECT * from ce_resumen where fecha_resumen = '${fecha_resumen_yymmdd}' and idsede = ${idsede} and estado_sunat = 0 order by idce_resumen desc limit 1;`;		
 		const resumenEvaluarCpe = await emitirRespuesta(sqlResumenCpe);
 		console.log('sqlResumenCpe', sqlResumenCpe)
 		console.log('resumenEvaluarCpe', resumenEvaluarCpe)
@@ -237,7 +237,7 @@ async function updateStatusCpe(el_cpe, rpt_cpe, isNoRegistrado = true) {
 	const _mensaje = isSuccess ? isNoRegistrado ? isBoleta ? 'Registrado' : 'Aceptado' : 'Aceptado' : rpt_cpe.message;
 	const _cdr = isBoleta ? 0 : 1;
 	const _descripcionResponse = isSuccess ? rpt_cpe.response.description : rpt_cpe.message;
-	const isRegistroPrevio = _descripcionResponse.indexOf('ya se encuentra registrado') > -1 ? true : false ;
+	const isRegistroPrevio = _descripcionResponse.indexOf('ya se encuentra registrado') > -1 ? true : false;
 	let sql_update = '';
 
 	if (isRegistroPrevio) {

@@ -237,7 +237,7 @@ async function updateStatusCpe(el_cpe, rpt_cpe, isNoRegistrado = true) {
 	const _mensaje = isSuccess ? isNoRegistrado ? isBoleta ? 'Registrado' : 'Aceptado' : 'Aceptado' : rpt_cpe.message;
 	const _cdr = isBoleta ? 0 : 1;
 	const _descripcionResponse = isSuccess ? rpt_cpe.response.description : rpt_cpe.message;
-	const isRegistroPrevio = _descripcionResponse.indexOf('ya se encuentra registrado') > -1 ? true : false : ;
+	const isRegistroPrevio = _descripcionResponse.indexOf('ya se encuentra registrado') > -1 ? true : false ;
 	let sql_update = '';
 
 	if (isRegistroPrevio) {

@@ -183,7 +183,7 @@ module.exports.cocinarRespuestaResumenCPE = cocinarRespuestaResumenCPE;
 
 async function getSedesCPE() {
 	// pruebas solo san carlos y papaya express
-	const sql_sedes = "select idorg,idsede,nombre,ciudad, authorization_api_comprobante, id_api_comprobante from sede where facturacion_e_activo = 1 and authorization_api_comprobante != '' and estado=0 order by idsede";
+	const sql_sedes = "select idorg,idsede,nombre,ciudad, authorization_api_comprobante, id_api_comprobante from sede where idsede = 154 and facturacion_e_activo = 1 and authorization_api_comprobante != '' and estado=0 order by idsede";
 	return await emitirRespuesta(sql_sedes);
 }
 

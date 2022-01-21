@@ -236,7 +236,7 @@ async function updateStatusCpe(el_cpe, rpt_cpe, isNoRegistrado = true) {
 	const _estadoSunat = isNoRegistrado ? isBoleta ? 1 : 0 : 0; // si es boleta aun no esta registrado lo mandaremos en resumen	 // si es envio de boletas del resumen si es correcto debe ir 0
 	const _mensaje = isSuccess ? isNoRegistrado ? isBoleta ? 'Registrado' : 'Aceptado' : 'Aceptado' : rpt_cpe.message;
 	const _cdr = isBoleta ? 0 : 1;
-	const _descripcionResponse = isSuccess ? rpt_cpe.response?.description || '' : rpt_cpe.message;
+	const _descripcionResponse = isSuccess ? rpt_cpe.response?.description : rpt_cpe.message;
 	const isRegistroPrevio = _descripcionResponse ? _descripcionResponse.indexOf('ya se encuentra registrado') > -1 ? true : false : false;
 	let sql_update = '';
 

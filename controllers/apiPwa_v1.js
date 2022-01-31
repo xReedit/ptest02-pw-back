@@ -256,6 +256,14 @@ const getDataSedeIni = async function (req, res) {
 }
 module.exports.getDataSedeIni = getDataSedeIni;
 
+const getIdSedeFromNickName = async function (req, res) {  
+    const nomsede = req.body.nomsede;
+    // console.log('cuenta de mesa: ', mesa);
+    const read_query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit from sede where link_carta='${nomsede}' AND estado=0`;    
+    emitirRespuesta_RES(read_query, res);
+}
+module.exports.getIdSedeFromNickName = getIdSedeFromNickName;
+
 
 const getReglasApp = async function (req, res) {	
 	const read_query = `SELECT * from pwa_reglas_app where estado=0`;	

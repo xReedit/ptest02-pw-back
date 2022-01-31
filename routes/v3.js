@@ -51,6 +51,7 @@ routerV3.post('/ini/info-sede', apiPwaAppPedidos.getDataSedeIni);
 routerV3.post('/ini/info-sede-gps', apiPwaAppPedidos.getSedeRequiereGPS);
 routerV3.get('/ini/reglas-app', apiPwaAppPedidos.getReglasApp);
 routerV3.post('/ini/login-cliente-dni', apiPwaAppPedidos.getUsuarioClietenByDNI);
+routerV3.post('/ini/carta-virtual', apiPwaAppPedidos.getIdSedeFromNickName);
 
 routerV3.post('/pedido/lacuenta-cliente', apiPwaAppPedidos.getLaCuentaFromCliente);
 routerV3.post('/pedido/lacuenta-cliente-totales', apiPwaAppPedidos.getLaCuentaFromClienteTotales);

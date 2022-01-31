@@ -302,13 +302,18 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 								if (item.subitems.length > 0) {
 
-									item.subitems.map(s => {							
-										let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
+									try {
+										item.subitems.map(s => {							
+											let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
 
-										if ( itemFind ) {
-											itemFind.cantidad = subitem.cantidad;
-										}
-									});
+											if ( itemFind ) {
+												itemFind.cantidad = subitem.cantidad;
+											}
+										});
+									} catch(error) {										
+										console.log(error);
+										console.log('item.subitems', item.subitems);
+									}	
 
 								}								
 							}							
@@ -1065,7 +1070,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		if ( tipo === 0 ) {
 			_dataUrl = `{"s": "${dataMsj.s}", "p": ${dataMsj.p}, "h": "${dataMsj.h}"}`;
-			url = `https://comercio.papaya.com.pe/#/order-last?p=${btoa(_dataUrl)}`;
+			// url = `https://comercio.papaya.com.pe/#/order-last?p=${btoa(_dataUrl)}`; // 2322 quitamos el hashtag #
+			url = `https://comercio.papaya.com.pe/order-last?p=${btoa(_dataUrl)}`;
 			msj = `🤖 🎉 🎉 Tienes un nuevo pedido por Papaya Express, chequealo aqui: ${url}`;
 			_sendServerMsj.tipo = 0;
 			_sendServerMsj.telefono = dataMsj.t;

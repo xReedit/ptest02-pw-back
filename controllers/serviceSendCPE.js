@@ -19,6 +19,14 @@ let mysql_clean = function (string) {
 const URL_COMPROBANTE = 'https://apifac.papaya.com.pe/api';
 var HEADERS_COMPROBANTE = { 'Content-Type': 'application/json', 'Authorization': ''}
 var cocinandoEnvioCPE = false;
+var searchCpeByDate = null;
+
+const cocinarEnvioByFecha = async function (req, res) {
+	searchCpeByDate = req.body.fecha;
+	console.log('cocinar de fecha', searchCpeByDate);	
+	cocinarEnvioCPE();
+}
+module.exports.cocinarEnvioByFecha = cocinarEnvioByFecha;	
 
 
 const activarEnvioCpe = async function () {	
@@ -188,8 +196,9 @@ async function getSedesCPE() {
 }
 
 function getFechaDiaAnterior() {
-	const fechaNow = new Date();
-	const fecha_resumen = new Date(fechaNow.setDate(fechaNow.getDate() - 1)); // produccion
+	const fechaDefault = searchCpeByDate;
+	const fechaNow = fechaDefault ? new Date(fechaDefault) : new Date();
+	const fecha_resumen = fechaDefault ? fechaNow : new Date(fechaNow.setDate(fechaNow.getDate() - 1)); // produccion
 	// const fecha_resumen = new Date(fechaNow.setDate(fechaNow.getDate())); // desarrollo
 	return fecha_resumen.toJSON().slice(0, 10).split('-').reverse().join('/');
 }

@@ -18,6 +18,13 @@ const getEstablecimientos = function (req, res) {
 }
 module.exports.getEstablecimientos = getEstablecimientos;
 
+const getEstablecimientosPromociones = function (req, res) {  
+	const ciudad = req.body.ciudad || ''; // lo cambiamos por ciudad
+    const read_query = `call procedure_pwa_delivery_establecimiento_promo('${ciudad}')`;
+    emitirRespuestaSP_RES(read_query, res);        
+}
+module.exports.getEstablecimientosPromociones = getEstablecimientosPromociones;
+
 
 const getDireccionCliente = async function (req, res) {
 	// console.log ('idcliente', req.body);

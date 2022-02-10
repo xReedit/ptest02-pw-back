@@ -90,6 +90,7 @@ routerV3.post('/transaction/registrar-pago', apiPwaAppPedidosPago.setRegistrarPa
 
 // delivery
 routerV3.post('/delivery/get-establecimientos', apiPwaAppDelivery.getEstablecimientos);
+routerV3.post('/delivery/get-establecimientos-promos', apiPwaAppDelivery.getEstablecimientosPromociones);
 routerV3.post('/delivery/get-direccion-cliente', apiPwaAppDelivery.getDireccionCliente);
 routerV3.post('/delivery/get-mis-pedidos', apiPwaAppDelivery.getMisPedido);
 routerV3.post('/delivery/calificar-servicio', apiPwaAppDelivery.setCalificarServicio);

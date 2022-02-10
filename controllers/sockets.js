@@ -1,6 +1,7 @@
 const apiPwa = require('./apiPwa_v1.js');
 const apiPwaRepartidor = require('./apiRepartidor.js');
 const apiPwaComercio = require('./apiComercio.js');
+let apiPrintServer = require('./apiPrintServer');
 var btoa = require('btoa');
 //const auth = require('../middleware/autentificacion');
 
@@ -108,6 +109,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			return;
 		}
 
+		
+
+
 
 		
 		
@@ -124,7 +128,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.join(chanelConect);
 
 
-		
+		// Servidor de Impresion 070222
+		if (dataCliente.isServerPrint === '1') {
+			// socketMaster = socket; 
+			console.log('es print server');
+			apiPrintServer.socketPrintServerClient(dataCliente,socket);
+			return;
+		}
 
 
 		if (dataCliente.isComercio === 'true') {
@@ -693,6 +703,16 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('restobar-permiso-cierre-remoto-respuesta', async (payload) => {			
 			console.log('restobar-permiso-cierre-remoto-respuesta', payload);	
 			socket.broadcast.to(chanelConect).emit('restobar-permiso-cierre-remoto-respuesta', payload);					
+		});
+
+
+		// notifica al cliente que repartidor tomo su pedido
+		socket.on('repartidor-notifica-cliente-acepto-pedido', async (listClienteNotifica) => {
+			console.log('repartidor-notifica-cliente-acepto-pedido ===========', listClienteNotifica)
+			listClienteNotifica.map(c => {
+				c.tipo = 2;
+				sendMsjSocketWsp(c)
+			});
 		});
 
 

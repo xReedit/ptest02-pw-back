@@ -49,6 +49,10 @@ const activarEnvioCpe = async function () {
 			cocinandoEnvioCPE = false;
 		}
 
+		if ( hoursNow === 4  ) {// 04:00 am borra todo los print detalle y cuadres anteriores
+			xLimpiarPrintDetalle();
+		}
+
 
 	}, minInterval);
 }
@@ -328,6 +332,12 @@ async function listBoletasResumen(idsede, fecha_resumen) {
 }
 
 
+
+// 04:00 limpia la tabla para mantenerla ligera
+function xLimpiarPrintDetalle () {
+	const sql = `call procedure_remove_print_detalle()`;	
+	emitirRespuesta(sql);	
+}
 
 
 function emitirRespuesta(xquery) {

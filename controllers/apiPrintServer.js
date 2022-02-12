@@ -46,29 +46,58 @@ const socketPrintServerClient = async function (data, socket) {
 		setStatusItem(item);
 	});
 
+	// cambiar status impreso toda la lista
+	socket.on('set-ps-status-list-item', async (list) => {		
+		console.log('set-ps-status-list-item', list);		
+		setStatusListItem(list);
+	});
+
 }
 module.exports.socketPrintServerClient = socketPrintServerClient;
 
 
 function setStatusItem(item) {
-	const _error = item.success ? '0' : '1';
-	const _impreso = item.success ? '1' : '0';	
+	const _error = item.success == true ? '0' : '1';
+	const _impreso = item.success == true ? '1' : '0';	
 	let sql = '';
 
 	// guadar como
 	if ( item.success ) {
-		sql = `update print_server_detalle set impreso = 1, error = 0 where idprint_server_detalle in(${item.id}) and impreso = 0;`;
-		emitirRespuesta(sql);
+		sql = `update print_server_detalle set impreso = 1, error = 0 where idprint_server_detalle in(${item.id}); `;
+		// emitirRespuesta(sql);
 
 		// notifica pedido visto
 		if ( item.idp !== '' ) {
-			sql = `update pedido set pwa_estado='A', is_printer = 1 where idpedido in(${item.idp}) and pwa_estado='P'`;
-			emitirRespuesta(sql);
+			sql += `update pedido set pwa_estado='A', is_printer = 1 where idpedido in(${item.idp}) and pwa_estado='P';`;
+			// emitirRespuesta(sql);
 		}				
 	} else {
-		sql = `update print_server_detalle set impreso = 0, error = 1 where idprint_server_detalle = ${item.id};`;
-		emitirRespuesta(sql);		
+		sql = `update print_server_detalle set impreso = 0, error = 1 where idprint_server_detalle = ${item.id};`;			
 	}
+
+	emitirRespuesta(sql);
+}
+
+// todo una lista
+function setStatusListItem(list) {
+	const idsPrint = list.map(x => x.id).join() || '';
+	const idsPedidos = list.map(x => x.idp).join() || '';
+	let sqlPrint = '';
+	let sqlVisto = '';
+
+	if (idsPrint !== '') {
+		sqlPrint = `update print_server_detalle set impreso = 1, error = 0 where idprint_server_detalle in(${idsPrint});`;		
+	}
+	if (idsPedidos !== '') {
+		sqlVisto = `update pedido set pwa_estado='A', is_printer = 1 where idpedido in(${idsPedidos}) and pwa_estado='P';`;			
+	}
+
+	const _sql = sqlPrint+' '+ sqlVisto;
+	console.log('_sql === > ', _sql);
+	emitirRespuesta(_sql);
+
+	console.log('idsPrint ==== ', idsPrint);
+	console.log('idsPedidos ==== ', idsPedidos);
 }
 
 function getMaxIdPrint(data) {

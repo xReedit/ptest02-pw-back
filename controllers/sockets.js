@@ -660,6 +660,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 
+
+
 		// delivery cliente
 
 		// notifica cambio de estado del pedido
@@ -703,6 +705,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('restobar-permiso-cierre-remoto-respuesta', async (payload) => {			
 			console.log('restobar-permiso-cierre-remoto-respuesta', payload);	
 			socket.broadcast.to(chanelConect).emit('restobar-permiso-cierre-remoto-respuesta', payload);					
+		});
+
+		socket.on('restobar-venta-registrada', () => {			
+			const _res = `se proceso un pago >  ${chanelConect}`;
+			console.log('=>>>>>>>>>>>>>>>>> ', _res);
+			socket.to(chanelConect).emit('restobar-venta-registrada-res', _res);
 		});
 
 

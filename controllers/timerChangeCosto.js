@@ -15,12 +15,14 @@ const timeRefesh = 30000;
 let listProgramacionPlaza = [];
 let intervalComand;
 
-const runTimerCosto = function (_listProgramacionPlaza) {		
-	listProgramacionPlaza = _listProgramacionPlaza;
+const runTimerCosto = async function () {
 
-	console.log ('this.listProgramacionPlaza', listProgramacionPlaza);
+  const read_query = `SELECT * from sede_config_service_delivery where estado = 0`;
+  const _list = await emitirRespuesta(read_query); 
+  listProgramacionPlaza = _list;
+  console.log('lista de configuracion de plazas horarios', _list);
 
-	if ( !intervalComand ) { clearInterval(intervalComand); }
+  if ( !intervalComand ) { clearInterval(intervalComand); }
 
     intervalComand = setInterval(() => {
       comandListChangeCosto();
@@ -28,12 +30,19 @@ const runTimerCosto = function (_listProgramacionPlaza) {
 }
 module.exports.runTimerCosto = runTimerCosto;
 
+const setChangeCosto = function (_listProgramacionPlaza) {		
+	listProgramacionPlaza = _listProgramacionPlaza;
+  comandListChangeCosto();	
+}
+module.exports.setChangeCosto = setChangeCosto;
+
 
 function comandListChangeCosto() {
-	console.log('========== ejecutamos comandListChangeCosto comandListChangeCosto');
+	// console.log('========== ejecutamos comandListChangeCosto comandListChangeCosto');
     const _date = new Date();
     const _dayNow = _date.getDay();
     const _hourNow = _date.getHours();
+    let _hourComand = 0;
     let costoChange = 0;
 
     listProgramacionPlaza.map(p => {
@@ -47,7 +56,7 @@ function comandListChangeCosto() {
            const comand_costo = c;
            const _dayComand = comand_costo.dia.num;
 
-           const _hourComand = parseInt(comand_costo.hora, 0);
+           _hourComand = parseInt(comand_costo.hora, 0);
 
            // si es -1 es todos los dias
            if ( _dayComand === -1 || _dayComand === _dayNow ) {
@@ -63,10 +72,11 @@ function comandListChangeCosto() {
 
         });
 
-         console.log('========== cambiamos costo', costoChange)
-         console.log('========== cambiamos _dayNow', _dayNow)
-        if (costoChange !== 0) {
+        // console.log('========== cambiamos costo', costoChange)
+        // console.log('========== cambiamos _dayNow', _dayNow)
+        if (costoChange !== 0 && p.isChangeHours !== _hourComand) {
           p.c_minimo = costoChange;
+          p.isChangeHours = _hourComand;
           guardarCambiosChangeCosto(p);
         }
 

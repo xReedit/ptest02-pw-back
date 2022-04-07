@@ -524,27 +524,38 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 				listPedidos
 					.filter(pp => pp.idsede === _idsede && pp.isshow_back === 1 && !pp.paso)
 					.map(pp => {						
-						importeAcumula += parseFloat(pp.total);
-						if ( importeAcumula <= pp.monto_acumula ) {
-							pp.paso=true;
-							pp.json_datos_delivery = typeof pp.json_datos_delivery === 'string' ? JSON.parse(pp.json_datos_delivery) : pp.json_datos_delivery;
+						pp.json_datos_delivery = typeof pp.json_datos_delivery === 'string' ? JSON.parse(pp.json_datos_delivery) : pp.json_datos_delivery;
+						const isPagoTarjeta = pp.json_datos_delivery.p_header.arrDatosDelivery.metodoPago.idtipo_pago === 2;
+						const isRecogeCliente = pp.cliente_pasa_recoger === 'false' ? false : true;
 
-							// si es tarjeta no suma
-							if ( pp.json_datos_delivery.p_header.arrDatosDelivery.metodoPago.idtipo_pago !==2 ) {
-								importePagar += parseFloat(pp.total);
+						if ( !isRecogeCliente ) { // si no recoge el cliente notifica al repartidor
+						
+							importeAcumula += parseFloat(pp.total);
+							if ( importeAcumula <= pp.monto_acumula) {
+								pp.paso=true;
+								// pp.json_datos_delivery = typeof pp.json_datos_delivery === 'string' ? JSON.parse(pp.json_datos_delivery) : pp.json_datos_delivery;
+
+								// si es tarjeta no suma
+								if ( pp.json_datos_delivery.p_header.arrDatosDelivery.metodoPago.idtipo_pago !==2 ) {
+									importePagar += parseFloat(pp.total);
+								}
+								
+								// console.log('push ', pp.idpedido);
+								_last_id_repartidor_reasigno = _last_id_repartidor_reasigno ? _last_id_repartidor_reasigno : pp.last_id_repartidor_reasigno;
+								_num_reasignaciones = _num_reasignaciones ? _num_reasignaciones : pp.num_reasignaciones;
+
+								listGroup.push(pp.idpedido);
+							} else {
+								if (isPagoTarjeta) {
+									listGroup.push(pp.idpedido);
+								}
+
+								importeAcumula -= parseFloat(pp.total);
 							}
-							
-							// console.log('push ', pp.idpedido);
-							_last_id_repartidor_reasigno = _last_id_repartidor_reasigno ? _last_id_repartidor_reasigno : pp.last_id_repartidor_reasigno;
-							_num_reasignaciones = _num_reasignaciones ? _num_reasignaciones : pp.num_reasignaciones;
-
-							// listGroup.push(pp.idpedido);
-						} else {
-							importeAcumula -= parseFloat(pp.total);
 						}
 
 						// si el monto es mayor al acumulado tambien agrega
-						listGroup.push(pp.idpedido);
+						// listGroup.push(pp.idpedido);
 						
 					});				
 
@@ -898,7 +909,12 @@ module.exports.runLoopPrueba = runLoopPrueba;
 
 
 
-
+// a los pedidos que recoge el cliente lo asigna el repartidor 1 = Atencion al cliente
+const setAsignarRepartoAtencionCliente = function (idpedido) {  	
+	const sql = `update pedido set idrepartidor = 1 where idpedido = ${idpedido};`;
+	onlyUpdateQuery(sql);
+}
+module.exports.setAsignarRepartoAtencionCliente = setAsignarRepartoAtencionCliente;
 
 
 

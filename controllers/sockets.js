@@ -1051,6 +1051,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			});
 		});
 
+		// notifica dede pacman al cliente de recoger su pedido
+		socket.on('set-monitor-pedido-recoger', async (_sendServerMsj) => {
+			console.log('mensaje recoger =============> ', _sendServerMsj);
+			apiPwaRepartidor.setAsignarRepartoAtencionCliente(_sendServerMsj.idpedido);
+			sendMsjSocketWsp(_sendServerMsj);
+		});		
+
 	}
 
 
@@ -1120,7 +1127,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		if ( tipo === 2 ) {			
 			_sendServerMsj.tipo = 2;
 			_sendServerMsj.telefono = dataMsj.telefono;
-			_sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre}, el repartidor que está a cargo de su pedido #${dataMsj.idpedido} de ${dataMsj.establecimiento} es: ${dataMsj.repartidor_nom} (${dataMsj.repartidor_telefono})🙋‍♂️\n\nLe llamará cuando este cerca ó para informarle de su pedido.`			
+			_sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre}, el repartidor que está a cargo de su pedido de ${dataMsj.establecimiento} es: ${dataMsj.repartidor_nom} 📞 ${dataMsj.repartidor_telefono} 🙋‍♂️\n\nLe llamará cuando este cerca ó para informarle de su pedido.`			
 		}
 
 		// notifica url descarga pdf comprobante
@@ -1132,8 +1139,17 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			_sendServerMsj.msj = `🤖 Hola, adjuntamos su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. También lo puede consultar en: papaya.com.pe`;			
 			
 			_sendServerMsj.url_comprobante = _ulrComprobante;
+			_sendServerMsj.url_comprobante_xml = _ulrComprobante.replace('/pdf/','/xml/');
 			_sendServerMsj.nombre_file = dataMsj.numero_comprobante;
 		}
+
+		// notifica al cliente que pase a recoger el pedido
+		if ( tipo === 4 ) {
+			_sendServerMsj.tipo = 4;
+			_sendServerMsj.telefono = dataMsj.telefono;
+			_sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre} su pedido de ${dataMsj.establecimiento} puede pasar a recogerlo en ${dataMsj.tiempo_entrega} aproximadamente.`;
+		}
+
 
 		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
 	}

@@ -92,10 +92,12 @@ const setComercioConectado = function (dataCLiente) {
 module.exports.setComercioConectado = setComercioConectado;
 
 const getSocketIdComercio = async function (idsede) {
-    const read_query = `SELECT ss.socketid, ss.key_suscripcion_push, s.pwa_delivery_telefono_notifica_pedido telefono_notifica from sede_socketid ss inner join sede s on s.idsede = ss.idsede where ss.idsede = ${idsede}`;
+    // const read_query = `SELECT ss.socketid, ss.key_suscripcion_push, s.pwa_delivery_telefono_notifica_pedido telefono_notifica from sede_socketid ss inner join sede s on s.idsede = ss.idsede where ss.idsede = ${idsede}`;    
+    const read_query = `select ss.socketid, ss.key_suscripcion_push, s.pwa_delivery_telefono_notifica_pedido telefono_notifica from sede s left join sede_socketid ss on s.idsede = ss.idsede where s.idsede = ${idsede}`;
     return emitirRespuesta(read_query);        
 }
 module.exports.getSocketIdComercio = getSocketIdComercio;
+
 
 const pushSuscripcion = async function (req, res) {	
 	console.log('============================ pushSuscripcion ========');

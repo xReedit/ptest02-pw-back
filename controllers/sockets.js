@@ -407,7 +407,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// notificacion push
 				const socketIdComercio = await apiPwaComercio.getSocketIdComercio(dataCliente.idsede);
 				telefonoComercio = socketIdComercio[0].telefono_notifica;
-				apiPwaComercio.sendOnlyNotificaPush(socketIdComercio[0].key_suscripcion_push, 0);				
+				if ( socketIdComercio[0].key_suscripcion_push ) {
+					apiPwaComercio.sendOnlyNotificaPush(socketIdComercio[0].key_suscripcion_push, 0);				
+				}				
 
 			// 	const _dataPedido = {
 			// 		dataItems: dataSend.dataPedido.p_body,

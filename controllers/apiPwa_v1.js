@@ -74,7 +74,7 @@ module.exports.getDataSedeDescuentos = getDataSedeDescuentos;
 const getTipoConsumo = async function (dataCLiente) {
 	const idorg = dataCLiente.idorg;
     const idsede = dataCLiente.idsede;
-    const read_query = `SELECT idtipo_consumo, descripcion, titulo from tipo_consumo where (idorg=${idorg} and idsede=${idsede}) and estado=0`;
+    const read_query = `SELECT idtipo_consumo, descripcion, titulo, idimpresora from tipo_consumo where (idorg=${idorg} and idsede=${idsede}) and estado=0`;
     return emitirRespuesta(read_query);        
 }
 module.exports.getTipoConsumo = getTipoConsumo;

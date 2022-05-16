@@ -159,10 +159,18 @@ module.exports.getSharedUrlCarta = getSharedUrlCarta;
 
 const SearchClienteByPhone = function (req, res) {			
 	const numTelefono = req.body.telefono;
-    const read_query = `select * from cliente where telefono = '${numTelefono}'  order by idcliente limit 1;`;
+    // const read_query = `select * from cliente where telefono = '${numTelefono}'  order by idcliente limit 1;`;
+    const read_query = `select * from cliente where pwa_id = 'phone|${numTelefono}'  order by idcliente limit 1;`;
     emitirRespuesta_RES(read_query, res);  
 }
 module.exports.SearchClienteByPhone = SearchClienteByPhone;
+
+const SearchClienteByPhonePwaId = function (req, res) {			
+	const numTelefono = req.body.telefono;
+    const read_query = `select * from cliente where pwa_id = 'phone|${numTelefono}'  order by idcliente limit 1;`;
+    emitirRespuesta_RES(read_query, res);  
+}
+module.exports.SearchClienteByPhonePwaId = SearchClienteByPhonePwaId;
 
 
 

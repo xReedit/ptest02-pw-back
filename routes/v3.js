@@ -117,6 +117,7 @@ routerV3.get('/delivery/get-tipo-vehiculo', apiPwaAppDelivery.getTipoVehiculo);
 routerV3.get('/delivery/get-ciudades-delivery', apiPwaAppDelivery.getCiudadesDelivery);
 routerV3.post('/delivery/get-calificacion-sede', apiPwaAppDelivery.getCalificacionSede);
 routerV3.post('/delivery/search-cliente-by-phone', apiPwaAppDelivery.SearchClienteByPhone);
+routerV3.post('/delivery/search-cliente-by-phone-pwaid', apiPwaAppDelivery.SearchClienteByPhonePwaId);
 
 // notificaciones push
 // guardar suscripcion

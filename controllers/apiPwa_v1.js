@@ -241,7 +241,7 @@ const getConsultaDatosClienteNoTk = async function (req, res) {
     console.log('doc cliente: ', doc);
     // idorg=${idorg}) AND 
     // const read_query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' order by pwa_id desc, telefono desc limit 1`;    
-    const read_query = `SELECT * FROM cliente where estado=0 and pwa_id='dni|${doc}' order by pwa_id desc, telefono desc limit 1`;    
+    const read_query = `SELECT * FROM cliente where estado=0 and pwa_id='dni|${doc}' and ruc='${doc}' order by pwa_id desc, telefono desc, pwa_code_verification desc limit 1`;    
     emitirRespuesta_RES(read_query, res);
 }
 module.exports.getConsultaDatosClienteNoTk = getConsultaDatosClienteNoTk;

@@ -195,8 +195,9 @@ module.exports.getLaCuenta = getLaCuenta;
 const getLaCuentaFromCliente = async function (req, res) {	
 	const idsede = req.body.idsede;
     const idcliente = req.body.idcliente;
+    const num_mesa = req.body.num_mesa;
 
-	const read_query = `call procedure_pwa_cuenta_cliente(${idcliente}, ${idsede});`;	
+	const read_query = `call procedure_pwa_cuenta_cliente(${idcliente}, ${idsede}, ${num_mesa});`;	
     emitirRespuestaSP_RES(read_query, res); 
 }
 module.exports.getLaCuentaFromCliente = getLaCuentaFromCliente;
@@ -205,9 +206,10 @@ module.exports.getLaCuentaFromCliente = getLaCuentaFromCliente;
 const getLaCuentaFromClienteTotales = async function (req, res) {	
 	const idsede = req.body.idsede;
     const idcliente = req.body.idcliente;
+    const num_mesa = req.body.num_mesa;
     const idpedido = req.body.idpedido ? req.body.idpedido : null;
 
-	const read_query = `call procedure_pwa_cuenta_cliente_totales(${idcliente}, ${idsede}, ${idpedido});`;	
+	const read_query = `call procedure_pwa_cuenta_cliente_totales(${idcliente}, ${idsede}, ${idpedido}, ${num_mesa});`;	
     emitirRespuestaSP_RES(read_query, res); 
 }
 module.exports.getLaCuentaFromClienteTotales = getLaCuentaFromClienteTotales;
@@ -247,6 +249,13 @@ const getConsultaDatosClienteNoTk = async function (req, res) {
 module.exports.getConsultaDatosClienteNoTk = getConsultaDatosClienteNoTk;
 
 
+// guarda los datos de facturacion que especifica el usuario desde pwa
+const setDatosFacturacionClientePwa = async function (req, res) {
+    const data = req.body;
+    const read_query = `call procedure_set_datos_facturacion_pwa('${JSON.stringify(data)}');`;   
+    emitirRespuestaSP_RES(read_query, res); 
+}
+module.exports.setDatosFacturacionClientePwa = setDatosFacturacionClientePwa;
 
 // datos al inicio despues de escanear codigo
 const getDataSedeIni = async function (req, res) {	
@@ -465,7 +474,29 @@ const setCodigoVerificacionTelefonoCliente =  function (data) {
 }
 module.exports.setCodigoVerificacionTelefonoCliente = setCodigoVerificacionTelefonoCliente;
 
+const saveCallClientMesa =  function (data, op) {        
+    const read_query = `call procedure_pwa_call_client_mesa('${JSON.stringify(data)}', ${op})`;
+    emitirRespuestaSP(read_query);
+}
+module.exports.saveCallClientMesa = saveCallClientMesa;
 
+const listCallClientMesa =  function (data) {        
+    const read_query = `SELECT num_mesa from cliente_solicita_atencion_mesa where idsede=${data.idsede} and atendido=0`;
+    return emitirRespuesta(read_query);    
+}
+module.exports.listCallClientMesa = listCallClientMesa;
+
+
+// datos de facturacion
+const getComprobantesSede = async function (req, res) {   
+    const idsede = req.body.idsede;    
+    const read_query = `SELECT tc.idtipo_comprobante, tc.descripcion from tipo_comprobante_serie tcs 
+                        inner join tipo_comprobante tc on tcs.idtipo_comprobante = tc.idtipo_comprobante 
+                        where tcs.idsede = ${idsede} and tcs.estado = 0 and tc.codsunat != '0'`;
+    
+    emitirRespuesta_RES(read_query, res);
+}
+module.exports.getComprobantesSede = getComprobantesSede;
 
 
 function emitirRespuesta_RES(xquery, res) {

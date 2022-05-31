@@ -171,6 +171,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			const objDescuentos = await apiPwa.getDataSedeDescuentos(dataCliente);
 			socket.emit('getDataSedeDescuentos', objDescuentos);
 
+			if ( dataCliente.iscliente !== 'true' ) { // si es personal autorizado
+				const objDescuentos = await apiPwa.listCallClientMesa(dataCliente);
+				socket.emit('load-list-cliente-llamado', objDescuentos);				
+			}
+
 			// console.log('tipo consumo', objTipoConsumo);
 			// console.log('reglas carta y subtotales', objReglasCarta);
 			// console.log('a user connected sokecontroller - servimos la carta', objCarta );		
@@ -642,8 +647,32 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 		// notifica llamado del cliente solicitando atentcion
-		socket.on('notificar-cliente-llamado', (numMesa) => {
+		socket.on('notificar-cliente-llamado', (numMesa) => {			
+			const _dataSend = {
+				idcliente: dataCliente.idcliente,
+				idsede: dataCliente.idsede,
+				num_mesa: numMesa
+			}
+
+			console.log('notificar-cliente-llamado', _dataSend)
+
+			// guardamos en bd
+			apiPwa.saveCallClientMesa(_dataSend,0);
+
 			socket.broadcast.to(chanelConect).emit('notificar-cliente-llamado', numMesa);
+		});
+
+		socket.on('notificar-cliente-llamado-voy', (numMesa) => {			
+			const _dataSend = {
+				idusuario: dataCliente.idusuario,
+				idsede: dataCliente.idsede,
+				num_mesa: numMesa
+			}
+			console.log('notificar-cliente-llamado-voy', _dataSend)
+			
+			apiPwa.saveCallClientMesa(_dataSend,1);
+
+			socket.broadcast.to(chanelConect).emit('notificar-cliente-llamado-remove', numMesa);
 		});
 
 

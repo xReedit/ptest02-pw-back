@@ -59,6 +59,8 @@ routerV3.post('/pedido/lacuenta-pedido-totales', apiPwaAppPedidos.getLaCuentaFro
 routerV3.get('/pedido/get-const-delivery-items-escala', apiPwaAppPedidos.getConsAppDelivery);
 routerV3.post('/pedido/get-last-comsion-entrega-sede', apiPwaAppPedidos.getLastComisionEntrega);
 routerV3.post('/pedido/get-canales-consumo', apiPwaAppPedidos.getCanalesConsumo);
+routerV3.post('/pedido/get-tpc-dato-facturacion', apiPwaAppPedidos.getComprobantesSede);
+routerV3.post('/pedido/set-datos-facturacion-cliente', apiPwaAppPedidos.setDatosFacturacionClientePwa);
 
 // para buscar todos los clientes
 routerV3.get('/pedido/get-all-clientes', auth.verificarToken, apiPwaAppPedidos.getAllClienteBySearch);

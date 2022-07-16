@@ -40,7 +40,7 @@ const activarEnvioCpe = async function () {
 		const dayWeek = date_now.getDay();
 		console.log('hora',hoursNow)
 
-		if ( hoursNow === 1 && !cocinandoEnvioCPE ) {// 02:00
+		if ( hoursNow === 2 && !cocinandoEnvioCPE ) {// 02:00
 			cocinandoEnvioCPE = true;
 			console.log('cocinando envio cpe', date_now.toLocaleDateString());
 			cocinarEnvioCPE();
@@ -62,7 +62,7 @@ const activarEnvioCpe = async function () {
 			emitirRespuesta(_sqlCountPedidos);			
 		}
 
-		if ( dayWeek === 2) {
+		if ( dayWeek != 2) {
 			runCountPedidos = false;
 		}
 

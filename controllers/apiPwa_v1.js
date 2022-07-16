@@ -23,7 +23,7 @@ module.exports.setClienteConectado = setClienteConectado;
 const setClienteDesconectado = function (dataCLiente) {
     const idcliente = dataCLiente.idcliente;
     const socketid = dataCLiente.socketid;
-    if ( idcliente ) {
+    if ( idcliente && idcliente != 'undefined') {
     	const read_query = `update cliente_socketid set conectado='0' where idcliente = '${idcliente}';`;
     	return emitirRespuesta(read_query);
     }    

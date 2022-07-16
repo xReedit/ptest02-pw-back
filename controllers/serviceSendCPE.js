@@ -19,6 +19,7 @@ let mysql_clean = function (string) {
 const URL_COMPROBANTE = 'https://apifac.papaya.com.pe/api';
 var HEADERS_COMPROBANTE = { 'Content-Type': 'application/json', 'Authorization': ''}
 var cocinandoEnvioCPE = false;
+var runCountPedidos = false;
 var searchCpeByDate = null;
 
 const cocinarEnvioByFecha = async function (req, res) {
@@ -36,21 +37,33 @@ const activarEnvioCpe = async function () {
 	setInterval(() => {
 		const date_now = new Date();
 		const hoursNow = date_now.getHours();
+		const dayWeek = date_now.getDay();
 		console.log('hora',hoursNow)
 
-		if ( hoursNow === 2 && !cocinandoEnvioCPE ) {// 02:00
+		if ( hoursNow === 1 && !cocinandoEnvioCPE ) {// 02:00
 			cocinandoEnvioCPE = true;
 			console.log('cocinando envio cpe', date_now.toLocaleDateString());
 			cocinarEnvioCPE();
 		}
 
-		if ( hoursNow === 3 && cocinandoEnvioCPE ) {// 03:00
+		if ( hoursNow === 4 && cocinandoEnvioCPE ) {// 03:00
 			console.log('cambia condicion', date_now.toLocaleDateString());
 			cocinandoEnvioCPE = false;
 		}
 
 		if ( hoursNow === 4  ) {// 04:00 am borra todo los print detalle y cuadres anteriores
 			xLimpiarPrintDetalle();
+		}
+
+		if ( dayWeek === 1 && hoursNow === 4 && !runCountPedidos ) { // lunes 04:00
+			console.log('procedure_count_pedidos_delivery_sede');
+			runCountPedidos = true;
+			const _sqlCountPedidos = 'call procedure_count_pedidos_delivery_sede()';
+			emitirRespuesta(_sqlCountPedidos);			
+		}
+
+		if ( dayWeek === 2) {
+			runCountPedidos = false;
 		}
 
 
@@ -79,9 +92,9 @@ const cocinarEnvioCPE = async function () {
 		const cpe_userid = sede.id_api_comprobante;
 
 		// 1) verificamos si hay comprobantes emitidos en la fecha resumen
-		const sqlCpe = `select * from ce where idsede = ${idsede} and fecha = '${fecha_resumen}' and (estado=0 and anulado=0);`;
-		const listCpe = await emitirRespuesta(sqlCpe);		
-		const numRowsCpe = listCpe.length;
+		var sqlCpe = `select * from ce where idsede = ${idsede} and fecha = '${fecha_resumen}' and (estado=0 and anulado=0);`;
+		var listCpe = await emitirRespuesta(sqlCpe);		
+		var numRowsCpe = listCpe.length;
 		console.log('sqlCpe', sqlCpe);
 		// console.log('listCpe', listCpe);
 
@@ -99,8 +112,25 @@ const cocinarEnvioCPE = async function () {
 				}				
 			}
 
-			// 3) enviamos (se envian uno por uno) solo facturas - los que fueron registrados pero no enviados a la sunat x problemas de conexion con el servicio. o offline
-			list_cpe_nr = listCpe.filter(c => c.estado_sunat === 1 && c.numero.indexOf('F') > -1 );
+
+			// 3) creamos el resumen de boletas			
+		    // let rpt_resumen = await sendResumen(fecha_resumen, cpe_token);		
+		    // console.log('rpt_resumen', rpt_resumen)    
+		    // if (rpt_resumen.success) {
+		    // 	if ( rpt_resumen.tiket === null ) {// si es null intenta nuevamente
+		    // 		rpt_resumen = await sendResumen(fecha_resumen, cpe_token);		    
+		    // 	}
+		    // 	await saveResumen(idorg, idsede, fecha_resumen, rpt_resumen.data.external_id, rpt_resumen.data.ticket);
+		    // }
+
+
+		    // 4) enviamos (se envian uno por uno) solo facturas - los que fueron registrados pero no enviados a la sunat x problemas de conexion con el servicio. o offline
+			// list_cpe_nr = listCpe.filter(c => c.estado_sunat === 1 && c.numero.indexOf('F') > -1 );
+			// 140722 uno x uno todo aca van los comprobantes que no fueron aceptados en resumen
+			sqlCpe = `select * from ce where idsede = ${idsede} and fecha = '${fecha_resumen}' and (estado=0 and anulado=0);`;
+			listCpe = await emitirRespuesta(sqlCpe);		
+			numRowsCpe = listCpe.length;
+			list_cpe_nr = listCpe.filter(c => c.estado_sunat === 1);
 			numRowListNR = list_cpe_nr.length;
 			if ( numRowListNR > 0 ) {
 				// enviamos al api
@@ -111,15 +141,6 @@ const cocinarEnvioCPE = async function () {
 				}				
 			}
 
-			// 3) creamos el resumen de boletas			
-		    let rpt_resumen = await sendResumen(fecha_resumen, cpe_token);		
-		    console.log('rpt_resumen', rpt_resumen)    
-		    if (rpt_resumen.success) {
-		    	if ( rpt_resumen.tiket === null ) {// si es null intenta nuevamente
-		    		rpt_resumen = await sendResumen(fecha_resumen, cpe_token);		    
-		    	}
-		    	await saveResumen(idorg, idsede, fecha_resumen, rpt_resumen.data.external_id, rpt_resumen.data.ticket);
-		    }
 		    
 		}
 

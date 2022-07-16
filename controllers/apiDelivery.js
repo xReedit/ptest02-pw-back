@@ -13,7 +13,8 @@ const getEstablecimientos = function (req, res) {
 	const idsede_categoria = req.body.idsede_categoria || 0;           
 	const codigo_postal = req.body.codigo_postal || ''; // lo cambiamos por ciudad
 	const idsede = req.body.idsede || 0;	
-    const read_query = `call procedure_pwa_delivery_establecimientos(${idsede_categoria}, '${codigo_postal}', ${idsede})`;
+	const point_client = req.body.point_client || '';	
+    const read_query = `call procedure_pwa_delivery_establecimientos(${idsede_categoria}, '${codigo_postal}', ${idsede}, '${point_client}')`;
     emitirRespuestaSP_RES(read_query, res);        
 }
 module.exports.getEstablecimientos = getEstablecimientos;

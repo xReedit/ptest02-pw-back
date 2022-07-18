@@ -225,12 +225,23 @@ module.exports.getLaCuentaFromPedidoTotales = getLaCuentaFromPedidoTotales;
 
 const getConsultaDatosCliente = async function (req, res) {
 	// const idorg = managerFilter.getInfoToken(req,'idorg');
-	// const idsede = managerFilter.getInfoToken(req, 'idsede');
-    const doc = req.body.documento;
+	const idsede = managerFilter.getInfoToken(req, 'idsede');
+    const onlySede = req.body.only_sede || false;
+    const doc = req.body.documento;    
+    // const _str_only_sede = onlySede ? ' and idsede = ' + idsede : ''; 
+    var read_query = '';
+
+    if ( onlySede ) {
+        read_query = `SELECT * FROM cliente c 
+                        inner join cliente_sede cs on c.idcliente = cs.idcliente 
+                    where c.estado=0 and c.ruc='${doc}' and cs.idsede = ${idsede} order by nombres limit 1`;
+    } else {
+        read_query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' order by nombres limit 1`;  
+    }
 
     console.log('doc cliente: ', doc);
     // idorg=${idorg}) AND 
-	const read_query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' order by nombres limit 1`;	
+	// const read_query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' ${_str_only_sede} order by nombres limit 1`;	
     emitirRespuesta_RES(read_query, res);
 }
 module.exports.getConsultaDatosCliente = getConsultaDatosCliente;
@@ -261,7 +272,7 @@ module.exports.setDatosFacturacionClientePwa = setDatosFacturacionClientePwa;
 const getDataSedeIni = async function (req, res) {	
 	const idsede = req.body.idsede;
     // console.log('cuenta de mesa: ', mesa);
-	const read_query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit from sede where (idsede=${idsede}) AND estado=0`;	
+	const read_query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit, pwa_delivery_comercio_online from sede where (idsede=${idsede}) AND estado=0`;	
     emitirRespuesta_RES(read_query, res);
 }
 module.exports.getDataSedeIni = getDataSedeIni;
@@ -407,7 +418,19 @@ module.exports.getAllClienteBySearch = getAllClienteBySearch;
 
 const getAllClienteBySearchName = function (req, res) {
     const buscar = req.body.buscar;
-    const read_query = `select idcliente, nombres, ruc, telefono from cliente where estado=0 and nombres!='' and LENGTH(nombres) > 10 and nombres like '%${buscar}%' group by nombres order by nombres`;
+    const idsede = managerFilter.getInfoToken(req, 'idsede');
+    const onlySede = req.body.only_sede || false;
+    // const _str_only_sede = onlySede ? ' and idsede = ' + idsede : ''; 
+    var read_query = '';
+
+    if ( onlySede ) {
+        read_query = `SELECT c.idcliente, c.nombres, c.ruc, c.telefono FROM cliente c 
+                        inner join cliente_sede cs on c.idcliente = cs.idcliente 
+                    where c.estado=0 and c.nombres!='' and cs.idsede = ${idsede} and LENGTH(c.nombres) > 10 and c.nombres like '%${buscar}%' group by c.nombres order by c.nombres`;
+    } else {
+        read_query = `select idcliente, nombres, ruc, telefono from cliente where estado=0 and nombres!='' and LENGTH(nombres) > 10 and nombres like '%${buscar}%' group by nombres order by nombres`;
+    }
+    
     emitirRespuesta_RES(read_query, res); 
 }
 module.exports.getAllClienteBySearchName = getAllClienteBySearchName;

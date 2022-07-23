@@ -56,7 +56,6 @@ const activarEnvioCpe = async function () {
 		}
 
 		if ( dayWeek === 1 && hoursNow === 4 && !runCountPedidos ) { // lunes 04:00
-			console.log('procedure_count_pedidos_delivery_sede');
 			runCountPedidos = true;
 			const _sqlCountPedidos = 'call procedure_count_pedidos_delivery_sede()';
 			emitirRespuesta(_sqlCountPedidos);			

@@ -8,7 +8,7 @@ var cors=require('cors');
 
 var config = require('./config');
 var socketsController = require('./controllers/sockets');
-const apiServiceSendCPE = require('./controllers/serviceSendCPE');
+// const apiServiceSendCPE = require('./controllers/serviceSendCPE');
 const apiServiceTimerChangeCosto = require('./controllers/timerChangeCosto.js');
 
 
@@ -80,7 +80,7 @@ socketsController.socketsOn(io);
 
 
 // ejecutar servicio de envio de comprobantes electronicos
-apiServiceSendCPE.activarEnvioCpe();
+// apiServiceSendCPE.activarEnvioCpe(); // servicio propio
 apiServiceTimerChangeCosto.runTimerCosto()
 
 module.exports = app;

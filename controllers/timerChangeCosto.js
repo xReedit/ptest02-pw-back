@@ -38,7 +38,7 @@ module.exports.setChangeCosto = setChangeCosto;
 
 
 function comandListChangeCosto() {
-	// console.log('========== ejecutamos comandListChangeCosto comandListChangeCosto');
+	console.log('========== ejecutamos comandListChangeCosto comandListChangeCosto');
     const _date = new Date();
     const _dayNow = _date.getDay();
     const _hourNow = _date.getHours();
@@ -72,8 +72,8 @@ function comandListChangeCosto() {
 
         });
 
-        // console.log('========== cambiamos costo', costoChange)
-        // console.log('========== cambiamos _dayNow', _dayNow)
+        console.log('========== cambiamos costo', costoChange)
+        console.log('========== cambiamos _dayNow', _dayNow)
         if (costoChange !== 0 && p.isChangeHours !== _hourComand) {
           p.c_minimo = costoChange;
           p.isChangeHours = _hourComand;

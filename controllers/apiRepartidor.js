@@ -235,7 +235,11 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 
 	// enviamos el socket
 	console.log('socket enviado a repartidor', firtsRepartidor);
-	io.to(firtsRepartidor.socketid).emit('repartidor-nuevo-pedido', [firtsRepartidor, dataPedido]);
+	// io.to(firtsRepartidor.socketid).emit('repartidor-nuevo-pedido', [firtsRepartidor, dataPedido]);
+
+	// busca el sockeid para asignar
+	const getSocketIdRepartidorAsignar = await getSocketIdRepartidor(firtsRepartidor.idrepartidor);
+	io.to(getSocketIdRepartidorAsignar[0].socketid).emit('repartidor-nuevo-pedido', [firtsRepartidor, dataPedido]);
 
 	// para finalizar async
 	return true;

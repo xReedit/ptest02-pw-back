@@ -522,6 +522,18 @@ const getComprobantesSede = async function (req, res) {
 module.exports.getComprobantesSede = getComprobantesSede;
 
 
+const getLastPedidoClienteThisTable = async function (req, res) {   
+    const idsede = req.body.idsede;    
+    const nummesa = req.body.nummesa;   
+    const read_query = `select p.referencia, TIMESTAMPDIFF(MINUTE, p.fecha_hora, now()) min 
+                        from pedido p left join pedido_correlativos pc on pc.idsede = p.idsede 
+                        where p.idpedido > pc.last_id_pedido_cierre and p.idsede=${idsede} and p.flag_is_cliente = 1 and p.nummesa = ${nummesa} and p.estado = 0 order by p.idpedido desc limit 1`;
+    
+    emitirRespuesta_RES(read_query, res);
+}
+module.exports.getLastPedidoClienteThisTable = getLastPedidoClienteThisTable;
+
+
 function emitirRespuesta_RES(xquery, res) {
 	console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})

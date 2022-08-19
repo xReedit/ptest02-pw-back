@@ -121,7 +121,16 @@ const setPedidoMandado = async function (req, res) {
 	console.log('pedido_mandado === ', req.body.dataInfo);
 
 	const obj = req.body.dataInfo;
-    const read_query = `call procedure_guardar_pedido_mandado('${JSON.stringify(obj)}')`;
+	var _json = JSON.stringify(obj).replace(/\\n/g, ' ')
+                                      .replace(/\\'/g, '')
+                                      .replace(/\\"/g, '')
+                                      .replace(/\\&/g, '')
+                                      .replace(/\\r/g, '')
+                                      .replace(/\\t/g, '')
+                                      .replace(/\\b/g, '')
+                                      .replace(/'/g, '')
+                                      .replace(/\\f/g, '');
+    const read_query = `call procedure_guardar_pedido_mandado('${_json}')`;
     emitirRespuestaSP_RES(read_query, res);       
 }
 module.exports.setPedidoMandado = setPedidoMandado;

@@ -24,18 +24,23 @@ const socketPrintServerClient = async function (data, socket) {
 	const lastRowsNoPrint = await getRegisterNoPrint(data);
 
 	// primero pasar las estructuras
+	let _payload = {};
 	try {
-		const _estructuras = await getEsctructuras();
-		const _payload = {
+		const _estructuras = await getEsctructuras();		
+		_payload = {
 			estructura: _estructuras,
 			logo: logoLocal,
 			url: 'http://'+urlLocal[0].ip_server_local,
 			rows_print: lastRowsNoPrint
 		}
+
+		console.log('urlLocal ============ ', urlLocal);
+		console.log('_payload ============ ', _payload);
 	} catch(e) {
 		console.log('error print-server', urlLocal);
 		return;
 	}
+
 	socket.emit('get-ps-estructuras', _payload);
 
 

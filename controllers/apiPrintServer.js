@@ -24,7 +24,7 @@ const socketPrintServerClient = async function (data, socket) {
 	const lastRowsNoPrint = await getRegisterNoPrint(data);
 
 	// primero pasar las estructuras
-	let _payload = {};
+	let _payload;
 	try {
 		const _estructuras = await getEsctructuras();		
 		_payload = {

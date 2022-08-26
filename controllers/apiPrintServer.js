@@ -34,8 +34,8 @@ const socketPrintServerClient = async function (data, socket) {
 			rows_print: lastRowsNoPrint
 		}
 
-		console.log('urlLocal ============ ', urlLocal);
-		console.log('_payload ============ ', _payload);		
+		// console.log('urlLocal ============ ', urlLocal);
+		// console.log('_payload ============ ', _payload);		
 	} catch(e) {
 		console.log('error print-server', urlLocal);
 		return;

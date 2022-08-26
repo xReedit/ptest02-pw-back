@@ -34,6 +34,8 @@ const socketPrintServerClient = async function (data, socket) {
 			rows_print: lastRowsNoPrint
 		}
 
+		socket.emit('get-ps-estructuras', _payload);
+
 		// console.log('urlLocal ============ ', urlLocal);
 		// console.log('_payload ============ ', _payload);		
 	} catch(e) {
@@ -41,8 +43,8 @@ const socketPrintServerClient = async function (data, socket) {
 		return;
 	}
 
-	console.log('_payload ============ ', _payload);
-	socket.emit('get-ps-estructuras', _payload);
+	// console.log('_payload ============ ', _payload);
+	
 
 
 	// solicita cada 10segundos

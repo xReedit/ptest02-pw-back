@@ -534,6 +534,23 @@ const getLastPedidoClienteThisTable = async function (req, res) {
 module.exports.getLastPedidoClienteThisTable = getLastPedidoClienteThisTable;
 
 
+const getListMesas = async function (req, res) {   
+    const idsede = req.body.idsede;    
+    const obj = req.body.obj;       
+    let read_query = '';
+
+    if ( obj ) {
+        read_query = `call procedure_refresh_mesas_list_mozo(${idsede}, '${JSON.stringify(obj)}')`;    
+    } else {
+        read_query = `call procedure_refresh_mesas_list_mozo(${idsede}, null)`;    
+    }
+    
+    emitirRespuestaSP_RES(read_query, res);
+}
+module.exports.getListMesas = getListMesas;
+
+
+
 function emitirRespuesta_RES(xquery, res) {
 	console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})

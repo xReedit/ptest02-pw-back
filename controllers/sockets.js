@@ -439,7 +439,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// socket.broadcast.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);			
 
 
-			io.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
+			io.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);			
+
+			io.to(chanelConect).emit('nuevoPedido-for-list-mesas', dataSend.dataPedido);
 
 			// notifica al monitor nuevo pedido para emitir alerta
 			if ( dataSend.dataPedido.p_header.delivery === 1 ) {
@@ -552,6 +554,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			dataSend.hora = n;
 			console.log('printerOnly', dataSend);
 			socket.broadcast.to(chanelConect).emit('printerOnly', dataSend);
+			socket.broadcast.to(chanelConect).emit('nuevoPedido-for-list-mesas', dataSend);
 
 			// verificar si es delivery que viene de venta rapida para actualizar monitor			
 			let isNotificaMonitor = false;

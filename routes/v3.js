@@ -41,6 +41,7 @@ routerV3.post('/pedido/lacuenta', auth.verificarToken, apiPwaAppPedidos.getLaCue
 routerV3.post('/pedido/printer-precuenta', auth.verificarToken, apiPwaAppPedidos.setPrinterOtherDocs);
 routerV3.post('/pedido/lacuenta-zona-delivery', apiPwaAppPedidos.getLaCuenta);
 routerV3.post('/pedido/register-scan', apiPwaAppPedidos.setRegisterScanQr);
+routerV3.post('/pedido/get-list-mesas', apiPwaAppPedidos.getListMesas);
 
 // nuevo pedido 150920 // para evitar cortes del socket y el pedido no se registra
 routerV3.post('/pedido/registrar-nuevo-pedido', apiPwaAppPedidos.setNuevoPedido2);

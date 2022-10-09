@@ -47,7 +47,13 @@ module.exports.getOrdenesPedientes = getOrdenesPedientes;
 
 const getOrdenesByid = function (req, res) {  
 	const idpedido = req.body.idpedido;	
-    const read_query = `SELECT * from pedido where idpedido=${idpedido};`;
+	const isRepartidor = req.body.repartidor;
+	let read_query = '';
+	if ( isRepartidor ) { // solo pedidos delivery
+		read_query = `select * from pedido p inner join tipo_consumo tc on p.idtipo_consumo = tc.idtipo_consumo where p.idpedido=${idpedido} and UPPER(tc.descripcion) = 'DELIVERY'`;
+	} else {
+		read_query = `SELECT * from pedido where idpedido=${idpedido};`;
+	}    
     emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getOrdenesByid = getOrdenesByid;

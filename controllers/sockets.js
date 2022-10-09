@@ -554,7 +554,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			dataSend.hora = n;
 			console.log('printerOnly', dataSend);
 			socket.broadcast.to(chanelConect).emit('printerOnly', dataSend);
-			socket.broadcast.to(chanelConect).emit('nuevoPedido-for-list-mesas', dataSend);
+			socket.broadcast.to(chanelConect).emit('nuevoPedido-for-list-mesas', dataSend); // app mozo
 
 			// verificar si es delivery que viene de venta rapida para actualizar monitor			
 			let isNotificaMonitor = false;
@@ -750,7 +750,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notifica al cliente que repartidor tomo su pedido
 		socket.on('repartidor-notifica-cliente-acepto-pedido', async (listClienteNotifica) => {
-			console.log('repartidor-notifica-cliente-acepto-pedido ===========', listClienteNotifica)
+			console.log('repartidor-notifica-cliente-acepto-pedido===========', listClienteNotifica)			
 			listClienteNotifica.map(c => {
 				c.tipo = 2;
 				sendMsjSocketWsp(c)
@@ -903,10 +903,16 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notifica al cliente que repartidor tomo su pedido
 		socket.on('repartidor-notifica-cliente-acepto-pedido', async (listClienteNotifica) => {
-			console.log('repartidor-notifica-cliente-acepto-pedido ===========', listClienteNotifica)
+			console.log('repartidor-notifica-cliente-acepto-pedido =========== repartidor', listClienteNotifica)
 			listClienteNotifica.map(c => {
 				c.tipo = 2;
-				sendMsjSocketWsp(c)
+				sendMsjSocketWsp(c);
+
+
+				// notifica al control de pedidos
+				const _chanelNotifica = 'room' + c.idorg +''+ c.idsede;
+				socket.to(_chanelNotifica).emit('repartidor-notifica-cliente-acepto-pedido-res', c);
+				console.log('_chanelNotifica ===========', _chanelNotifica);
 			});
 		});
 
@@ -938,6 +944,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			const idComercio = dataPedido.datosComercio ? dataPedido.datosComercio.idsede : dataPedido.idsede;
 			const socketidComercio = await apiPwaComercio.getSocketIdComercio(idComercio);
 			io.to(socketidComercio[0].socketid).emit('repartidor-notifica-fin-pedido', dataPedido);
+
+			// notifica a control pedidos restobar
+			const _chanelConect = `room${dataPedido.idorg}${dataPedido.idsede}`;
+			console.log(_chanelConect);
+			io.to(_chanelConect).emit('repartidor-notifica-fin-pedido', dataPedido.idpedido);
 
 			io.to('MONITOR').emit('repartidor-notifica-fin-pedido', {idrepartidor: dataPedido.idrepartidor, idpedido: dataPedido.idpedido});
 		});
@@ -1079,9 +1090,17 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// notifica al cliente que repartidor tomo su pedido
 		socket.on('repartidor-notifica-cliente-acepto-pedido', async (listClienteNotifica) => {
 			console.log('repartidor-notifica-cliente-acepto-pedido ===========', listClienteNotifica)
+			
+
+			// notifica wsp cliente
 			listClienteNotifica.map(c => {
 				c.tipo = 2;
 				sendMsjSocketWsp(c)
+
+				// notifica al control de pedidos
+				const _chanelNotifica = 'room' + c.idorg +''+ c.idsede;
+				socket.to(_chanelNotifica).emit('repartidor-notifica-cliente-acepto-pedido-res', c);
+				console.log('_chanelNotifica ===========', _chanelNotifica);
 			});
 		});
 

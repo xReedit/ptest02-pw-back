@@ -894,14 +894,17 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			
 
-			// buscamos socketid de comercio para notificar
-			const socketidComercio = await apiPwaComercio.getSocketIdComercio(dataPedido.idsede);
-			console.log('repartidor-notifica-a-comercio-pedido-aceptado', socketidComercio +'  pedido: '+ dataPedido);
+			// dataPedido viene vacio =verificar= 221022
+			try {
+				// buscamos socketid de comercio para notificar
+				const socketidComercio = await apiPwaComercio.getSocketIdComercio(dataPedido.idsede);
+				console.log('repartidor-notifica-a-comercio-pedido-aceptado', socketidComercio +'  pedido: '+ dataPedido);
 
-			io.to(socketidComercio[0].socketid).emit('repartidor-notifica-a-comercio-pedido-aceptado', dataPedido);	
+				io.to(socketidComercio[0].socketid).emit('repartidor-notifica-a-comercio-pedido-aceptado', dataPedido);	
 
-			// NOTIFICA a la central
-			io.to('MONITOR').emit('repartidor-notifica-a-comercio-pedido-aceptado', true);
+				// NOTIFICA a la central
+				io.to('MONITOR').emit('repartidor-notifica-a-comercio-pedido-aceptado', true);
+			} catch (err) {console.log(err)}
 
 		});
 

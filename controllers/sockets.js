@@ -855,7 +855,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 						io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas);
 					}
 				}						
-				catch(err) => {console.log('cliente sin socket id', err)}
+				catch(err) {console.log('cliente sin socket id',err)}
 			}			
 
 			// notifica a comercio

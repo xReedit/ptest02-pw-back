@@ -90,8 +90,20 @@ const getReglasCarta = async function (dataCLiente) {
 module.exports.getReglasCarta = getReglasCarta;
 
 
-const setItemCarta = async function (op, item) {		              
-    const read_query = `call porcedure_pwa_update_cantidad_item(${op},'${JSON.stringify(item)}')`;
+const setItemCarta = async function (op, item) {	
+    // nos aseguramos de quitar los espacios en blanco
+    var item = JSON.stringify(item).replace(/\\n/g, '')
+                                      .replace(/\\'/g, '')
+                                      .replace(/\\"/g, '')
+                                      .replace(/\\&/g, '')
+                                      .replace(/\\r/g, '')
+                                      .replace(/\\t/g, '')
+                                      .replace(/\\b/g, '')
+                                      .replace(/\\f/g, '');	              
+    // const read_query = `call porcedure_pwa_update_cantidad_item(${op},'${JSON.stringify(item)}')`;
+
+    item = item.replace(/[\r\n]/g, '');
+    const read_query = `call porcedure_pwa_update_cantidad_item(${op},'${item}')`;
     return emitirRespuestaSP(read_query);        
 }
 module.exports.setItemCarta = setItemCarta;

@@ -925,16 +925,18 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// repartidor propio
 		socket.on('repartidor-propio-notifica-fin-pedido', async (dataPedido) => {
 			console.log('repartidor-propio-notifica-fin-pedido', dataPedido);
-			apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
-			apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
+			try {
+				apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
+				apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
 
-			// para que el comercio actualice el marker
-			// notifica a comercio			
-			const socketidComercio = await apiPwaComercio.getSocketIdComercio(dataPedido.datosComercio.idsede);
-			io.to(socketidComercio[0].socketid).emit('repartidor-propio-notifica-fin-pedido', dataPedido);
+				// para que el comercio actualice el marker
+				// notifica a comercio			
+				const socketidComercio = await apiPwaComercio.getSocketIdComercio(dataPedido.datosComercio.idsede);
+				io.to(socketidComercio[0].socketid).emit('repartidor-propio-notifica-fin-pedido', dataPedido);
 
 
-			io.to('MONITOR').emit('repartidor-notifica-fin-pedido', {idrepartidor: dataPedido.idrepartidor, idpedido: dataPedido.idpedido});
+				io.to('MONITOR').emit('repartidor-notifica-fin-pedido', {idrepartidor: dataPedido.idrepartidor, idpedido: dataPedido.idpedido});
+			} catch (err) { console.log('error payload vacio', err) }
 		});
 
 		// notifica fin de solo un pedido de grupo de pedidos

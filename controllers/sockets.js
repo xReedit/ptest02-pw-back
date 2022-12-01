@@ -928,6 +928,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// repartidor propio
 		socket.on('repartidor-propio-notifica-fin-pedido', async (dataPedido) => {
 			console.log('repartidor-propio-notifica-fin-pedido', dataPedido);
+			// dataPedido viene vacio =verificar= 221022
 			try {
 				apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
 				apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
@@ -1195,7 +1196,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notifica url descarga pdf comprobante
 		if ( tipo === 3 ) {
-			const _ulrComprobante = `https://apifac.papaya.com.pe/downloads/document/pdf/${dataMsj.external_id}`;
+			const _user_id = dataMsj.user_id ? `/${dataMsj.user_id}` : '';
+			const _concat_external_id = dataMsj.external_id + _user_id;
+			const _ulrComprobante = `https://apifac.papaya.com.pe/downloads/document/pdf/${_concat_external_id}`;
 			_sendServerMsj.tipo = 3;
 			_sendServerMsj.telefono = dataMsj.telefono;
 			// _sendServerMsj.msj = `🤖 Hola, adjuntamos el link de descarga de su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. \n\n 📄👆 ${_ulrComprobante} \n\nTambién lo puede consultar en: papaya.com.pe`;			

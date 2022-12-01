@@ -92,18 +92,26 @@ module.exports.getReglasCarta = getReglasCarta;
 
 const setItemCarta = async function (op, item) {	
     // nos aseguramos de quitar los espacios en blanco
-    var item = JSON.stringify(item).replace(/\\n/g, '')
+    let read_query = '';
+    if ( item.isalmacen.toString() === '1' ) { // si es producto}
+        const _item = {cantidadSumar: item.cantidadSumar, idcarta_lista: item.idcarta_lista, cantidad_reset: item.cantidad_reset};
+        console.log('porcedure_pwa_update_cantidad_only_producto', _item)
+        read_query = `call porcedure_pwa_update_cantidad_only_producto(${op},'${JSON.stringify(_item)}')`;
+    } else {
+        var item = JSON.stringify(item).replace(/\\n/g, '')
                                       .replace(/\\'/g, '')
                                       .replace(/\\"/g, '')
                                       .replace(/\\&/g, '')
                                       .replace(/\\r/g, '')
                                       .replace(/\\t/g, '')
                                       .replace(/\\b/g, '')
-                                      .replace(/\\f/g, '');	              
-    // const read_query = `call porcedure_pwa_update_cantidad_item(${op},'${JSON.stringify(item)}')`;
+                                      .replace(/\\f/g, '');               
+        // const read_query = `call porcedure_pwa_update_cantidad_item(${op},'${JSON.stringify(item)}')`;
 
-    item = item.replace(/[\r\n]/g, '');
-    const read_query = `call porcedure_pwa_update_cantidad_item(${op},'${item}')`;
+        item = item.replace(/[\r\n]/g, '');
+        read_query = `call porcedure_pwa_update_cantidad_item(${op},'${item}')`;
+    }
+    
     return emitirRespuestaSP(read_query);        
 }
 module.exports.setItemCarta = setItemCarta;

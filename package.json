@@ -19,7 +19,7 @@
     "jsonwebtoken": "^8.5.1",
     "mysql": "^2.18.1",
     "mysql2": "^1.7.0",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.7",
     "node-gcm": "^1.0.5",
     "nodemailer": "^6.4.17",
     "parse-error": "^0.2.0",

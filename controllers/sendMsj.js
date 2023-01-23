@@ -54,13 +54,13 @@ module.exports.sendMsjConfirmacion = sendMsjConfirmacion;
 
 
 const sendMsjWhatsAp = function (numberPhone) {
-	var client = require('twilio')(config.accountSidSms, config.authTokenSms);
-	client.messages.create({
-	  from: 'whatsapp:+14155238886',
-	  to: 'whatsapp:+51960518915',
-	  body: 'Hola desde api whatsapp!'
+	// var client = require('twilio')(config.accountSidSms, config.authTokenSms);
+	// client.messages.create({
+	//   from: 'whatsapp:+14155238886',
+	//   to: 'whatsapp:+51960518915',
+	//   body: 'Hola desde api whatsapp!'
 
-	}).then(message => console.log(message.sid));	
+	// }).then(message => console.log(message.sid));	
 
 }
 module.exports.sendMsjWhatsAp = sendMsjWhatsAp;

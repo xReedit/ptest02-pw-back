@@ -61,6 +61,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			sendMsjSocketWsp(_sendServerMsj);
 		});
 
+		// escucha respuesta del servidor de mensajeria
+		socket.on('mensaje-verificacion-telefono-rpt', async (val) => {
+			console.log('mensaje-verificacion-telefono-rpt', val);			
+			io.to(val.idsocket).emit('mensaje-verificacion-telefono-rpt', val);
+		});
+
 		// obtener date
 		socket.on('date-now-info', (e) =>{
 			socket.emit('date-now-info', new Date());
@@ -358,6 +364,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			callback(rpt);
 		});
 
+		apiPwaRepartidor.runLoopSearchRepartidor(io, 0);
+
 		// hay un nuevo pedido - guardar
 		socket.on('nuevoPedido', async (dataSend, callback) => {
 			console.log('tipo dato', typeof dataSend);
@@ -467,6 +475,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// socket.broadcast.to(chanelConect).emit('printerComanda', rpt);
 			xMandarImprimirComanda (rpt[0].data, socket, chanelConect);
 		});
+
+
 
 		// esta funcion no guarda solo notifica del nuevo pedido
 		// solo envia el data pedido con el id del pedido registrado por http		
@@ -755,6 +765,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			console.log('repartidor-notifica-cliente-acepto-pedido===========', listClienteNotifica)			
 			listClienteNotifica.map(c => {
 				c.tipo = 2;
+
+				// actualiza el time_line // hora_pedido_aceptado								
+				apiPwa.updateTimeLinePedido(c.idpedido, c.time_line);
 				sendMsjSocketWsp(c)
 			});
 		});
@@ -808,6 +821,18 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// notifica que el repartidor esta online
 		// 20052021 quitamos porque esto suscede cuando abren la aplicacion es decir cuando el socket se conecta
 		// io.to('MONITOR').emit('notifica-repartidor-online', dataCliente);
+
+		// ver si tenemos un pedido pendiente de aceptar // ver si solicito libear pedido
+		const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataCliente.idrepartidor);
+
+		console.log('pedioPendienteAceptar', pedioPendienteAceptar);
+		if ( pedioPendienteAceptar ) {
+			if ( pedioPendienteAceptar[0].solicita_liberar_pedido === 1 ) {
+				apiPwaRepartidor.setLiberarPedido(dataCliente.idrepartidor);
+			} else {
+				socket.emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
+			}	
+		}		
 		
 
 		// registrar como conectado en cliente_socketid
@@ -824,15 +849,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to('MONITOR').emit('notifica-repartidor-online', dataCliente);
 		});
 
-		// ver si tenemos un pedido pendiente de aceptar // ver si solicito libear pedido
-		const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataCliente.idrepartidor);
-
-		console.log('pedioPendienteAceptar', pedioPendienteAceptar);
-		if ( pedioPendienteAceptar[0].solicita_liberar_pedido === 1 ) {
-			apiPwaRepartidor.setLiberarPedido(dataCliente.idrepartidor);
-		} else {
-			socket.emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
-		}		
+		
 
 
 		// escuchar estado del pedido // reparitor asignado // en camino //  llego
@@ -916,11 +933,45 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				c.tipo = 2;
 				sendMsjSocketWsp(c);
 
+				// actualiza el time_line // hora_pedido_aceptado								
+				apiPwa.updateTimeLinePedido(c.idpedido, c.time_line);
 
-				// notifica al control de pedidos
+
+				// notifica al control de pedidos del comercio
 				const _chanelNotifica = 'room' + c.idorg +''+ c.idsede;
 				socket.to(_chanelNotifica).emit('repartidor-notifica-cliente-acepto-pedido-res', c);
 				console.log('_chanelNotifica ===========', _chanelNotifica);
+			});
+		});
+
+		// notifica al cliente time line del pedido
+		socket.on('repartidor-notifica-cliente-time-line', async (listClienteNotifica) => {
+			console.log('repartidor-notifica-cliente-time-line =========== repartidor', listClienteNotifica)
+			listClienteNotifica.map(c => {
+				c.tipo = 5; 
+				switch (c.tipo_msj) {
+					case 1: // llegue al comercio						
+						c.msj = `🤖 Hola, el repartidor a cargo de su pedido ${c.repartidor_nom} ya llegó a ${c.establecimiento}, y esta esperando su pedido. Puede comunicarse con él si tiene alguna indicación adicional. 📞 ${c.repartidor_telefono}`
+						break;
+					case 2: // estoy en camino a entregar el pedido
+						c.msj = `🤖 El repartidor esta camino a entregarle su pedido, por favor este alerta a su teléfono le llamará cuando este cerca.`
+						break;
+				} 
+					
+				// actualiza time_line_pedido
+				apiPwa.updateTimeLinePedido(c.idpedido, c.time_line);
+
+
+
+				console.log('mensaje === ', c)
+				sendMsjSocketWsp(c);
+
+				// NOTIFICA a la central
+				io.to('MONITOR').emit('repartidor-notifica-cliente-time-line', c);
+
+				// notifica al control de pedidos del comercio
+				// const _chanelNotifica = 'room' + c.idorg +''+ c.idsede;
+				// socket.to(_chanelNotifica).emit('repartidor-notifica-cliente-time-line', c);				
 			});
 		});
 
@@ -1087,7 +1138,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			apiPwaRepartidor.sendOnlyNotificaPush(pedioPendienteAceptar[0].key_suscripcion_push, 0);
 
 			// notifica a monitor para refesh vista
-			io.to('MONITOR').emit('set-asigna-pedido-repartidor-manual', {idrepartidor: dataPedido.idrepartidor});
+			io.to('MONITOR').emit('set-asigna-pedido-repartidor-manual', {idrepartidor: dataPedido.idrepartidor, pedidos: dataPedido.pedidos});
+			// io.to('MONITOR').emit('set-asigna-pedido-repartidor-manual', {idrepartidor: dataPedido.idrepartidor});
 		});		
 
 
@@ -1107,6 +1159,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			listClienteNotifica.map(c => {
 				c.tipo = 2;
 				sendMsjSocketWsp(c)
+
+				// actualiza el time_line // hora_pedido_aceptado								
+				apiPwa.updateTimeLinePedido(c.idpedido, c.time_line);
 
 				// notifica al control de pedidos
 				const _chanelNotifica = 'room' + c.idorg +''+ c.idsede;
@@ -1214,6 +1269,14 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			_sendServerMsj.tipo = 4;
 			_sendServerMsj.telefono = dataMsj.telefono;
 			_sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre} su pedido de ${dataMsj.establecimiento} puede pasar a recogerlo en ${dataMsj.tiempo_entrega} aproximadamente.`;
+		}
+
+		// notifica al cliente el repartidor time line del pedido
+		if ( tipo === 5 ) {			
+			_sendServerMsj.tipo = 2;
+			_sendServerMsj.telefono = dataMsj.telefono;
+			// _sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre}, el repartidor que está a cargo de su pedido de ${dataMsj.establecimiento} es: ${dataMsj.repartidor_nom} 📞 ${dataMsj.repartidor_telefono} 🙋‍♂️\n\nLe llamará cuando este cerca ó para informarle de su pedido.`			
+			_sendServerMsj.msj = dataMsj.msj
 		}
 
 

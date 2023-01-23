@@ -42,7 +42,7 @@ const pushSuscripcion = function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	const suscripcion = req.body.suscripcion;	
 
-	const read_query = `update repartidor set pwa_code_verification = '${JSON.stringify(suscripcion)}' where idrepartidor = ${idrepartidor}`;
+	const read_query = `update repartidor set pwa_code_verification = '${suscripcion}' where idrepartidor = ${idrepartidor}`;
 	emitirRespuestaSP_RES(read_query, res);
 }
 module.exports.pushSuscripcion = pushSuscripcion;
@@ -185,7 +185,9 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 	const idsPedidos = dataPedido.pedidos.join(',');
 	let firtsRepartidor = listRepartidores[numIndex];
 
+	console.log('lista de repartidor ============ listRepartidores', listRepartidores);
 	console.log('repartidor ============ firtsRepartidor', firtsRepartidor);
+
 
 	// quitamos el pedido al repartidor anterior
 	console.log('asignar repartidor ============ ', dataPedido);
@@ -198,7 +200,8 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 			io.to(getSocketIdRepartidorReasigno[0].socketid).emit('repartidor-notifica-server-quita-pedido', null);
 
 			// NOTIFICA MONITOR quita  pedido a repartidor
-			// io.to('MONITOR').emit('notifica-server-quita-pedido-repartidor', dataPedido.last_id_repartidor_reasigno);
+			console.log('xxxxxxxxxxxxx === NOTIFICA MONITOR quita  pedido a repartidor')
+			io.to('MONITOR').emit('notifica-server-quita-pedido-repartidor', dataPedido.last_id_repartidor_reasigno);
 		}		
 	}
 
@@ -219,27 +222,33 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 
 		// NOTIFICA MONITOR repartidor nuevo pedido
 		// console.log('===== notifica-server-pedido-por-aceptar');	
-		// io.to('MONITOR').emit('notifica-server-pedido-por-aceptar', [firtsRepartidor, dataPedido]);
+		console.log('xxxxxxxxxxxxx === NOTIFICA MONITOR notifica-server-pedido-por-acepta')
+		io.to('MONITOR').emit('notifica-server-pedido-por-aceptar', [firtsRepartidor, dataPedido, listRepartidores]);
+
+		
+		console.log("============== last_notification = ", firtsRepartidor.last_notification);
+		sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0);
+		// enviamos el socket
+		console.log('socket enviado a repartidor', firtsRepartidor);
+		// io.to(firtsRepartidor.socketid).emit('repartidor-nuevo-pedido', [firtsRepartidor, dataPedido]);
+
+		// busca el sockeid para asignar
+		const getSocketIdRepartidorAsignar = await getSocketIdRepartidor(firtsRepartidor.idrepartidor);
+		io.to(getSocketIdRepartidorAsignar[0].socketid).emit('repartidor-nuevo-pedido', [firtsRepartidor, dataPedido]);
 	}
 
 
 	// envio mensaje
-	console.log("============== last_notification = ", firtsRepartidor.last_notification);
+	// console.log("============== last_notification = ", firtsRepartidor.last_notification);
 	// if ( firtsRepartidor.last_notification === 0 ||  firtsRepartidor.last_notification > 7) {	
 		// sendMsjsService.sendMsjSMSNewPedido(firtsRepartidor.telefono);
 		// const read_query = `update repartidor set last_notification = time(now()) where idrepartidor=${firtsRepartidor.idrepartidor};`;
     	// return emitirRespuestaSP(read_query); 
 	// }
 
-	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0);
+	
 
-	// enviamos el socket
-	console.log('socket enviado a repartidor', firtsRepartidor);
-	// io.to(firtsRepartidor.socketid).emit('repartidor-nuevo-pedido', [firtsRepartidor, dataPedido]);
-
-	// busca el sockeid para asignar
-	const getSocketIdRepartidorAsignar = await getSocketIdRepartidor(firtsRepartidor.idrepartidor);
-	io.to(getSocketIdRepartidorAsignar[0].socketid).emit('repartidor-nuevo-pedido', [firtsRepartidor, dataPedido]);
+	
 
 	// para finalizar async
 	return true;
@@ -476,11 +485,12 @@ module.exports.getInfo = getInfo;
 
 const getPedidosRecibidosGroup = function (req, res) {
 	_ids = req.body.ids;
-    const read_query = `SELECT * from  pedido where idpedido in (${_ids})`;
+    const read_query = `SELECT p.*, ptle.time_line from  pedido p
+							left join pedido_time_line_entrega ptle using(idpedido) 
+						where p.idpedido in (${_ids})`;
     return emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getPedidosRecibidosGroup = getPedidosRecibidosGroup;
-
 
 
 
@@ -495,6 +505,8 @@ module.exports.getPedidosRecibidosGroup = getPedidosRecibidosGroup;
 
 
 async function colocarPedidoEnRepartidor(io, idsede) {
+
+	console.log ( 'xxxxxxxxxxxxxxxxx------colocarPedidoEnRepartidor' );
 
 	// traer lista de pedidos que estan sin repartidor
 	let listGroupPedidos = []; // lista agrupada
@@ -540,28 +552,31 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 
 						if ( !isRecogeCliente ) { // si no recoge el cliente notifica al repartidor
 						
-							importeAcumula += parseFloat(pp.total);
-							if ( importeAcumula <= pp.monto_acumula) {
+							if (isPagoTarjeta) {
 								pp.paso=true;
-								// pp.json_datos_delivery = typeof pp.json_datos_delivery === 'string' ? JSON.parse(pp.json_datos_delivery) : pp.json_datos_delivery;
-
-								// si es tarjeta no suma
-								if ( pp.json_datos_delivery.p_header.arrDatosDelivery.metodoPago.idtipo_pago !==2 ) {
-									importePagar += parseFloat(pp.total);
-								}
-								
-								// console.log('push ', pp.idpedido);
-								_last_id_repartidor_reasigno = _last_id_repartidor_reasigno ? _last_id_repartidor_reasigno : pp.last_id_repartidor_reasigno;
-								_num_reasignaciones = _num_reasignaciones ? _num_reasignaciones : pp.num_reasignaciones;
-
 								listGroup.push(pp.idpedido);
 							} else {
-								if (isPagoTarjeta) {
-									listGroup.push(pp.idpedido);
-								}
+								const _ppTotal = parseFloat(pp.total);
+								importeAcumula += _ppTotal;
+								if ( importeAcumula <= pp.monto_acumula) {
+									pp.paso=true;
+									// pp.json_datos_delivery = typeof pp.json_datos_delivery === 'string' ? JSON.parse(pp.json_datos_delivery) : pp.json_datos_delivery;									
 
-								importeAcumula -= parseFloat(pp.total);
-							}
+									importePagar += _ppTotal;	
+									
+									// console.log('push ', pp.idpedido);
+									_last_id_repartidor_reasigno = _last_id_repartidor_reasigno ? _last_id_repartidor_reasigno : pp.last_id_repartidor_reasigno;
+									_num_reasignaciones = _num_reasignaciones ? _num_reasignaciones : pp.num_reasignaciones;
+
+									listGroup.push(pp.idpedido);
+								} else {
+									// if (isPagoTarjeta) {
+									// 	listGroup.push(pp.idpedido);
+									// }
+
+									importeAcumula -= _ppTotal;
+								}
+							}							
 						}
 
 						// si el monto es mayor al acumulado tambien agrega
@@ -580,6 +595,7 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 				
 
 				console.log('listLastRepartidor', listLastRepartidor);			
+				console.log('listLastRepartidor pedido', _last_id_repartidor_reasigno);
 
 				const _rowPedidoAdd = {
 					pedidos: listGroup,	
@@ -709,10 +725,11 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 // el proceso se activa al primer pedido que recibe y se mantiene activo eseprando
 // pedidos
 const runLoopSearchRepartidor = async function (io, idsede) {
-
-	if ( intervalBucaRepartidor === null ) {
+	console.log('xxxxxxxxxxx-----------runLoopSearchRepartidor', intervalBucaRepartidor)
+	if ( intervalBucaRepartidor === null ) {		
 		colocarPedidoEnRepartidor(io, idsede);
-		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
+		// intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
+		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 10000);
 	}
 }
 module.exports.runLoopSearchRepartidor = runLoopSearchRepartidor;

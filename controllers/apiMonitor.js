@@ -418,6 +418,28 @@ const setAnularPagoServicio = async function (req, res) {
 module.exports.setAnularPagoServicio = setAnularPagoServicio;
 
 
+const getShowPedidosAsignadosRepartidor = function (req, res) {   
+    const arrPedidos = req.body.arr;
+    const read_query = `select p1.idpedido, ptle.time_line, p1.json_datos_delivery->'$.p_header.arrDatosDelivery.establecimiento.nombre' establecimiento
+                            ,TIMESTAMPDIFF(MINUTE, p1.fecha_hora, now()) t_transcurrido
+                            ,p1.pwa_estado, p1.pwa_delivery_tiempo_atendido,p1.flag_is_cliente
+                        from pedido p1
+                        left join pedido_time_line_entrega ptle on ptle.idpedido = p1.idpedido 
+                        where p1.idpedido in (${arrPedidos})`;
+    // console.log('getShowPedidosAsignadosRepartidor', read_query)
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getShowPedidosAsignadosRepartidor = getShowPedidosAsignadosRepartidor;
+
+const getPedidoById = function (req, res) {  
+    const idpedido = req.body.idpedido;     
+    read_query = `SELECT p.*, r.nombre as nom_repartidor, r.telefono telefono_repartidor from pedido p
+left join repartidor r on p.idrepartidor = r.idrepartidor 
+where p.idpedido=${idpedido};`;
+    emitirRespuesta_RES(read_query, res);        
+}
+module.exports.getPedidoById = getPedidoById;
+
 
 
 function execSqlQueryNoReturn(xquery, res) {

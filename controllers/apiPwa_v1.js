@@ -570,6 +570,25 @@ const getListMesas = async function (req, res) {
 module.exports.getListMesas = getListMesas;
 
 
+const updateTimeLinePedido = function (idpedido,time_line) {      
+    const read_query = `insert into pedido_time_line_entrega (idpedido, time_line) values (${idpedido}, '${JSON.stringify(time_line)}') ON DUPLICATE KEY UPDATE time_line = '${JSON.stringify(time_line)}'`;
+    emitirRespuesta(read_query);        
+}
+module.exports.updateTimeLinePedido = updateTimeLinePedido;
+
+const setUserAccountRemove = async function (req, res) { 
+    const user = req.body.user;      
+    console.log('user remove', user);
+    if ( user.isCliente ) {
+        const read_query = `update usuario set estado=1 where idusuario=${idusuario}`;
+        emitirRespuestaSP(read_query);                
+    }
+    res.status(200).json({success: true})
+}
+module.exports.setUserAccountRemove = setUserAccountRemove;
+
+
+
 
 function emitirRespuesta_RES(xquery, res) {
 	console.log(xquery);

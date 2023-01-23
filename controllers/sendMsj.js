@@ -6,6 +6,10 @@ let Sequelize = require('sequelize');
 
 const nodemailer = require("nodemailer");
 
+// notificaciones push
+const gcm = require('node-gcm');
+const sender = new gcm.Sender(config.firebaseApikey);
+
 
 webpush.setVapidDetails(
   'mailto:papaya.restobar@gmail.com',
@@ -269,40 +273,57 @@ module.exports.sendPushNotificaction = sendPushNotificaction;
 
 
 // envia notificacion push a repartidor de que tiene un pedido
-const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_msj) {
-	// const key_suscripcion_push = Repartidor.key_suscripcion_push;	
-	// const notificationPayload = payload;
-	let payload;
+const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_msj) {	
+	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
+	let payloadNotification = '';
 	switch (tipo_msj) {
       case 0: // notifica a repartidor nuevo pedido
-      payload = {
-		"notification": {
-		        // "notification": {
-		            "title": "Nuevo Pedido",
-		            "body": `Te llego un pedido.`,
-		            "icon": "./favicon.ico",
-		            "lang": "es",
-		            "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]
-		        // }
-		    }
+      payloadNotification = {
+			title: "🪂 Nuevo Pedido",
+			icon: "./favicon.ico",
+			body: "Acepta el pedido, tiene un minuto para aceptarlo.",
+			vibrate: [200, 100, 200],
+        	sound: "default"
 		}       
         break;
     }	
 
-	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
+		
+    //081222 firebase
+    var message = new gcm.Message({
+		collapseKey: 'demo',
+		priority: 'high',
+		contentAvailable: true,
+		delayWhileIdle: true,
+		timeToLive: 3,					
+		notification: payloadNotification
+	});
 
-	console.log('notificationPayload', payload);
+	const registrationIds = [key_suscripcion_push];
 
-    webpush.sendNotification(
-    	key_suscripcion_push, JSON.stringify(payload) )
-		.then(() => 
-			// res.status(200).json({message: 'mensaje enviado con exito'})
-			console.log('ok')
-		)
-        .catch(err => {
-           	console.error("Error sending notification, reason: ", err);
-           	// res.sendStatus(500);
-        });
+	sender.send(message, { registrationIds: registrationIds }, (err, response) => {
+	  if (err) {
+	  	// res.sendStatus(500);
+	    console.error(err);
+	  } else {
+	  	// res.status(200).json({message: 'mensaje enviado con exito'})
+	    console.log(response);
+	  }
+	});
+
+
+	// console.log('notificationPayload', payload);
+
+    // webpush.sendNotification(
+    // 	key_suscripcion_push, JSON.stringify(payload) )
+	// 	.then(() => 
+	// 		// res.status(200).json({message: 'mensaje enviado con exito'})
+	// 		console.log('ok')
+	// 	)
+    //     .catch(err => {
+    //        	console.error("Error sending notification, reason: ", err);
+    //        	// res.sendStatus(500);
+    //     });
 
 	// res.json(payload)
 }
@@ -335,7 +356,9 @@ const sendPushNotificactionRepartidorAceptaPedido = function (_dataMsjs) {
 	                        "data": _dataMsjs._data				       		
 				        }
 				    }
-				// }       
+				// }
+
+
 	        break;
 	    }
 	// } 
@@ -351,6 +374,10 @@ const sendPushNotificactionRepartidorAceptaPedido = function (_dataMsjs) {
            	res.sendStatus(500);
         });
 
+
+
+
+
 }
 module.exports.sendPushNotificactionRepartidorAceptaPedido = sendPushNotificactionRepartidorAceptaPedido;
 
@@ -363,57 +390,88 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 	const _payload = req.body.payload || null;
 	const tipo_msj = 0;	
 
-	console.log('push key_push', key_suscripcion_push);
-	// const key_suscripcion_push = Repartidor.key_suscripcion_push;	
-	// const notificationPayload = payload;
-	let payload;	
-	if ( !_payload ) {
-		switch (tipo_msj) {
-	      case 0: // notifica a repartidor nuevo pedido
-	      payload = {
-			"notification": {
-			        // "notification": {
-			            "title": "Nuevo Pedido",
-			            "body": `Te llego un pedido.`,
-			            "icon": "./favicon.ico",
-			            "lang": "es",
-			            "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50],
-			            "actions": [
-                            {"action": "foo", "title": "Enviar Mensaje"},
-                            {"action": "foo2", "title": "Llamar"}
-                        ],
-                        "data": {
-                            "onActionClick": {
-                                "foo": {"operation": "openWindow", "url": "https://api.whatsapp.com/send?phone=51934746830"},
-                                "foo2": {"operation": "openWindow", "url": "tel:934746830"}      
-                            }
-			            }
+	// console.log('push key_push', key_suscripcion_push);
+	// // const key_suscripcion_push = Repartidor.key_suscripcion_push;	
+	// // const notificationPayload = payload;
+	// let payload;	
+	// if ( !_payload ) {
+	// 	switch (tipo_msj) {
+	//       case 0: // notifica a repartidor nuevo pedido
+	//       payload = {
+	// 		"notification": {
+	// 		        // "notification": {
+	// 		            "title": "Nuevo Pedido",
+	// 		            "body": `Te llego un pedido.`,
+	// 		            "icon": "./favicon.ico",
+	// 		            "lang": "es",
+	// 		            "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50],
+	// 		            "actions": [
+    //                         {"action": "foo", "title": "Enviar Mensaje"},
+    //                         {"action": "foo2", "title": "Llamar"}
+    //                     ],
+    //                     "data": {
+    //                         "onActionClick": {
+    //                             "foo": {"operation": "openWindow", "url": "https://api.whatsapp.com/send?phone=51934746830"},
+    //                             "foo2": {"operation": "openWindow", "url": "tel:934746830"}      
+    //                         }
+	// 		            }
 			       		
-			        }
-			    // }
-			}       
-	        break;
-	    }
-	} else {
-		payload = _payload;
-	}
+	// 		        }
+	// 		    // }
+	// 		}       
+	//         break;
+	//     }
+	// } else {
+	// 	payload = _payload;
+	// }
 
 	
 
-	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
+	// if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
 
-	console.log('notificationPayload', payload);
+	// console.log('notificationPayload', payload);
 	
-    // Promise.all(
-    webpush.sendNotification(
-    	key_suscripcion_push, JSON.stringify(payload) )
-		.then(() => 
-			res.status(200).json({message: 'mensaje enviado con exito'})
-		)
-        .catch(err => {
-           	console.error("Error sending notification, reason: ", err);
-           	res.sendStatus(500);
-        });
+    // // Promise.all(
+    // webpush.sendNotification(
+    // 	key_suscripcion_push, JSON.stringify(payload) )
+	// 	.then(() => 
+	// 		res.status(200).json({message: 'mensaje enviado con exito'})
+	// 	)
+    //     .catch(err => {
+    //        	console.error("Error sending notification, reason: ", err);
+    //        	res.sendStatus(500);
+    //     });
+
+	const payloadNotification = {
+			title: "🪂 Nuevo Pedido",
+			icon: "./favicon.ico",
+			body: "Acepta el pedido, tiene un minuto para aceptarlo.",
+			vibrate: [200, 100, 200],
+        	sound: "default"
+		} 
+
+    //081222 firebase
+    var message = new gcm.Message({
+		collapseKey: 'demo',
+		priority: 'high',
+		contentAvailable: true,
+		delayWhileIdle: true,
+		timeToLive: 3,					
+		notification: payloadNotification
+	});
+
+	const registrationIds = [key_suscripcion_push];
+
+	sender.send(message, { registrationIds: registrationIds }, (err, response) => {
+	  if (err) {
+	  	res.sendStatus(500);
+	    console.error(err);
+	  } else {
+	  	res.status(200).json({message: 'mensaje enviado con exito'})
+	    console.log(response);
+	  }
+	});
+
 
 }
 module.exports.sendPushNotificactionOneRepartidorTEST = sendPushNotificactionOneRepartidorTEST;

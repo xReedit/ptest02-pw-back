@@ -31,7 +31,7 @@ const getDireccionCliente = async function (req, res) {
 	// console.log ('idcliente', req.body);
 	const idcliente = req.body.idcliente;
     // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
-    const read_query = `SELECT cpd.*, sc.options from cliente_pwa_direccion cpd	inner join sede_config_service_delivery sc on UPPER(sc.ciudad) = UPPER(cpd.ciudad) where cpd.idcliente = ${idcliente} and cpd.estado = 0`
+    const read_query = `SELECT cpd.*, sc.options from cliente_pwa_direccion cpd	left join sede_config_service_delivery sc on UPPER(sc.ciudad) = UPPER(cpd.ciudad) where cpd.idcliente = ${idcliente} and cpd.estado = 0`
     emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getDireccionCliente = getDireccionCliente;

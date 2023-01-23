@@ -80,6 +80,7 @@ routerV3.post('/pedido/search-subitems-del-item', apiPwaAppPedidos.getSearchSubi
 routerV3.post('/pedido/get-last-pedido-cliente-this-table', apiPwaAppPedidos.getLastPedidoClienteThisTable);
 
 routerV3.post('/ini/register-cliente-login', apiPwaAppPedidos.setRegisterClienteLogin);
+routerV3.post('/ini/user-account-remove', apiPwaAppPedidos.setUserAccountRemove);
 
 // cliente profile
 routerV3.post('/cliente/perfil', apiPwaAppPedidos.getClientePerfil);
@@ -109,7 +110,7 @@ routerV3.post('/delivery/get-shared-url-carta', apiPwaAppDelivery.getSharedUrlCa
 // mensajes
 routerV3.post('/delivery/verificar-codigo-sms', apiPwaAppDelivery.verificarCodigoSMS);
 // routerV3.post('/delivery/send-sms-confirmation', auth.verificarTokenSms, apiPwaSMS.sendMsjConfirmacion);
-routerV3.post('/delivery/send-sms-confirmation', apiPwaSMS.sendMsjConfirmacion);
+routerV3.post('/delivery/send-sms-confirmation-out', apiPwaSMS.sendMsjConfirmacion);
 routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepartidorTEST);
 routerV3.post('/delivery/send-sms-test', apiPwaSMS.sendMsjSMSNewPedido);
 routerV3.post('/delivery/send-sms', apiPwaSMS.sendMsjSMS);
@@ -245,6 +246,9 @@ routerV3.post('/monitor/get-sede-info-fact', auth.verificarToken, apiPwaAppMonit
 routerV3.post('/monitor/get-sede-info-facturacion-by-ruc', auth.verificarToken, apiPwaAppMonitor.getInfoSedeFacturacionById);
 routerV3.post('/monitor/set-factura-confirmacion-pago-servicio', auth.verificarToken, apiPwaAppMonitor.setFacturaConfirmarPagoServicio);
 routerV3.post('/monitor/set-anular-confirmacion-pago-servicio', auth.verificarToken, apiPwaAppMonitor.setAnularPagoServicio);
+routerV3.post('/monitor/get-show-pedidos-asignados-repartidor', auth.verificarToken, apiPwaAppMonitor.getShowPedidosAsignadosRepartidor);
+routerV3.post('/monitor/get-pedido-by-id', auth.verificarToken, apiPwaAppMonitor.getPedidoById);
+
 
 
 //// MONITOR ///

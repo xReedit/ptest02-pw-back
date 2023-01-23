@@ -12,11 +12,14 @@ var socketsController = require('./controllers/sockets');
 const apiServiceTimerChangeCosto = require('./controllers/timerChangeCosto.js');
 
 
-app.use(cors());
+var corsOptions = {
+  origin: '*papaya.com.pe/*'
+}
+
+app.use(cors(corsOptions));
 
 app.use(bodyParser.json({ limit: '50mb' })); // soporte para bodies codificados en jsonsupport
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb', extended: true, parameterLimit: 50000 })); // soporte para bodies codificados
-
 
 
 // para pwa-app-pedidos
@@ -29,7 +32,7 @@ app.use(function(req, res, next) {
     next(err);
 });
 
-
+    
 // error handler
 app.use(function(err, req, res, next) {
     // render the error page

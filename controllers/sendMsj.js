@@ -22,33 +22,33 @@ let sequelize = new Sequelize(config.database, config.username, config.password,
 // sms mensaje de confirmacion de telefono
 const sendMsjConfirmacion = async function (req, res) {
 	// console.log ('idcliente', req.body);
-	const numberPhone = req.body.numberphone;
-	const idcliente = req.body.idcliente;
+	// const numberPhone = req.body.numberphone;
+	// const idcliente = req.body.idcliente;
 
-	const codigoVerificacion = Math.round(Math.random()* (9000 - 1)+parseInt(1000));
-	console.log('codigo de verificacion', codigoVerificacion);
-    // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
-    // emitirRespuesta_RES(read_query, res);        
-    var clientSMS = require('twilio')(config.accountSidSms, config.authTokenSms);
-    clientSMS.messages.create({
-    	body: 'Papaya.com.pe, codigo de verificacion: ' + codigoVerificacion,
-    	to: '+51'+numberPhone,  // Text this number
-    	from: '+17852279308' // From a valid Twilio number
-	})
-	.then((message) => {
-		// genera codigo y guarda
-		const numTelefono = parseInt(idcliente) < 0 ? numberPhone : '';
-		const read_query = `call porcedure_pwa_update_phono_sms_cliente(${idcliente},'${numTelefono}', '${codigoVerificacion}')`;
-    	emitirRespuestaSP(read_query);
-		return ReS(res, {
-			msj: true
-		});
-	})
-	.catch(err => {
-		return ReS(res, {
-			msj: false
-		});
-	});
+	// const codigoVerificacion = Math.round(Math.random()* (9000 - 1)+parseInt(1000));
+	// console.log('codigo de verificacion', codigoVerificacion);
+    // // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
+    // // emitirRespuesta_RES(read_query, res);        
+    // var clientSMS = require('twilio')(config.accountSidSms, config.authTokenSms);
+    // clientSMS.messages.create({
+    // 	body: 'Papaya.com.pe, codigo de verificacion: ' + codigoVerificacion,
+    // 	to: '+51'+numberPhone,  // Text this number
+    // 	from: '+17852279308' // From a valid Twilio number
+	// })
+	// .then((message) => {
+	// 	// genera codigo y guarda
+	// 	const numTelefono = parseInt(idcliente) < 0 ? numberPhone : '';
+	// 	const read_query = `call porcedure_pwa_update_phono_sms_cliente(${idcliente},'${numTelefono}', '${codigoVerificacion}')`;
+    // 	emitirRespuestaSP(read_query);
+	// 	return ReS(res, {
+	// 		msj: true
+	// 	});
+	// })
+	// .catch(err => {
+	// 	return ReS(res, {
+	// 		msj: false
+	// 	});
+	// });
 }
 module.exports.sendMsjConfirmacion = sendMsjConfirmacion;
 
@@ -75,50 +75,50 @@ const sendMsjSMSNewPedido = async function (numberPhone, dato = 'Repartidor ') {
 	// const numberPhone = req.body.numberphone;
     // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
     // emitirRespuesta_RES(read_query, res);        
-    var clientSMS = require('twilio')(config.accountSidSms, config.authTokenSms);
+ //    var clientSMS = require('twilio')(config.accountSidSms, config.authTokenSms);
+
+ // //    clientSMS.messages.create({
+// 	//   from: 'whatsapp:+14155238886',
+// 	//   body: 'Ahoy world!',
+// 	//   to: 'whatsapp:+51'+numberPhone
+// 	// }).then(message => console.log(message.sid));
 
  //    clientSMS.messages.create({
-	//   from: 'whatsapp:+14155238886',
-	//   body: 'Ahoy world!',
-	//   to: 'whatsapp:+51'+numberPhone
-	// }).then(message => console.log(message.sid));
-
-    clientSMS.messages.create({
-    	body: dato  + 'Papaya Express. Tiene un nuevo pedido.',
-    	to: '+51'+numberPhone,  // Text this number
-    	from: '+17852279308' // From a valid Twilio number
-	})
-	.then((message) => {		
-		return true;
-	})
-	.catch(err => {
-		return false;
-	});
+ //    	body: dato  + 'Papaya Express. Tiene un nuevo pedido.',
+ //    	to: '+51'+numberPhone,  // Text this number
+ //    	from: '+17852279308' // From a valid Twilio number
+// 	})
+// 	.then((message) => {		
+// 		return true;
+// 	})
+// 	.catch(err => {
+// 		return false;
+// 	});
 }
 module.exports.sendMsjSMSNewPedido = sendMsjSMSNewPedido;
 
 // sms mensaje sms a clientes
 const sendMsjSMS = async function (req, res) {	
-	const numberPhone = req.body.phone;
-	const contenido = req.body.contenido;
+	// const numberPhone = req.body.phone;
+	// const contenido = req.body.contenido;
 
-	console.log(contenido);
+	// console.log(contenido);
 
-    var clientSMS = require('twilio')(config.accountSidSms, config.authTokenSms);
+    // var clientSMS = require('twilio')(config.accountSidSms, config.authTokenSms);
 
-    clientSMS.messages.create({
-    	body: contenido,
-    	to: '+51'+numberPhone,  // Text this number
-    	from: '+17852279308' // From a valid Twilio number
-	})
-	.then((message) => {	
-		console.log(message.sid);
-		return res.json({success:true});
-	})
-	.catch(err => {
-		console.log('error al enviar mensaje');
-		return res.json({success:false});
-	});
+    // clientSMS.messages.create({
+    // 	body: contenido,
+    // 	to: '+51'+numberPhone,  // Text this number
+    // 	from: '+17852279308' // From a valid Twilio number
+	// })
+	// .then((message) => {	
+	// 	console.log(message.sid);
+	// 	return res.json({success:true});
+	// })
+	// .catch(err => {
+	// 	console.log('error al enviar mensaje');
+	// 	return res.json({success:false});
+	// });
 }
 module.exports.sendMsjSMS = sendMsjSMS;
 

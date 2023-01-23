@@ -16,7 +16,7 @@ var corsOptions = {
   origin: '*papaya.com.pe/*'
 }
 
-app.use(cors(corsOptions));
+app.use(cors());
 
 app.use(bodyParser.json({ limit: '50mb' })); // soporte para bodies codificados en jsonsupport
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb', extended: true, parameterLimit: 50000 })); // soporte para bodies codificados

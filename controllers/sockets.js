@@ -1272,12 +1272,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		}
 
 		// notifica al cliente el repartidor time line del pedido
-		if ( tipo === 5 ) {			
-			_sendServerMsj.tipo = 2;
-			_sendServerMsj.telefono = dataMsj.telefono;
-			// _sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre}, el repartidor que está a cargo de su pedido de ${dataMsj.establecimiento} es: ${dataMsj.repartidor_nom} 📞 ${dataMsj.repartidor_telefono} 🙋‍♂️\n\nLe llamará cuando este cerca ó para informarle de su pedido.`			
-			_sendServerMsj.msj = dataMsj.msj
-		}
+		// if ( tipo === 5 ) {			
+		// 	_sendServerMsj.tipo = 2;
+		// 	_sendServerMsj.telefono = dataMsj.telefono;
+		// 	// _sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre}, el repartidor que está a cargo de su pedido de ${dataMsj.establecimiento} es: ${dataMsj.repartidor_nom} 📞 ${dataMsj.repartidor_telefono} 🙋‍♂️\n\nLe llamará cuando este cerca ó para informarle de su pedido.`			
+		// 	_sendServerMsj.msj = dataMsj.msj
+		// }
 
 
 		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);

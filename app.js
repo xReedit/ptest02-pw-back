@@ -6,17 +6,16 @@ var app = express();
 var bodyParser = require('body-parser');
 var cors=require('cors');
 
+
+app.use(cors());
+
+
 var config = require('./config');
 var socketsController = require('./controllers/sockets');
 // const apiServiceSendCPE = require('./controllers/serviceSendCPE');
 const apiServiceTimerChangeCosto = require('./controllers/timerChangeCosto.js');
 
 
-var corsOptions = {
-  origin: '*papaya.com.pe/*'
-}
-
-app.use(cors());
 
 app.use(bodyParser.json({ limit: '50mb' })); // soporte para bodies codificados en jsonsupport
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb', extended: true, parameterLimit: 50000 })); // soporte para bodies codificados
@@ -26,7 +25,7 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '50mb', extended: true, p
 var appV3 = require('./routes/v3');
 app.use('/v3',appV3);
 
-app.use(function(req, res, next) {
+app.use(function(req, res, next) {    
     var err = new Error('Not Found');
     err.status = 404;
     next(err);

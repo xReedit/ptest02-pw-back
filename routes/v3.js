@@ -21,7 +21,26 @@ const auth = require('../middleware/autentificacion');
 
 const apiSpeech = require('../controllers/speech');
 
-routerV3.get('/', function (req, res, next) {
+
+// var cors = require('cors')
+
+// var whitelist = ['http://example1.com', 'http://example2.com', 'http://localhost/*']
+// var corsOptionsDelegate = function (req, callback) {
+//   var corsOptions;
+//   console.log('xxxxxxx =====> xxxxxxxxxxx', req)
+//   // if (whitelist.indexOf(req.header('Origin')) !== -1) {
+//   //   corsOptions = { origin: true } // reflect (enable) the requested origin in the CORS response
+//   //   callback(null, true)
+//   // } else {
+//   //   corsOptions = { origin: false } // disable CORS for this request
+//   //   // return res.json({success:false, error: 'No habilitado'});
+//   //   throw new Error('No habilitado');
+//   // }  
+// }
+
+// routerV3.use(cors(corsOptionsDelegate))
+
+routerV3.get('/', function (req, res, next) {	
 	res.json({
 		status: "success",
 		message: "API V3",

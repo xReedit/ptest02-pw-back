@@ -728,8 +728,8 @@ const runLoopSearchRepartidor = async function (io, idsede) {
 	console.log('xxxxxxxxxxx-----------runLoopSearchRepartidor', intervalBucaRepartidor)
 	if ( intervalBucaRepartidor === null ) {		
 		colocarPedidoEnRepartidor(io, idsede);
-		// intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
-		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 10000);
+		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
+		// intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 10000); //desarrollo
 	}
 }
 module.exports.runLoopSearchRepartidor = runLoopSearchRepartidor;

@@ -279,7 +279,7 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 	switch (tipo_msj) {
       case 0: // notifica a repartidor nuevo pedido
       payloadNotification = {
-			title: "🪂 Nuevo Pedido",
+			title: "🎉 Nuevo Pedido",
 			icon: "./favicon.ico",
 			body: "Acepta el pedido, tiene un minuto para aceptarlo.",
 			vibrate: [200, 100, 200],
@@ -311,21 +311,25 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 	  }
 	});
 
+	
+	
+
+
 
 	// console.log('notificationPayload', payload);
+	// para web
+    webpush.sendNotification(
+    	key_suscripcion_push, JSON.stringify(payloadNotification) )
+		.then(() => 
+			// res.status(200).json({message: 'mensaje enviado con exito'})
+			console.log('ok')
+		)
+        .catch(err => {
+           	console.error("Error sending notification, reason: ", err);
+           	// res.sendStatus(500);
+        });
 
-    // webpush.sendNotification(
-    // 	key_suscripcion_push, JSON.stringify(payload) )
-	// 	.then(() => 
-	// 		// res.status(200).json({message: 'mensaje enviado con exito'})
-	// 		console.log('ok')
-	// 	)
-    //     .catch(err => {
-    //        	console.error("Error sending notification, reason: ", err);
-    //        	// res.sendStatus(500);
-    //     });
-
-	// res.json(payload)
+	res.json(payload)
 }
 module.exports.sendPushNotificactionOneRepartidor = sendPushNotificactionOneRepartidor;
 
@@ -376,8 +380,7 @@ const sendPushNotificactionRepartidorAceptaPedido = function (_dataMsjs) {
 
 
 
-
-
+	
 }
 module.exports.sendPushNotificactionRepartidorAceptaPedido = sendPushNotificactionRepartidorAceptaPedido;
 

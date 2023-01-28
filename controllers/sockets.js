@@ -216,7 +216,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			
 			// la cantidad viene 999 cuando es nd y la porcion si viene nd
 			// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
-			// item.cantidad = parseInt(item.cantidad) >= 999 ? item.isporcion || 'ND' : item.cantidad;
+			item.cantidad = parseInt(item.cantidad) >= 999 ? item.isporcion || 'ND' : item.cantidad;
 			if (item.cantidad != 'ND') {	
 				console.log('item.sumar', item);	
 				// var _cantItem = parseFloat(item.cantidad);
@@ -301,7 +301,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// item.cantidad = parseInt(item.cantidad) === 999 ? item.isporcion : item.cantidad; // la cantidad viene 999 cuando es nd y la porcion si viene nd
 				// la cantidad viene 999 cuando es nd y la porcion si viene nd
 				// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
-				// item.cantidad = parseInt(item.cantidad) >= 999 || parseInt(item.stock_actual) >= 999 ? item.isporcion || 'ND' : item.cantidad;
+				item.cantidad = parseInt(item.cantidad) >= 999 || parseInt(item.stock_actual) >= 999 ? item.isporcion || 'ND' : item.cantidad;
 				if (item.cantidad != 'ND') {
 					item.cantidad_reset = item.cantidad_seleccionada;					
 					item.cantidad_seleccionada = 0;

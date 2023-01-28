@@ -40,11 +40,13 @@ module.exports.setEfectivoMano = setEfectivoMano;
 
 const pushSuscripcion = function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
-	const suscripcion = req.body.suscripcion;	
+	let suscripcion = req.body.suscripcion;	
 
 	if (typeof suscripcion === "object") { 
 		suscripcion = JSON.stringify(suscripcion)
 	}
+
+	console.log('suscripcion ====>>', suscripcion)
 
 	const read_query = `update repartidor set pwa_code_verification = '${suscripcion}' where idrepartidor = ${idrepartidor}`;
 	emitirRespuestaSP_RES(read_query, res);

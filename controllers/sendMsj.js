@@ -271,6 +271,39 @@ const sendPushNotificaction = function (req, res) {
 module.exports.sendPushNotificaction = sendPushNotificaction;
 
 
+// envia notificacion push a repartidor de que tiene un pedido
+const sendPushNotificactionComercio = function (key_suscripcion_push, tipo_msj) {	
+	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
+	let payloadNotification = '';
+	switch (tipo_msj) {
+      case 0: // notifica a repartidor nuevo pedido
+      payloadNotification = {
+			title: "🎉 Nuevo Pedido",
+			icon: "./favicon.ico",
+			body: "Tiene un nuevo pedido por Papaya Express.",
+			vibrate: [200, 100, 200],
+        	sound: "default"
+		}       
+        break;
+    }	
+
+
+	// console.log('notificationPayload', payload);
+	// para web
+    webpush.sendNotification(
+    	key_suscripcion_push, JSON.stringify(payloadNotification) )
+		.then(() => 
+			// res.status(200).json({message: 'mensaje enviado con exito'})
+			console.log('ok')
+		)
+        .catch(err => {
+           	console.error("Error sending notification, reason: ", err);
+           	// res.sendStatus(500);
+        });
+
+	// res.json(payloadNotification)
+}
+module.exports.sendPushNotificactionComercio = sendPushNotificactionComercio;
 
 // envia notificacion push a repartidor de que tiene un pedido
 const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_msj) {	
@@ -329,7 +362,7 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
            	// res.sendStatus(500);
         });
 
-	res.json(payload)
+	// res.json(payload)
 }
 module.exports.sendPushNotificactionOneRepartidor = sendPushNotificactionOneRepartidor;
 

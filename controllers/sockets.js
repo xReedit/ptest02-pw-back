@@ -460,7 +460,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				console.log(' ====== notifica al servidor de mensajes ===== telefono notifica ====> ', telefonoComercio);
 
 				if ( telefonoComercio !== '' ) {
-					const _sendServerMsj = `{"tipo":0, "s": "${dataCliente.idorg}.${dataCliente.idsede}", "p": ${dataSend.dataPedido.idpedido}, "h": "${new Date().toISOString()}", "t":"${telefonoComercio}"}`;					
+					let _sendServerMsj = `{"tipo":0, "s": "${dataCliente.idorg}.${dataCliente.idsede}", "p": ${dataSend.dataPedido.idpedido}, "h": "${new Date().toISOString()}", "t":"${telefonoComercio}"}`;
+					_sendServerMsj = JSON.parse(_sendServerMsj);
 					sendMsjSocketWsp(_sendServerMsj);
 				}				
 			}

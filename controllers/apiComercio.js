@@ -258,7 +258,7 @@ module.exports.getProcedure = getProcedure;
 
 
 const sendOnlyNotificaPush = function (key_suscripcion_push, tipo_msjs) {
-	sendMsjsService.sendPushNotificactionOneRepartidor(key_suscripcion_push, tipo_msjs);
+	sendMsjsService.sendPushNotificactionComercio(key_suscripcion_push, tipo_msjs);
 }
 module.exports.sendOnlyNotificaPush = sendOnlyNotificaPush;
 

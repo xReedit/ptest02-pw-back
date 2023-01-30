@@ -364,6 +364,7 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 
 	// console.log('notificationPayload', payload);
 
+	// para version web
 	let payload = {
 		"notification": {		        
 		        "title": "🎉 Nuevo Pedido",

@@ -525,6 +525,10 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 	
 	console.log ( 'listPedidos listPedidos.lenght', listPedidos.length );
 
+
+	//isshow indica los pedidos que ya llegaron a la hora de notificacion
+	//isshow_back inidica que llegaron a la hora notificacion - 6 minutos para agrupar y dar aun solo repartidor
+
 	if ( listPedidos.length > 0 ) {
 
 		// op 2
@@ -550,6 +554,7 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 				_last_id_repartidor_reasigno = null;
 				listGroup = [];
 				listPedidos
+					.filter(pp => pp.isshow === 1 || pp.flag_solicita_repartidor_papaya === 1)
 					.filter(pp => pp.idsede === _idsede && pp.isshow_back === 1 && !pp.paso)
 					.map(pp => {						
 						pp.json_datos_delivery = typeof pp.json_datos_delivery === 'string' ? JSON.parse(pp.json_datos_delivery) : pp.json_datos_delivery;

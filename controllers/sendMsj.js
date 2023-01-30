@@ -274,24 +274,37 @@ module.exports.sendPushNotificaction = sendPushNotificaction;
 // envia notificacion push a repartidor de que tiene un pedido
 const sendPushNotificactionComercio = function (key_suscripcion_push, tipo_msj) {	
 	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
-	let payloadNotification = '';
-	switch (tipo_msj) {
-      case 0: // notifica a repartidor nuevo pedido
-      payloadNotification = {
-			title: "🎉 Nuevo Pedido",
-			icon: "./favicon.ico",
-			body: "Tiene un nuevo pedido por Papaya Express.",
-			vibrate: [200, 100, 200],
-        	sound: "default"
-		}       
-        break;
-    }	
+	
+	// let payloadNotification = '';
+	// switch (tipo_msj) {
+    //   case 0: // notifica a repartidor nuevo pedido
+    //   payloadNotification = {
+	// 		title: "🎉 Nuevo Pedido",
+	// 		icon: "./favicon.ico",
+	// 		body: "Tiene un nuevo pedido por Papaya Express.",
+	// 		vibrate: [200, 100, 200],
+    //     	sound: "default"
+	// 	}       
+    //     break;
+    // }	
+
+
+    // solo web 
+    let payload = {
+		"notification": {		        
+		        "title": "🎉 Nuevo Pedido",
+		        "body": `Tiene un nuevo pedido por Papaya Express`,
+		        "icon": "./favicon.ico",
+		        "lang": "es",
+		        "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]		        
+		    }
+		} 
 
 
 	// console.log('notificationPayload', payload);
 	// para web
     webpush.sendNotification(
-    	key_suscripcion_push, JSON.stringify(payloadNotification) )
+    	key_suscripcion_push, JSON.stringify(payload) )
 		.then(() => 
 			// res.status(200).json({message: 'mensaje enviado con exito'})
 			console.log('ok')
@@ -350,9 +363,19 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 
 
 	// console.log('notificationPayload', payload);
+
+	let payload = {
+		"notification": {		        
+		        "title": "🎉 Nuevo Pedido",
+		        "body": `Acepta el pedido, tiene un minuto para aceptarlo.`,
+		        "icon": "./favicon.ico",
+		        "lang": "es",
+		        "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]		        
+		    }
+		} 
 	// para web
     webpush.sendNotification(
-    	key_suscripcion_push, JSON.stringify(payloadNotification) )
+    	key_suscripcion_push, JSON.stringify(payload) )
 		.then(() => 
 			// res.status(200).json({message: 'mensaje enviado con exito'})
 			console.log('ok')
@@ -507,6 +530,30 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 	    console.log(response);
 	  }
 	});
+
+
+
+	// web
+	let payload = {
+		"notification": {		        
+		        "title": "🎉 Nuevo Pedido",
+		        "body": `Nuevo Pedido Papaya Expres.`,
+		        "icon": "./favicon.ico",
+		        "lang": "es",
+		        "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]		        
+		    }
+		} 
+	// para web
+    webpush.sendNotification(
+    	key_suscripcion_push, JSON.stringify(payload) )
+		.then(() => 
+			// res.status(200).json({message: 'mensaje enviado con exito'})
+			console.log('ok')
+		)
+        .catch(err => {
+           	console.error("Error sending notification, reason: ", err);
+           	// res.sendStatus(500);
+        });
 
 
 }

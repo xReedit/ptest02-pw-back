@@ -321,6 +321,39 @@ module.exports.sendPushNotificactionComercio = sendPushNotificactionComercio;
 // envia notificacion push a repartidor de que tiene un pedido
 const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_msj) {	
 	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
+
+	if (typeof suscripcion === "object") { // es web
+
+		// console.log('notificationPayload', payload);
+		// para version web
+		let payload = {
+			"notification": {		        
+			        "title": "🎉 Nuevo Pedido",
+			        "body": `Acepta el pedido, tiene un minuto para aceptarlo.`,
+			        "icon": "./favicon.ico",
+			        "lang": "es",
+			        "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]		        
+			    }
+			} 
+		// para web
+	    webpush.sendNotification(
+	    	key_suscripcion_push, JSON.stringify(payload) )
+			.then(() => 
+				// res.status(200).json({message: 'mensaje enviado con exito'})
+				console.log('ok')
+			)
+	        .catch(err => {
+	           	console.error("Error sending notification, reason: ", err);
+	           	// res.sendStatus(500);
+	        });
+
+		// res.json(payload)
+	    return;
+	}
+
+
+	// notificacion ios android
+
 	let payloadNotification = '';
 	switch (tipo_msj) {
       case 0: // notifica a repartidor nuevo pedido
@@ -362,31 +395,7 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 
 
 
-	// console.log('notificationPayload', payload);
-
-	// para version web
-	let payload = {
-		"notification": {		        
-		        "title": "🎉 Nuevo Pedido",
-		        "body": `Acepta el pedido, tiene un minuto para aceptarlo.`,
-		        "icon": "./favicon.ico",
-		        "lang": "es",
-		        "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]		        
-		    }
-		} 
-	// para web
-    webpush.sendNotification(
-    	key_suscripcion_push, JSON.stringify(payload) )
-		.then(() => 
-			// res.status(200).json({message: 'mensaje enviado con exito'})
-			console.log('ok')
-		)
-        .catch(err => {
-           	console.error("Error sending notification, reason: ", err);
-           	// res.sendStatus(500);
-        });
-
-	// res.json(payload)
+	
 }
 module.exports.sendPushNotificactionOneRepartidor = sendPushNotificactionOneRepartidor;
 

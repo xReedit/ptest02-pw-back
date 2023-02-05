@@ -491,9 +491,9 @@ module.exports.getInfo = getInfo;
 
 const getPedidosRecibidosGroup = function (req, res) {
 	_ids = req.body.ids;
-    const read_query = `SELECT p.*, ptle.time_line from  pedido p
+    const read_query = `DISTINCT SELECT p.*, ptle.time_line from  pedido p
 							left join pedido_time_line_entrega ptle using(idpedido) 
-						where p.idpedido in (${_ids})`;
+						where p.idpedido in (${_ids}) GROUP by p.idpedido`;
     return emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getPedidosRecibidosGroup = getPedidosRecibidosGroup;

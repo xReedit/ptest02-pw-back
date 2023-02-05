@@ -324,7 +324,7 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 
 	if (typeof key_suscripcion_push === "object") { // es web
 
-		key_suscripcion_push = JSON.parse(key_suscripcion_push);
+		// key_suscripcion_push = JSON.parse(key_suscripcion_push);
 
 		// console.log('notificationPayload', payload);
 		// para version web

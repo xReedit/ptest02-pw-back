@@ -322,6 +322,8 @@ module.exports.sendPushNotificactionComercio = sendPushNotificactionComercio;
 const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_msj) {	
 	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
 
+	console.log('======== notifica a=======', key_suscripcion_push)
+
 	// if (typeof key_suscripcion_push === "object") { // es web
 
 		// key_suscripcion_push = JSON.parse(key_suscripcion_push);

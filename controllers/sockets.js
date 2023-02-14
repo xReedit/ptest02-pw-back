@@ -1130,7 +1130,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notifica al repartidor del pedido asinado manualmente
 		socket.on('set-asigna-pedido-repartidor-manual', async (dataPedido) => {				
-			console.log('set-asigna-pedido-repartidor-manual');
+			console.log('====== set-asigna-pedido-repartidor-manual', dataPedido);
 			const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataPedido.idrepartidor);
 			const socketIdRepartidor = pedioPendienteAceptar[0].socketid;
 			io.to(socketIdRepartidor).emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
@@ -1141,6 +1141,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// notifica a monitor para refesh vista
 			io.to('MONITOR').emit('set-asigna-pedido-repartidor-manual', {idrepartidor: dataPedido.idrepartidor, pedidos: dataPedido.pedidos});
 			// io.to('MONITOR').emit('set-asigna-pedido-repartidor-manual', {idrepartidor: dataPedido.idrepartidor});
+
+			// quitar el pedido al repartidor que estaba notificando
+			if ( dataPedido.socket_repartidor_quitar ) {
+				io.to(dataPedido.socket_repartidor_quitar).emit('repartidor-notifica-server-quita-pedido', null);
+			}
+			
 		});		
 
 

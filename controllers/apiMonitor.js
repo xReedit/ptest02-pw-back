@@ -62,7 +62,7 @@ module.exports.getCientes = getCientes;
 
 const getRepartidoreCiudad = function (req, res) {	
 	const codigo_postal = req.body.codigo_postal;
-    const read_query = `SELECT * from repartidor where codigo_postal = '${codigo_postal}' and estado = 0 and online = 1 and COALESCE(idsede_suscrito, 0) = 0`;
+    const read_query = `SELECT * from repartidor where idrepartidor=1 or codigo_postal = '${codigo_postal}' and estado = 0 and online = 1 and COALESCE(idsede_suscrito, 0) = 0`;
     emitirRespuesta_RES(read_query, res);  
 }
 module.exports.getRepartidoreCiudad = getRepartidoreCiudad;

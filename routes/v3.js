@@ -131,6 +131,7 @@ routerV3.post('/delivery/verificar-codigo-sms', apiPwaAppDelivery.verificarCodig
 // routerV3.post('/delivery/send-sms-confirmation', auth.verificarTokenSms, apiPwaSMS.sendMsjConfirmacion);
 routerV3.post('/delivery/send-sms-confirmation-out', apiPwaSMS.sendMsjConfirmacion);
 routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepartidorTEST);
+// routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepartidor);
 routerV3.post('/delivery/send-sms-test-out', apiPwaSMS.sendMsjSMSNewPedido);
 routerV3.post('/delivery/send-sms-out', apiPwaSMS.sendMsjSMS);
 routerV3.post('/delivery/send-email', apiPwaSMS.sendEmailSendGrid);

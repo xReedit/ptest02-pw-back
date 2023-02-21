@@ -202,6 +202,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// para sacar el loader
 		socket.emit('finishLoadDataInitial');
 
+		socket.on('itemModificado-test', async function(item) {
+			console.log('==========> llego', item)
+		})
+
 		// item modificado
 		socket.on('itemModificado', async function(item) {
 			// console.log('itemModificado', item);
@@ -210,7 +214,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			
 
-			console.log('item', item);
+			// console.log('item', item);
 			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
 			item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
 			
@@ -240,18 +244,23 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// console.log('item subitems', item.subitems);
 
 				if ( rptCantidad[0].listSubItems ) {
-					rptCantidad[0].listSubItems.map(subitem => {
+					try {
+						rptCantidad[0].listSubItems.map(subitem => {
 
-						if ( !item.subitems ) {
-							item.subitems.map(s => {							
-								let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
+							if ( !item.subitems ) {
+								item.subitems.map(s => {							
+									let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
 
-								if ( itemFind ) {
-									itemFind.cantidad = subitem.cantidad;
-								}
-							});
-						}						
-					});
+									if ( itemFind ) {
+										itemFind.cantidad = subitem.cantidad;
+									}
+								});
+							}						
+						});
+					}
+					catch (error) {
+						console.log(error);
+					}
 				}			
 
 				const rpt = {
@@ -379,6 +388,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
 
 			console.log('respuesta del socket ', rpt);
+
+			console.log('data socketid res ==== > ', dataSend.socketid);
+			console.log('data socketid res ==== > ', socket.id);
+
+			io.to(socket.id).emit('nuevoPedidoRes', rpt)
 
 			if ( callback ) {
 				callback(rpt);			

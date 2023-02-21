@@ -588,6 +588,13 @@ const setUserAccountRemove = async function (req, res) {
 module.exports.setUserAccountRemove = setUserAccountRemove;
 
 
+// const setModificaStockTest = async function (req, res) { 
+//     const id = req.body;      
+//     console.log('==========> llego setModificaStockTest', id)
+//     res.status(200).json({success: true})
+// }
+// module.exports.setModificaStockTest = setModificaStockTest
+
 
 
 function emitirRespuesta_RES(xquery, res) {

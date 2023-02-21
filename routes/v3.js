@@ -97,6 +97,7 @@ routerV3.post('/encuesta/guardar', apiPwaAppPedidos.setEncuestaGuardar);
 routerV3.post('/pedido/calc-time-despacho', apiPwaAppPedidos.getCalcTimeDespacho);
 routerV3.post('/pedido/search-subitems-del-item', apiPwaAppPedidos.getSearchSubitemsItem);
 routerV3.post('/pedido/get-last-pedido-cliente-this-table', apiPwaAppPedidos.getLastPedidoClienteThisTable);
+// routerV3.post('/pedido/modificar-stock-test', apiPwaAppPedidos.setModificaStockTest);
 
 routerV3.post('/ini/register-cliente-login', apiPwaAppPedidos.setRegisterClienteLogin);
 routerV3.post('/ini/user-account-remove', apiPwaAppPedidos.setUserAccountRemove);

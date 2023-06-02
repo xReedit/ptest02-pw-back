@@ -97,6 +97,7 @@ const setItemCarta = async function (op, item) {
         const _item = {cantidadSumar: item.cantidadSumar, idcarta_lista: item.idcarta_lista, cantidad_reset: item.cantidad_reset};
         console.log('porcedure_pwa_update_cantidad_only_producto', _item)
         read_query = `call porcedure_pwa_update_cantidad_only_producto(${op},'${JSON.stringify(_item)}')`;
+        console.log('read_query', read_query);
     } else {
         var item = JSON.stringify(item).replace(/\\n/g, '')
                                       .replace(/\\'/g, '')

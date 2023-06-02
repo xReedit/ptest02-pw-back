@@ -224,7 +224,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			if (item.cantidad != 'ND') {	
 				console.log('item.sumar', item);	
 				// var _cantItem = parseFloat(item.cantidad);
-				var _cantSumar = item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;
+
+				// item.venta_x_peso solo para productos
+				var _cantSumar = item.venta_x_peso === 1 ? -item.cantidad : item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;
 				item.cantidadSumar = _cantSumar;
 				console.log('item.cantidadSumar', item.cantidadSumar);
 				// item.cantidad = _cantItem;		

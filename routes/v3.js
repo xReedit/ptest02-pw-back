@@ -20,6 +20,7 @@ const login = require('../controllers/login');
 const auth = require('../middleware/autentificacion');
 
 const apiSpeech = require('../controllers/speech');
+const pedidoBot = require('../controllers/pedidoBot');
 
 
 // var cors = require('cors')
@@ -49,6 +50,10 @@ routerV3.get('/', function (req, res, next) {
 		}
 	})
 });
+
+// PEDIDO BOT
+routerV3.post('/bot/send-bot-pedido', pedidoBot.setPedidoBot);
+
 
 // PWA-APP PEDIDO //
 // PWA-APP PEDIDO //

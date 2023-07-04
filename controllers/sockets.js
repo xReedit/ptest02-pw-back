@@ -20,6 +20,7 @@ var d = new Date();
 var n = d.toLocaleTimeString(); 
 // var socketMaster; 
 
+
 module.exports.socketsOn = function(io){ // Success Web Response
 
 	// middleware
@@ -34,9 +35,15 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 	io.on('connection', async function(socket) {
-		console.log('datos socket', socket.id);
-		let dataSocket = socket.handshake.query;		
-		dataSocket.socketid = socket.id;
+		module.exports.elSocket = socket;
+		console.log('datos socket', socket.id);		
+		// console.log('datos socket', socket.handshake.headers.query);		
+		let dataSocket = socket.handshake.query;
+		// console.log('dataSocket ==== ', dataSocket.idorg)
+
+		// si viene de un websocket // socket.handshake.headers.query
+		dataSocket = dataSocket.idorg === undefined ? JSON.parse(socket.handshake.headers.query) : dataSocket
+		dataSocket.socketid = socket.id;		
 
 		// const rptDate = new Date().toLocaleString().split(' ');
 		// var aaa = '2020-05-28'.replace(',', '');
@@ -197,7 +204,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			// socket.emit('finishLoadDataInitial');
 
-		}		
+		}
+
+		console.log('=== limite comprobaciones')		
+
+		socket.on('hola-test', async function(item) {
+			console.log('==========> llego HOLA TEST')
+		})
 
 		// para sacar el loader
 		socket.emit('finishLoadDataInitial');
@@ -389,7 +402,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			}
 			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
 
-			// console.log('respuesta del socket ', rpt);			
+			console.log('respuesta del setNuevoPedido ', rpt);			
 			console.log('data socketid res ==== > ', socket.id);
 			io.to(socket.id).emit('nuevoPedidoRes', rpt)
 

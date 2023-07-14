@@ -41,8 +41,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		let dataSocket = socket.handshake.query;
 		// console.log('dataSocket ==== ', dataSocket.idorg)
 
-		// si viene de un websocket // socket.handshake.headers.query
-		dataSocket = dataSocket.idorg === undefined ? JSON.parse(socket.handshake.headers.query) : dataSocket
+		// si viene de un websocket isFromBot // socket.handshake.headers.query
+		dataSocket = dataSocket.isFromBot === 1 ? JSON.parse(socket.handshake.headers.query) : dataSocket
 		dataSocket.socketid = socket.id;		
 
 		// const rptDate = new Date().toLocaleString().split(' ');

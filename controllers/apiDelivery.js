@@ -182,6 +182,13 @@ const SearchClienteByPhonePwaId = function (req, res) {
 }
 module.exports.SearchClienteByPhonePwaId = SearchClienteByPhonePwaId;
 
+const getTelefonoClienteChatBot = function (req, res) {			
+	const id = req.body.id;
+    const read_query = `call procedure_delivery_get_cliente_from_bot('${id}')`;
+    emitirRespuestaSP_RES(read_query, res); 
+}
+module.exports.getTelefonoClienteChatBot = getTelefonoClienteChatBot;
+
 
 
 function emitirRespuesta(xquery, res) {

@@ -177,6 +177,7 @@ routerV3.post('/repartidor/push-suscripcion', auth.verificarToken, apiPwaAppRepa
 routerV3.post('/repartidor/set-efectivo-mano', apiPwaAppRepartidor.setEfectivoMano);
 routerV3.post('/repartidor/set-position-now', auth.verificarToken, apiPwaAppRepartidor.setPositionNow);
 routerV3.post('/repartidor/set-asignar-pedido', auth.verificarToken, apiPwaAppRepartidor.setAsignarPedido);
+routerV3.post('/repartidor/set-asignar-pedido2', auth.verificarToken, apiPwaAppRepartidor.setAsignarPedido2);
 routerV3.post('/repartidor/set-paso-pedido-va', auth.verificarToken, apiPwaAppRepartidor.setPasoVaPedido);
 routerV3.post('/repartidor/get-estado-pedido', auth.verificarToken, apiPwaAppRepartidor.getEstadoPedido);
 routerV3.post('/repartidor/set-fin-pedido-entregado', auth.verificarToken, apiPwaAppRepartidor.setFinPedidoEntregado);

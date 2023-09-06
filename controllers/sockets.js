@@ -485,11 +485,15 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 				console.log(' ====== notifica al servidor de mensajes ===== telefono notifica ====> ', telefonoComercio);
 
-				if ( telefonoComercio !== '' ) {
-					let _sendServerMsj = `{"tipo":0, "s": "${dataCliente.idorg}.${dataCliente.idsede}", "p": ${dataSend.dataPedido.idpedido}, "h": "${new Date().toISOString()}", "t":"${telefonoComercio}"}`;
-					_sendServerMsj = JSON.parse(_sendServerMsj);
-					sendMsjSocketWsp(_sendServerMsj);
-				}				
+				try {
+					if ( telefonoComercio !== '' ) {
+						let _sendServerMsj = `{"tipo":0, "s": "${dataCliente.idorg}.${dataCliente.idsede}", "p": ${dataSend.dataPedido.idpedido}, "h": "${new Date().toISOString()}", "t":"${telefonoComercio}"}`;
+						_sendServerMsj = JSON.parse(_sendServerMsj);
+						sendMsjSocketWsp(_sendServerMsj);
+					}	
+				} catch(error){
+					console.log('error', error)
+				}
 			}
 			// io.to('MONITOR').emit('nuevoPedido', dataCliente);
 
@@ -851,15 +855,18 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// ver si tenemos un pedido pendiente de aceptar // ver si solicito libear pedido
 		const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataCliente.idrepartidor);
-
-		console.log('pedioPendienteAceptar', pedioPendienteAceptar);
-		if ( pedioPendienteAceptar ) {
-			if ( pedioPendienteAceptar[0].solicita_liberar_pedido === 1 ) {
-				apiPwaRepartidor.setLiberarPedido(dataCliente.idrepartidor);
-			} else {
-				socket.emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
-			}	
-		}		
+		
+		try {
+			if ( pedioPendienteAceptar ) {
+				if ( pedioPendienteAceptar[0].solicita_liberar_pedido === 1 ) {
+					apiPwaRepartidor.setLiberarPedido(dataCliente.idrepartidor);
+				} else {					
+					socket.emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
+				}	
+			}		
+		} catch(error) {
+			console.log('error', error)
+		}
 		
 
 		// registrar como conectado en cliente_socketid
@@ -1013,7 +1020,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 				// para que el comercio actualice el marker
 				// notifica a comercio			
-				const socketidComercio = await apiPwaComercio.getSocketIdComercio(dataPedido.datosComercio.idsede);
+				const idsede = dataPedido.datosComercio ? dataPedido.datosComercio.idsede : dataPedido.idsede
+				const socketidComercio = await apiPwaComercio.getSocketIdComercio(idsede);
 				io.to(socketidComercio[0].socketid).emit('repartidor-propio-notifica-fin-pedido', dataPedido);
 
 

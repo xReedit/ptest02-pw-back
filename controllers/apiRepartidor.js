@@ -12,17 +12,122 @@ let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
 };
 
-const setRepartidorConectado = function (dataCLiente) {	
+const emitirRespuesta = async (xquery) => {
+    console.log(xquery);
+    try {
+        return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+    } catch (err) {
+        console.error(err);
+        return false;
+    }
+};
+
+const emitirRespuesta_RES = async (xquery, res) => {
+    console.log(xquery);
+
+    try {
+        const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+        return ReS(res, {
+            data: rows
+        });
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+};
+module.exports.emitirRespuesta_RES = emitirRespuesta_RES;
+
+const emitirRespuestaSP = async (xquery) => {
+    console.log(xquery);
+    try {
+        const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+        const arr = Object.values(rows[0]);
+        return arr;
+    } catch (err) {
+        console.error(err);
+        return false;
+    }
+};
+
+
+
+// function emitirRespuestaSP(xquery) {
+// 	console.log(xquery);
+// 	return sequelize.query(xquery, {		
+// 		type: sequelize.QueryTypes.SELECT
+// 	})
+// 	.then(function (rows) {
+
+// 		// convertimos en array ya que viene en object
+// 		var arr = [];
+// 		arr = Object.values(rows[0]);		
+		
+// 		return arr;
+// 	})
+// 	.catch((err) => {
+// 		return false;
+// 	});
+// }
+
+
+const emitirRespuestaSP_RES = async (xquery, res) => {
+    console.log(xquery);
+    try {
+        const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+
+        // Convertimos en array ya que viene en object
+        const arr = Object.values(rows[0]);
+
+        return ReS(res, {
+            data: arr
+        });
+    } catch (err) {
+        return ReE(res, err);
+    }
+};
+
+const execSqlQueryNoReturn = async (xquery, res) => {
+	console.log(xquery);
+	try {
+		sequelize.query(xquery, {type: sequelize.QueryTypes.UPDATE}).spread(function(results, metadata) {
+
+		  	return ReS(res, {
+				data: results
+			});
+		});
+	} catch (err) {
+        return ReE(res, err);
+    }
+
+}
+
+
+const onlyUpdateQuery = async (xquery, res) => {
+	console.log(xquery);
+	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+	.then(function (result) {
+		
+		return ReS(res, {
+		 susccess: true
+		});		
+	})
+	.catch((err) => {
+		return false;
+	});
+}
+
+
+const setRepartidorConectado = async function (dataCLiente) {	
     const idrepartidor = dataCLiente.idrepartidor;
     const socketid = dataCLiente.socketid;
     if ( idrepartidor ) {    	
     	const read_query = `update repartidor set socketid = '${socketid}' where idrepartidor =${idrepartidor}`;
-    	return emitirRespuesta(read_query);
+    	await onlyUpdateQuery(read_query);
     }    
 }
 module.exports.setRepartidorConectado = setRepartidorConectado;
 
-const setEfectivoMano = function (req, res) {
+const setEfectivoMano = async function (req, res) {
 	// console.log('llego a funcion setEfectivoMano');
 	// console.log('llego a funcion setEfectivoMano req', req);
 	// console.log('llego a funcion setEfectivoMano req usuariotoken', req.usuariotoken);
@@ -34,11 +139,11 @@ const setEfectivoMano = function (req, res) {
 	// console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	
     const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
-    execSqlQueryNoReturn(read_query, res);
+    await execSqlQueryNoReturn(read_query, res);
 }
 module.exports.setEfectivoMano = setEfectivoMano;
 
-const pushSuscripcion = function (req, res) {
+const pushSuscripcion = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	let suscripcion = req.body.suscripcion;	
 
@@ -49,7 +154,7 @@ const pushSuscripcion = function (req, res) {
 	console.log('suscripcion ====>>', suscripcion)
 
 	const read_query = `update repartidor set pwa_code_verification = '${suscripcion}' where idrepartidor = ${idrepartidor}`;
-	emitirRespuestaSP_RES(read_query, res);
+	return await emitirRespuestaSP_RES(read_query, res);
 }
 module.exports.pushSuscripcion = pushSuscripcion;
 
@@ -59,7 +164,7 @@ const setPositionNow = async function (req, res) {
 	
 	
     const read_query = `update repartidor set position_now = '${JSON.stringify(pos)}' where idrepartidor = ${idrepartidor}`;
-    emitirRespuesta_RES(read_query, res);
+    return await emitirRespuesta_RES(read_query, res);
 }
 module.exports.setPositionNow = setPositionNow;
 
@@ -68,7 +173,7 @@ const setCambioPassRepartidor = async function (req, res) {
 	const p2 = req.body.p2;	
 
 	const read_query = `update repartidor set pass = '${p2}' where idrepartidor = ${idrepartidor}`;
-    execSqlQueryNoReturn(read_query, res);
+    await execSqlQueryNoReturn(read_query, res);
     
 }
 module.exports.setCambioPassRepartidor = setCambioPassRepartidor;
@@ -88,7 +193,7 @@ const getRepartidoreForPedido = async function (dataPedido) {
 	const es_latitude = datosEstablecimiento.latitude;
     const es_longitude = datosEstablecimiento.longitude;		                  
     const read_query = `call procedure_delivery_get_repartidor(${es_latitude}, ${es_longitude})`;
-    return emitirRespuestaSP(read_query);        
+    return await emitirRespuestaSP(read_query);        
 }
 module.exports.getRepartidoreForPedido = getRepartidoreForPedido;
 
@@ -123,9 +228,9 @@ const getPedidosEsperaRepartidor = async function (idsede) {
 module.exports.getPedidosEsperaRepartidor = getPedidosEsperaRepartidor;
 
 // asigna el pedido temporalmente a espera que acepte
-const setAsignaTemporalPedidoARepartidor = function (idpedido, idrepartidor_va, pedido) {	
+const setAsignaTemporalPedidoARepartidor = async function (idpedido, idrepartidor_va, pedido) {	
     const read_query = `call procedure_delivery_set_pedido_repartidor(${idpedido}, ${idrepartidor_va},'${JSON.stringify(pedido)}')`;
-    emitirRespuestaSP(read_query);        
+    return await emitirRespuestaSP(read_query);        
 }
 module.exports.setAsignaTemporalPedidoARepartidor = setAsignaTemporalPedidoARepartidor;
 
@@ -152,7 +257,7 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 		// resetea los contadores para empezar nuevamente
 		// update pedido set num_reasignaciones = 0 where idpedido = ${dataPedido.idpedido}; 
 		const read_query = `update repartidor set flag_paso_pedido='0', pedido_por_aceptar=null where flag_paso_pedido=${dataPedido.idpedido};`;
-    	return emitirRespuestaSP(read_query); 
+    	return await emitirRespuestaSP(read_query); 
 	} else {
 
 		const read_query = `call procedure_delivery_set_pedido_repartidor(${dataPedido.idpedido}, ${firtsRepartidor.idrepartidor}, '${JSON.stringify(dataPedido)}')`;
@@ -165,7 +270,7 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 	if ( firtsRepartidor.last_notification === 0 ||  firtsRepartidor.last_notification > 7) {	
 		//sendMsjsService.sendMsjSMSNewPedido(firtsRepartidor.telefono);
 		const read_query = `update repartidor set last_notification = time(now()) where idrepartidor=${firtsRepartidor.idrepartidor};`;
-    	emitirRespuestaSP(read_query);
+    	await emitirRespuestaSP(read_query);
 	}
 
 	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0);
@@ -220,7 +325,7 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 		// resetea los contadores para empezar nuevamente
 		// update pedido set num_reasignaciones = 0 where idpedido = ${dataPedido.idpedido}; 
 		const read_query = `update repartidor set flag_paso_pedido=0, pedido_por_aceptar=null where flag_paso_pedido=${dataPedido.pedidos[0]};`;
-    	return emitirRespuestaSP(read_query); 
+    	return await emitirRespuestaSP(read_query); 
 	} else {
 
 		const read_query = `call procedure_delivery_set_pedido_repartidor(${dataPedido.pedidos[0]}, ${firtsRepartidor.idrepartidor}, '${JSON.stringify(dataPedido)}')`;
@@ -302,6 +407,23 @@ module.exports.sendOnlyNotificaPush = sendOnlyNotificaPush;
 // module.exports.sendPedidoRepartidor = sendPedidoRepartidor;
 
 // cuando el repartidor acepta el pedido -- se asigna el pedido al repartitor
+const setAsignarPedido2 = async function (req, res) {  
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
+	const idpedido = req.body.idpedido;
+	const firstPedido = idpedido.split(',')[0];
+	
+    let read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido in (${idpedido});
+    					update repartidor set ocupado = 1, pedido_paso_va = 1, pedido_por_aceptar=null where idrepartidor = ${idrepartidor};
+    					update repartidor set flag_paso_pedido=0 where flag_paso_pedido=${firstPedido}`;
+
+	// const read_query = `call procedure_delivery_asignar_pedido(${idrepartidor}, ${idpedido})`;    					
+    execSqlQueryNoReturn(read_query, res);     
+    // return emitirRespuesta_RES(read_query, res);   
+
+}
+module.exports.setAsignarPedido2 = setAsignarPedido2;
+
+// cuando el repartidor acepta el pedido -- se asigna el pedido al repartitor
 const setAsignarPedido = async function (req, res) {  
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	const idpedido = req.body.idpedido;           
@@ -327,6 +449,7 @@ const setAsignarPedido = async function (req, res) {
 
 	const lisClientesPedido = await emitirRespuestaSP(read_query);
 	var _dataMsjs, actions, data, _key_suscripcion_push;
+
 	if (!lisClientesPedido) return;
 
 	// lisClientesPedido.map(c => {
@@ -360,36 +483,36 @@ const setAsignarPedido = async function (req, res) {
 }
 module.exports.setAsignarPedido = setAsignarPedido;
 
-const setPasoVaPedido = function (req, res) {
+const setPasoVaPedido = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	const paso = req.body.paso_va;
     const read_query = `update repartidor set pedido_paso_va = ${paso} where idrepartidor = ${idrepartidor};`;
-    execSqlQueryNoReturn(read_query, res); 
+    await execSqlQueryNoReturn(read_query, res); 
 }
 module.exports.setPasoVaPedido = setPasoVaPedido;
 
 
 /// desde el comercio
-const setUpdateEstadoPedido = function (idpedido, estado, tiempo = null) {	
+const setUpdateEstadoPedido = async function (idpedido, estado, tiempo = null) {	
 	// const savePwaEstado = estado === 4 ? ", pwa_estado = 'E', estado=2 " : '';	 // estado = 2 => pagado
 	const savePwaEstado = estado === 4 ? ", pwa_estado = 'E' " : '';	 // estado = 2 => pagado // quitamos estado 2 para que no se desaparesca del control de pedidos
     const read_query = `update pedido set pwa_delivery_status = '${estado}' ${savePwaEstado} where idpedido = ${idpedido};`;
-    emitirRespuesta(read_query);        
+    await emitirRespuesta(read_query);        
 }
 module.exports.setUpdateEstadoPedido = setUpdateEstadoPedido;
 
-const setUpdateRepartidorOcupado = function (idrepartidor, estado) {  
+const setUpdateRepartidorOcupado = async function (idrepartidor, estado) {  
 	// si no esta ocupado libera pedido_por_aceptar;
 	// console.log('==== CAMBIAMOS DE ESTADO OCUPADO ===', estado);
 	const clearPedidoPorAceptar = estado === 0 ?  `, pedido_por_aceptar = null, pedido_paso_va = 0` : '';
     const read_query = `update repartidor set ocupado = ${estado} ${clearPedidoPorAceptar} where idrepartidor = ${idrepartidor};`;
-    emitirRespuesta(read_query);        
+    await emitirRespuesta(read_query);        
 }
 module.exports.setUpdateRepartidorOcupado = setUpdateRepartidorOcupado;
 
-const setLiberarPedido = function (idrepartidor) {  
+const setLiberarPedido = async function (idrepartidor) {  
     const read_query = `update repartidor set ocupado = 0, pedido_por_aceptar = null, solicita_liberar_pedido=0, pedido_paso_va = 0 where idrepartidor = ${idrepartidor};`;
-    emitirRespuesta(read_query);        
+    await emitirRespuesta(read_query);        
 }
 module.exports.setLiberarPedido = setLiberarPedido;
 
@@ -408,21 +531,21 @@ const getEstadoPedido = async function (req, res) {
         
     const read_query = `select pwa_delivery_status from pedido where idpedido=${idpedido}`;
     // return emitirRespuestaSP(read_query);      
-    emitirRespuesta_RES(read_query, res);  
+    return await emitirRespuesta_RES(read_query, res);  
 }
 module.exports.getEstadoPedido = getEstadoPedido;
 
 
-const setFinPedidoEntregado = function (req, res) {
+const setFinPedidoEntregado = async function (req, res) {
 	const obj = req.body;
 	// console.log(JSON.stringify(obj));
 
     const read_query = `call procedure_pwa_delivery_pedido_entregado('${JSON.stringify(obj)}')`;
-    return emitirRespuesta_RES(read_query, res);        
+    return await emitirRespuesta_RES(read_query, res);        
 }
 module.exports.setFinPedidoEntregado = setFinPedidoEntregado;
 
-const setFinPedidoExpressEntregado = function (req, res) {
+const setFinPedidoExpressEntregado = async function (req, res) {
 	const idpedido = req.body.idpedido_mandado;
 	const pedidos_quedan = req.body.pedidos_quedan;
 	const num_quedan = req.body.num_quedan;
@@ -444,23 +567,23 @@ const setFinPedidoExpressEntregado = function (req, res) {
 	if ( tipo_pedido === 'retiro_atm' ) {
 		read_query = `update atm_retiros set pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora_registro, now()), pwa_estado='E' where idatm_retiros = ${idpedido}; update repartidor set ocupado = 0, pedido_por_aceptar=null where idrepartidor = ${idrepartidor}`;
 	}
-    execSqlQueryNoReturn(read_query, res);
+    await execSqlQueryNoReturn(read_query, res);
 }
 module.exports.setFinPedidoExpressEntregado = setFinPedidoExpressEntregado;
 
-const getPedidosEntregadoDia = function (req, res) {
+const getPedidosEntregadoDia = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	
     const read_query = `call procedure_pwa_repartidor_pedido_entregado_dia(${idrepartidor})`;
-    return emitirRespuesta_RES(read_query, res);        
+    return await emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getPedidosEntregadoDia = getPedidosEntregadoDia;
 
-const getPedidosResumenEntregadoDia = function (req, res) {
+const getPedidosResumenEntregadoDia = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	
     const read_query = `call procedure_pwa_repartidor_resumen_entregado_dia(${idrepartidor})`;
-    return emitirRespuesta_RES(read_query, res);        
+    return await emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getPedidosResumenEntregadoDia = getPedidosResumenEntregadoDia;
 
@@ -468,33 +591,33 @@ module.exports.getPedidosResumenEntregadoDia = getPedidosResumenEntregadoDia;
 const getPedidoPendienteAceptar = async function (idrepartidor) {
 	// const idcliente = dataCLiente.idcliente;
     const read_query = `SELECT pedido_por_aceptar, solicita_liberar_pedido, pedido_paso_va, socketid, pwa_code_verification as key_suscripcion_push from repartidor where idrepartidor = ${idrepartidor}`;
-    return emitirRespuesta(read_query);        
+    return await emitirRespuesta(read_query);        
 }
 module.exports.getPedidoPendienteAceptar = getPedidoPendienteAceptar;
 
 
 
 
-const getPropioPedidos = function (req, res) {
+const getPropioPedidos = async function (req, res) {
 	const idrepartidor = req.body.idrepartidor || managerFilter.getInfoToken(req,'idrepartidor');
     const read_query = `SELECT * from  pedido where idrepartidor=${idrepartidor} and (fecha = DATE_FORMAT(now(), '%d/%m/%Y')  or cierre=0)`;
-    emitirRespuesta_RES(read_query, res);        
+    return await emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getPropioPedidos = getPropioPedidos;
 
-const getInfo = function (req, res) {
+const getInfo = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
     const read_query = `SELECT * from  repartidor where idrepartidor=${idrepartidor}`;
-    emitirRespuesta_RES(read_query, res);        
+    return await emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getInfo = getInfo;
 
-const getPedidosRecibidosGroup = function (req, res) {
+const getPedidosRecibidosGroup = async function (req, res) {
 	_ids = req.body.ids;
     const read_query = `SELECT p.*, ptle.time_line from  pedido p
 							left join pedido_time_line_entrega ptle using(idpedido) 
 						where p.idpedido in (${_ids}) GROUP by p.idpedido`;
-    return emitirRespuesta_RES(read_query, res);        
+    return await emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getPedidosRecibidosGroup = getPedidosRecibidosGroup;
 
@@ -948,9 +1071,9 @@ module.exports.runLoopPrueba = runLoopPrueba;
 
 
 // a los pedidos que recoge el cliente lo asigna el repartidor 1 = Atencion al cliente
-const setAsignarRepartoAtencionCliente = function (idpedido) {  	
+const setAsignarRepartoAtencionCliente = async function (idpedido) {  	
 	const sql = `update pedido set idrepartidor = 1 where idpedido = ${idpedido};`;
-	onlyUpdateQuery(sql);
+	await onlyUpdateQuery(sql);
 }
 module.exports.setAsignarRepartoAtencionCliente = setAsignarRepartoAtencionCliente;
 
@@ -960,64 +1083,44 @@ module.exports.setAsignarRepartoAtencionCliente = setAsignarRepartoAtencionClien
 
 
 
-function emitirRespuestaSP(xquery) {
-	console.log(xquery);
-	return sequelize.query(xquery, {		
-		type: sequelize.QueryTypes.SELECT
-	})
-	.then(function (rows) {
+// function emitirRespuestaSP(xquery) {
+// 	console.log(xquery);
+// 	return sequelize.query(xquery, {		
+// 		type: sequelize.QueryTypes.SELECT
+// 	})
+// 	.then(function (rows) {
 
-		// convertimos en array ya que viene en object
-		var arr = [];
-		arr = Object.values(rows[0]);		
+// 		// convertimos en array ya que viene en object
+// 		var arr = [];
+// 		arr = Object.values(rows[0]);		
 		
-		return arr;
-	})
-	.catch((err) => {
-		return false;
-	});
-}
+// 		return arr;
+// 	})
+// 	.catch((err) => {
+// 		return false;
+// 	});
+// }
 
 
-function onlyUpdateQuery(xquery, res) {
-	console.log(xquery);
-	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
-	.then(function (result) {
+
+
+
+
+
+// function emitirRespuesta(xquery) {
+// 	console.log(xquery);
+// 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+// 	.then(function (rows) {
 		
-		return ReS(res, {
-		 susccess: true
-		});		
-	})
-	.catch((err) => {
-		return false;
-	});
-
-	// return ReS(res, {
-	// 	 susccess: true
-	// 	});	
-	// res.json(result)
-	// res.json({
- //        susccess: true        
- //    });
-}
-
-
-
-
-function emitirRespuesta(xquery) {
-	console.log(xquery);
-	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
-	.then(function (rows) {
-		
-		// return ReS(res, {
-		// 	data: rows
-		// });
-		return rows;
-	})
-	.catch((err) => {
-		return false;
-	});
-}
+// 		// return ReS(res, {
+// 		// 	data: rows
+// 		// });
+// 		return rows;
+// 	})
+// 	.catch((err) => {
+// 		return false;
+// 	});
+// }
 
 function emitirRespuestaData(xquery) {
 	console.log(xquery);
@@ -1036,54 +1139,54 @@ function emitirRespuestaData(xquery) {
 	});
 }
 
-function execSqlQueryNoReturn(xquery, res) {
-	console.log(xquery);
-	sequelize.query(xquery, {type: sequelize.QueryTypes.UPDATE}).spread(function(results, metadata) {
-  // Results will be an empty array and metadata will contain the number of affected rows.
+// function execSqlQueryNoReturn(xquery, res) {
+// 	console.log(xquery);
+// 	sequelize.query(xquery, {type: sequelize.QueryTypes.UPDATE}).spread(function(results, metadata) {
+//   // Results will be an empty array and metadata will contain the number of affected rows.
 
-	  	return ReS(res, {
-			data: results
-		});
-	});
+// 	  	return ReS(res, {
+// 			data: results
+// 		});
+// 	});
 
-}
-
-
+// }
 
 
 
-function emitirRespuesta_RES(xquery, res) {
-	console.log(xquery);
-	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
-	.then(function (rows) {
+
+
+// function emitirRespuesta_RES(xquery, res) {
+// 	console.log(xquery);
+// 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+// 	.then(function (rows) {
 		
-		return ReS(res, {
-			data: rows
-		});
-		// return rows;
-	})
-	.catch((err) => {
-		return false;
-	});
-}
+// 		return ReS(res, {
+// 			data: rows
+// 		});
+// 		// return rows;
+// 	})
+// 	.catch((err) => {
+// 		return false;
+// 	});
+// }
 
 
-function emitirRespuestaSP_RES(xquery, res) {
-	console.log(xquery);
-	sequelize.query(xquery, {		
-		type: sequelize.QueryTypes.SELECT
-	})
-	.then(function (rows) {
+// function emitirRespuestaSP_RES(xquery, res) {
+// 	console.log(xquery);
+// 	sequelize.query(xquery, {		
+// 		type: sequelize.QueryTypes.SELECT
+// 	})
+// 	.then(function (rows) {
 
-		// convertimos en array ya que viene en object
-		var arr = [];
-		arr = Object.values(rows[0]) ;
+// 		// convertimos en array ya que viene en object
+// 		var arr = [];
+// 		arr = Object.values(rows[0]) ;
 		
-		return ReS(res, {
-			data: arr
-		});
-	})
-	.catch((err) => {
-		return ReE(res, err);
-	});
-}
+// 		return ReS(res, {
+// 			data: arr
+// 		});
+// 	})
+// 	.catch((err) => {
+// 		return ReE(res, err);
+// 	});
+// }

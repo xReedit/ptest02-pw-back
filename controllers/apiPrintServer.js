@@ -61,6 +61,11 @@ const socketPrintServerClient = async function (data, socket) {
 
 	// cambiar status impreso toda la lista
 	socket.on('set-ps-status-list-item', async (list) => {		
+		// quitar duplicados
+		// const list = Array.from(new Set(data.map(item => item.id))).map(id => {
+		//     return data.find(item => item.id === id);
+		// });
+
 		console.log('set-ps-status-list-item', list);		
 		setStatusListItem(list);
 	});

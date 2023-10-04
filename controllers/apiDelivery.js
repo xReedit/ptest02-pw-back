@@ -78,6 +78,13 @@ const getEstablecimientos = async function (req, res) {
 }
 module.exports.getEstablecimientos = getEstablecimientos;
 
+const getParametrosTiendaLinea = async function(req, res) {
+    const idsede = req.body.idsede
+    const read_query = `select parametros from sede_costo_delivery where idsede=${idsede}`;
+    return await emitirRespuesta_RES(read_query, res);
+}
+module.exports.getParametrosTiendaLinea = getParametrosTiendaLinea;
+
 const getEstablecimientosPromociones = async function (req, res) {  
 	const ciudad = req.body.ciudad || ''; // lo cambiamos por ciudad
     const read_query = `call procedure_pwa_delivery_establecimiento_promo('${ciudad}')`;

@@ -290,8 +290,8 @@ const setItemCarta = async (op, item) => {
             .replace(/\\r/g, '')
             .replace(/\\t/g, '')
             .replace(/\\b/g, '')
-            .replace(/\\f/g, '')
-            .replace(/[\r\n]/g, '');
+            .replace(/\\f/g, '')            
+            .replace(/[\r\n]/g, '').replace(/'/g, '');
 
         const query = `CALL porcedure_pwa_update_cantidad_item(${op}, '${cleanedItem}')`;
         return await emitirRespuestaSP(query);
@@ -837,7 +837,7 @@ const getListMesas = async function (req, res) {
 module.exports.getListMesas = getListMesas;
 
 
-const updateTimeLinePedido = async function (idpedido,time_line) {      
+const updateTimeLinePedido = async function (idpedido,time_line) {
     const read_query = `insert into pedido_time_line_entrega (idpedido, time_line) values (${idpedido}, '${JSON.stringify(time_line)}') ON DUPLICATE KEY UPDATE time_line = '${JSON.stringify(time_line)}'`;
     return await emitirRespuesta(read_query);        
 }

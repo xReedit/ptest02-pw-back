@@ -91,8 +91,8 @@ const loggerUsAutorizadoRepartidor = async function (req, res) {
 
         // console.log('passs ', req.body);
 
-        let read_query = "SELECT idrepartidor, nombre, apellido, ciudad, usuario, pass, idsede_suscrito  FROM repartidor WHERE usuario = '" + usuario + "' and estado = 0";
-        console.log(read_query);
+        let read_query = "SELECT idrepartidor, nombre, apellido, ciudad, usuario, pass, idsede_suscrito, telefono  FROM repartidor WHERE usuario = '" + usuario + "' and estado = 0";
+        // console.log(read_query);
 
         sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })
                 .then(function (rows) {
@@ -114,7 +114,7 @@ const loggerUsAutorizadoRepartidor = async function (req, res) {
                         
                         // const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: 294400});
                         // no caduca
-                        const token = jwt.sign({ usuario: rows[0] }, SEED, {});
+                        const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: '2d' });
 
                         return ReS(res, { usuario: rows[0], token: token });
 

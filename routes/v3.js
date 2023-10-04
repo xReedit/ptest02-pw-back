@@ -120,6 +120,7 @@ routerV3.post('/transaction/registrar-pago', apiPwaAppPedidosPago.setRegistrarPa
 
 // delivery
 routerV3.post('/delivery/get-establecimientos', apiPwaAppDelivery.getEstablecimientos);
+routerV3.post('/delivery/get-parametros-tienda-linea', apiPwaAppDelivery.getParametrosTiendaLinea)
 routerV3.post('/delivery/get-establecimientos-promos', apiPwaAppDelivery.getEstablecimientosPromociones);
 routerV3.post('/delivery/get-direccion-cliente', apiPwaAppDelivery.getDireccionCliente);
 routerV3.post('/delivery/get-mis-pedidos', apiPwaAppDelivery.getMisPedido);
@@ -178,6 +179,7 @@ routerV3.post('/repartidor/set-efectivo-mano', apiPwaAppRepartidor.setEfectivoMa
 routerV3.post('/repartidor/set-position-now', auth.verificarToken, apiPwaAppRepartidor.setPositionNow);
 routerV3.post('/repartidor/set-asignar-pedido', auth.verificarToken, apiPwaAppRepartidor.setAsignarPedido);
 routerV3.post('/repartidor/set-asignar-pedido2', auth.verificarToken, apiPwaAppRepartidor.setAsignarPedido2);
+routerV3.post('/repartidor/set-pedidos-por-aceptar-from-app', auth.verificarToken, apiPwaAppRepartidor.setNullPedidosPorAceptar);
 routerV3.post('/repartidor/set-paso-pedido-va', auth.verificarToken, apiPwaAppRepartidor.setPasoVaPedido);
 routerV3.post('/repartidor/get-estado-pedido', auth.verificarToken, apiPwaAppRepartidor.getEstadoPedido);
 routerV3.post('/repartidor/set-fin-pedido-entregado', auth.verificarToken, apiPwaAppRepartidor.setFinPedidoEntregado);
@@ -187,6 +189,7 @@ routerV3.get('/repartidor/get-pedidos-resumen-entregados-dia', auth.verificarTok
 routerV3.get('/repartidor/get-repartidor-propio-mis-pedidos', auth.verificarToken, apiPwaAppRepartidor.getPropioPedidos);
 routerV3.post('/repartidor/get-pedidos-recibidos-group', auth.verificarToken, apiPwaAppRepartidor.getPedidosRecibidosGroup);
 routerV3.post('/repartidor/set-cambio-pass-repartidor', auth.verificarToken, apiPwaAppRepartidor.setCambioPassRepartidor);
+routerV3.get('/repartidor/get-list-pedidos-pendientes-comercio', auth.verificarToken, apiPwaAppRepartidor.getListPedidosPendientesComercio);
 // routerV3.get('/repartidor/get-view-event-new-pedido', apiPwaAppRepartidor.getIfPedidoNuevo);
 
 

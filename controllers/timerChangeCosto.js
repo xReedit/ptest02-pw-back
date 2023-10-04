@@ -20,7 +20,7 @@ const runTimerCosto = async function () {
   const read_query = `SELECT * from sede_config_service_delivery where estado = 0`;
   const _list = await emitirRespuesta(read_query); 
   listProgramacionPlaza = _list;
-  console.log('lista de configuracion de plazas horarios', _list);
+  // console.log('lista de configuracion de plazas horarios', _list);
 
   if ( !intervalComand ) { clearInterval(intervalComand); }
 

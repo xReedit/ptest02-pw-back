@@ -423,6 +423,14 @@ const setAsignarPedido2 = async function (req, res) {
 }
 module.exports.setAsignarPedido2 = setAsignarPedido2;
 
+// esto desde app repartidor 0923
+const setNullPedidosPorAceptar = async function (req, res) {
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
+	const read_query = `update repartidor set ocupado = 1, pedido_paso_va = 1, pedido_por_aceptar=null where idrepartidor = ${idrepartidor};`;
+	execSqlQueryNoReturn(read_query, res); 
+}
+module.exports.setNullPedidosPorAceptar = setNullPedidosPorAceptar;
+
 // cuando el repartidor acepta el pedido -- se asigna el pedido al repartitor
 const setAsignarPedido = async function (req, res) {  
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
@@ -524,6 +532,17 @@ const getSocketIdRepartidor = async function (listIdRepartidor) {
     return await emitirRespuesta(read_query);        
 }
 module.exports.getSocketIdRepartidor = getSocketIdRepartidor;
+
+const getListPedidosPendientesComercio = async function(req, res) {
+	const idsede = managerFilter.getInfoToken(req,'idsede_suscrito');
+	const read_query = `select * from pedido p
+	inner join tipo_consumo tc on p.idtipo_consumo = tc.idtipo_consumo 
+where cast(p.fecha_hora as date) >= date_add(curdate(), INTERVAL -1 day) and p.idsede = ${idsede} and IFNULL(p.idrepartidor, 0) = 0  
+	and tc.descripcion = 'DELIVERY'
+order by p.idpedido desc`;
+	return await emitirRespuesta_RES(read_query, res);
+}
+module.exports.getListPedidosPendientesComercio = getListPedidosPendientesComercio
 
 
 const getEstadoPedido = async function (req, res) {	
@@ -647,6 +666,7 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 	listPedidos = JSON.parse(JSON.stringify(listPedidos));
 	
 	console.log ( 'listPedidos listPedidos.lenght', listPedidos.length );
+	// console.log (' == listPedidos ==', listPedidos)
 
 
 	//isshow indica los pedidos que ya llegaron a la hora de notificacion
@@ -667,12 +687,14 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 			console.log( 'p.idpedido', p.idpedido );
 			if ( !p.paso && p.isshow == 1 ){
 				const _idsede = p.idsede;
+				let isImporteAcumuladoCompleto = false; // para continuar la agrupacion o no
 
 				console.log( '_idsede', _idsede );
 
 				// p.paso = true;
 				importeAcumula = 0;
-				importePagar = 0;
+				importePagar = 0;				
+
 				_num_reasignaciones = null;
 				_last_id_repartidor_reasigno = null;
 				listGroup = [];
@@ -686,13 +708,19 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 
 						if ( !isRecogeCliente ) { // si no recoge el cliente notifica al repartidor
 						
+							console.log('== el pedido', pp)
+							console.log('== isPagoTarjeta', isPagoTarjeta)
 							if (isPagoTarjeta) {
 								pp.paso=true;
 								listGroup.push(pp.idpedido);
 							} else {
 								const _ppTotal = parseFloat(pp.total);
+								console.log('== _ppTotal', _ppTotal)
 								importeAcumula += _ppTotal;
-								if ( importeAcumula <= pp.monto_acumula) {
+								console.log('== importeAcumula', importeAcumula)
+								console.log('== isImporteAcumuladoCompleto antes', isImporteAcumuladoCompleto)
+								// if ( importeAcumula <= pp.monto_acumula) {
+								if ( isImporteAcumuladoCompleto === false ) {
 									pp.paso=true;
 									// pp.json_datos_delivery = typeof pp.json_datos_delivery === 'string' ? JSON.parse(pp.json_datos_delivery) : pp.json_datos_delivery;									
 
@@ -703,13 +731,20 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 									_num_reasignaciones = _num_reasignaciones ? _num_reasignaciones : pp.num_reasignaciones;
 
 									listGroup.push(pp.idpedido);
-								} else {
+									console.log('== listGroup', listGroup)
+
+									isImporteAcumuladoCompleto = importeAcumula >= pp.monto_acumula ? true : false;
+									console.log('== isImporteAcumuladoCompleto fin', isImporteAcumuladoCompleto)
+								} 
+								// else {
 									// if (isPagoTarjeta) {
 									// 	listGroup.push(pp.idpedido);
 									// }
 
-									importeAcumula -= _ppTotal;
-								}
+									// importeAcumula -= _ppTotal;
+								//}
+
+								
 							}							
 						}
 
@@ -767,12 +802,13 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 			// const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;	
 			// const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
 
-			console.log('_cantidadEfectivoPagar', _group.importe_pagar);				
+			console.log('_cantidadEfectivoPagar 1', _group.importe_pagar);				
 
 			// const _pJson = JSON.parse(JSON.stringify(p));		
 			// console.log('pedido procesar json', p);
 			// lista de repartidores			
 			const listRepartidores = await getRepartidoreForPedidoFromInterval(_group.sede_coordenadas.latitude, _group.sede_coordenadas.longitude, _group.importe_pagar);
+			console.log('listRepartidores', listRepartidores)
 
 			// enviamos
 			const response_ok = await sendPedidoRepartidorOp2(listRepartidores, _group, io);
@@ -862,8 +898,8 @@ const runLoopSearchRepartidor = async function (io, idsede) {
 	console.log('xxxxxxxxxxx-----------runLoopSearchRepartidor', intervalBucaRepartidor)
 	if ( intervalBucaRepartidor === null ) {		
 		colocarPedidoEnRepartidor(io, idsede);
-		// intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
-		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 30000); //desarrollo
+		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
+		// intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 30000); //desarrollo
 	}
 }
 module.exports.runLoopSearchRepartidor = runLoopSearchRepartidor;

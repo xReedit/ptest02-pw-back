@@ -33,6 +33,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 	//   // return next(new Error('authentication error'));
 	// });
 
+	apiPwaRepartidor.runLoopSearchRepartidor(io, 0);
+
 
 	io.on('connection', async function(socket) {
 		module.exports.elSocket = socket;
@@ -388,6 +390,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			callback(rpt);
 		});
 
+		// 26/09/2023 lo colocamos arriba
 		apiPwaRepartidor.runLoopSearchRepartidor(io, 0);
 
 		// hay un nuevo pedido - guardar

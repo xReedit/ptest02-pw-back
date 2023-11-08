@@ -11,7 +11,7 @@ let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
 };
 
-const timeRefesh = 30000;
+const timeRefesh = 600000; // cada 10min
 let listProgramacionPlaza = [];
 let intervalComand;
 
@@ -72,8 +72,8 @@ function comandListChangeCosto() {
 
         });
 
-        console.log('========== cambiamos costo', costoChange)
-        console.log('========== cambiamos _dayNow', _dayNow)
+        // console.log('========== cambiamos costo', costoChange)
+        // console.log('========== cambiamos _dayNow', _dayNow)
         if (costoChange !== 0 && p.isChangeHours !== _hourComand) {
           p.c_minimo = costoChange;
           p.isChangeHours = _hourComand;

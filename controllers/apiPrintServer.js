@@ -20,8 +20,10 @@ const socketPrintServerClient = async function (data, socket) {
 	// logo local
 	const logoLocal = await getLogoLocal(idsedeSocket);	
 
-	// registros no impresos
-	const lastRowsNoPrint = await getRegisterNoPrint(data);
+	// registros no impresos 
+	// 101023 quitamos porque va con el mix
+	// const lastRowsNoPrint = await getRegisterNoPrint(data);
+	const lastRowsNoPrint = [];
 
 	// primero pasar las estructuras
 	// let _payload;
@@ -131,8 +133,8 @@ function getRegisterNoPrint(data) {
 						FROM print_server_detalle as psd
 							INNER JOIN print_server_estructura as pse on pse.idprint_server_estructura = psd.idprint_server_estructura							
 					WHERE (psd.idsede=${data.idsede} and psd.impreso=0) 
-						and  TIMESTAMPDIFF(MINUTE, STR_TO_DATE(concat(psd.fecha, ' ', psd.hora), '%d/%m/%Y %H:%i:%s'),DATE_FORMAT(now(), '%Y-%m-%d %H:%i:%s')) < 20
 						and psd.estado=0 ${ultimoId}
+						and  TIMESTAMPDIFF(MINUTE, STR_TO_DATE(concat(psd.fecha, ' ', psd.hora), '%d/%m/%Y %H:%i:%s'),DATE_FORMAT(now(), '%Y-%m-%d %H:%i:%s')) < 20						
 						or (psd.isreserva = 1 and psd.impreso = 0)
 					ORDER BY psd.idprint_server_detalle DESC limit 30`;
 	return emitirRespuesta(sql);

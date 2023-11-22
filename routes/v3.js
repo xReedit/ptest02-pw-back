@@ -53,6 +53,7 @@ routerV3.get('/', function (req, res, next) {
 
 // PEDIDO BOT
 routerV3.post('/bot/send-bot-pedido', pedidoBot.setPedidoBot);
+routerV3.post('/bot/send-bot-solicitud-permiso', pedidoBot.setAceptaSolicitudRemotoBot);
 
 
 // PWA-APP PEDIDO //

@@ -807,6 +807,25 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 
+		// restobar notifica solicitud de permiso al administrador para borrar productos, eliminar cuentas, o cierre de caja
+		socket.on('restobar-send-msj-ws-solicitud-permiso', async (payload) => {
+			payload.tipo = 6;			
+			console.log('restobar-send-msj-ws-solicitud-permiso', payload);
+			sendMsjSocketWsp(payload);
+			
+		});
+
+
+		// ecucha las solicitudes de permisos atendidos del chatbot - restobar borrar pedidos o productos
+		// solicitud anular producto en pedido
+		socket.on('restobar-permiso-remove-producto-mesa', async (payload) => {			
+			socket.to(chanelConect).emit('restobar-permiso-remove-producto-mesa', payload);			
+		});
+
+		// solicitud anular todo el pedido
+		socket.on('restobar-permiso-remove-pedido-mesa', async (payload) => {			
+			socket.to(chanelConect).emit('restobar-permiso-remove-pedido-mesa', payload);			
+		});
 		
 
 	});

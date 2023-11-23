@@ -1,7 +1,8 @@
 const { to, ReE, ReS } = require('../service/uitl.service');
 let bcrypt = require('bcryptjs'); //passoword
 let jwt = require('jsonwebtoken');
-const SEED = require('../config').SEED;
+// const SEED = require('../config').SEED;
+const SEED = require('../_config').SEED;
 
 let Sequelize = require('sequelize');
 // let config = require('../config');

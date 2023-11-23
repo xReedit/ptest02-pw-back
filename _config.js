@@ -1,20 +1,38 @@
-const _config = require('./config');
+let _config;
+try {
+	_config = require('./config');
+} catch(e) {
+	_config = {
+		port: '',
+		portSocket: '',
+		database: '',
+		username: '',
+		password: '',
+		db_host: '',
+		port: '',
+		db_port: '',
+		publicKeyVapid: '',
+		privateKeyVapid: '',
+		firebaseApikey: ''
+	};
+}
+
 
 var config = {};
 
-config.port = process.env.PORT || _config.port;
-config.portSocket = process.env.PORT_SOCKET || _config.portSocket;
+config.port = process.env.PORT || _config?.port;
+config.portSocket = process.env.PORT_SOCKET || _config?.portSocket;
 
-config.database = process.env.DB_NAME || 'restobar';
-config.username = process.env.DB_USER || 'resto';
-config.password = process.env.DB_PASSWORD ||'182182';
+config.database = process.env.DB_NAME || _config?.database;
+config.username = process.env.DB_USER || _config?.username;
+config.password = process.env.DB_PASSWORD || _config?.password;
 
-config.db_host= process.env.DB_HOST || "192.168.1.65";
-config.db_port= process.env.DB_PORT || 3306;
+config.db_host= process.env.DB_HOST || _config?.db_host;
+config.db_port= process.env.DB_PORT || _config?.db_port;
 
-config.publicKeyVapid = process.env.PB_VAPID  || _config.publicKeyVapid;
-config.privateKeyVapid = process.env.PV_VAPID || _config.privateKeyVapid;
-config.firebaseApikey = process.env.FB_API || _config.firebaseApikey;
+config.publicKeyVapid = process.env.PB_VAPID  || _config?.publicKeyVapid;
+config.privateKeyVapid = process.env.PV_VAPID || _config?.privateKeyVapid;
+config.firebaseApikey = process.env.FB_API || _config?.firebaseApikey;
 
 config.dialect="mysql";
 config.operatorsAliases = false;

@@ -2,6 +2,9 @@ const _config = require('./config');
 
 var config = {};
 
+config.port = process.env.PORT || _config.port;
+config.portSocket = process.env.PORT_SOCKET || _config.portSocket;
+
 config.database = process.env.DB_NAME || 'restobar';
 config.username = process.env.DB_USER || 'resto';
 config.password = process.env.DB_PASSWORD ||'182182';

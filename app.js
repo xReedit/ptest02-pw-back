@@ -10,7 +10,8 @@ var cors=require('cors');
 app.use(cors());
 
 
-var config = require('./config');
+// var config = require('./config');
+var config = require('./_config');
 var socketsController = require('./controllers/sockets');
 // const apiServiceSendCPE = require('./controllers/serviceSendCPE');
 const apiServiceTimerChangeCosto = require('./controllers/timerChangeCosto.js');

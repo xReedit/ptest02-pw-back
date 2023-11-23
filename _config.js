@@ -53,4 +53,6 @@ config.sequelizeOption = {
                 logging: false
         }
 
+config.SEED = process.env.PB_VAPID || _config.SEED;
+
 module.exports = config;

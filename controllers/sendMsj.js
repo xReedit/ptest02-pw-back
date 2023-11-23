@@ -1,7 +1,7 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
 // const atob = require('atob');
-const config = require('../config');
-let _config = require('../_config');
+// const config = require('../config');
+let config = require('../_config');
 const webpush = require('web-push');
 let Sequelize = require('sequelize');
 
@@ -18,7 +18,7 @@ webpush.setVapidDetails(
   config.privateKeyVapid
 );
 
-let sequelize = new Sequelize(_config.database, config.username, _config.password, _config.sequelizeOption);
+let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
 // sms mensaje de confirmacion de telefono
 const sendMsjConfirmacion = async function (req, res) {

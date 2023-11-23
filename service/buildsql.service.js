@@ -1,6 +1,7 @@
 let managerFilter = require('../utilitarios/filters')
 let Sequelize = require('sequelize');
-let config = require('../config');
+// let config = require('../config');
+let config = require('../_config');
 
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 let mysql_clean = function (string) {

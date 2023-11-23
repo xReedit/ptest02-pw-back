@@ -53,6 +53,12 @@ config.sequelizeOption = {
                 logging: false
         }
 
-config.SEED = process.env.PB_VAPID || _config.SEED;
+config.SEED = process.env.SEED || _config.SEED;
+
+config.SEED_SMS = process.env.SEED_SMS || _config.SEED_SMS;
+config.SEED_EMAIL = process.env.SEED_EMAIL || _config.SEED_EMAIL;
+config.SEED_SES_USER = process.env.SEED_SES_USER || config.SEED_SES_USER;
+config.SEED_SES_PASS = process.env.SEED_SES_PASS || config.SEED_SES_PASS;
+
 
 module.exports = config;

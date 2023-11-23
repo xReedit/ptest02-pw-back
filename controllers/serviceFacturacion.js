@@ -8,7 +8,8 @@
 
 const { to, ReE, ReS }  = require('../service/uitl.service');
 let Sequelize = require('sequelize');
-let config = require('../config');
+// let config = require('../config');
+let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 
 const fetch = require("node-fetch");

@@ -1,5 +1,6 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
-const config = require('../config');
+// const config = require('../config');
+let config = require('../_config');
 let Sequelize = require('sequelize');
 
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);

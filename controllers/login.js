@@ -4,7 +4,8 @@ let jwt = require('jsonwebtoken');
 const SEED = require('../config').SEED;
 
 let Sequelize = require('sequelize');
-let config = require('../config');
+// let config = require('../config');
+let config = require('../_config');
 
 
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);

@@ -2,7 +2,8 @@
 // cambia automaticamente el costo de entrega segun hora y dia
 const { to, ReE, ReS }  = require('../service/uitl.service');
 let Sequelize = require('sequelize');
-let config = require('../config');
+// let config = require('../config');
+let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);

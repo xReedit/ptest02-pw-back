@@ -2,7 +2,8 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
 const sendMsjsService = require('./sendMsj.js')
 let Sequelize = require('sequelize');
-let config = require('../config');
+// let config = require('../config');
+let config = require('../_config');
 const fetch = require("node-fetch");
 let managerFilter = require('../utilitarios/filters');
 const url_service = 'https://restobar.papaya.com.pe/consulta/';

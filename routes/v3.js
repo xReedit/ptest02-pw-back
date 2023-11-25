@@ -62,6 +62,7 @@ routerV3.post('/bot/send-bot-solicitud-permiso', pedidoBot.setAceptaSolicitudRem
 // para usuario autorizado - colaboradores --->>>
 routerV3.post('/login-usuario-autorizado', login.loggerUsAutorizado);
 routerV3.post('/verificarToken', auth.verificarToken);
+routerV3.get('/validar-token', auth.validarTokenExperidado);
 routerV3.post('/pedido/lacuenta', auth.verificarToken, apiPwaAppPedidos.getLaCuenta);
 routerV3.post('/pedido/printer-precuenta', auth.verificarToken, apiPwaAppPedidos.setPrinterOtherDocs);
 routerV3.post('/pedido/lacuenta-zona-delivery', apiPwaAppPedidos.getLaCuenta);

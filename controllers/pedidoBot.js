@@ -51,7 +51,19 @@ const setAceptaSolicitudRemotoBot = function(req, res) {
 	if ( data.tipo_permiso == 2 ) {
 		console.log('restobar-permiso-remove-pedido-mesa', data)
 		socket.emit('restobar-permiso-remove-pedido-mesa', data)
-	}	
+	}
+
+	// borrar pedidos completos
+	if ( data.tipo_permiso == 3 ) {
+		console.log('restobar-permiso-change-metodo-pago', data)
+		socket.emit('restobar-permiso-change-metodo-pago', data)
+	}
+	
+	// cerrar caja
+	if ( data.tipo_permiso == 4 ) {
+		console.log('restobar-permiso-cerrar-caja', data)
+		socket.emit('restobar-permiso-cerrar-caja', data)
+	}
 
 }
 module.exports.setAceptaSolicitudRemotoBot = setAceptaSolicitudRemotoBot;

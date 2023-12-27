@@ -4,9 +4,11 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 	// 0: nuevo pedido notifica comercio
 		// 1: verificar telefono
 		// 2: notifica al cliente el repartidor que acepto pedido
-		console.log('dataMsj ===========> ', dataMsj);
+		console.log('dataMsj ===========> aa ==', dataMsj);
 		dataMsj = typeof dataMsj !== 'object' ? JSON.parse(dataMsj) : dataMsj;
 		const tipo = dataMsj.tipo;
+
+		console.log("tipo === ", tipo)
 
 		var _sendServerMsj = {telefono: 0, msj: '', tipo: 0};
 		var msj;
@@ -76,15 +78,18 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 		// viene de restobar
 		if ( tipo === 6 ) {
 			let mjsPermiso = '';
+			dataMsj.link = `https://chatbot.papaya.com.pe/solicitud-remoto/${dataMsj.link}`;
 			// borrar producto de cuenta
 			if ( dataMsj.tipo_permiso === 1 ) {
-				mjsPermiso = `🔐 Solicitud de permiso por encargo de: ${dataMsj.nomusuario_solicita}.\n\nHola ${dataMsj.nomusuario_admin}\n*Solicitud:* ${dataMsj.solicitud}\n*Motivo*: ${dataMsj.motivo}\n\nAutorizalo en este link: ${dataMsj.link}`;
+				mjsPermiso = `🔐 *[Solicitud de Permiso]*\nEl usuario: ${dataMsj.nomusuario_solicita} de ${dataMsj.nomsede} solicita permiso.\n\nHola ${dataMsj.nomusuario_admin}\n*Solicitud:* ${dataMsj.solicitud}\n*Motivo*: ${dataMsj.motivo}\n\nAutorizalo en este link: ${dataMsj.link}`;
 			}
 
 			_sendServerMsj.tipo = 6;
-			_sendServerMsj.telefono = dataMsj.telefono;			
+			_sendServerMsj.telefono = dataMsj.telefono_admin;			
 			_sendServerMsj.msj = mjsPermiso
 		}
+
+		console.log('_sendServerMsj === ', _sendServerMsj);
 
 
 		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);

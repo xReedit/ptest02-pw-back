@@ -1,8 +1,14 @@
 const apiPwa = require('./apiPwa_v1.js');
 const apiPwaRepartidor = require('./apiRepartidor.js');
 const apiPwaComercio = require('./apiComercio.js');
+const apiMessageWsp = require('./socketMenssagesWsp.js');
 let apiPrintServer = require('./apiPrintServer');
+const async = require('async');
 var btoa = require('btoa');
+
+
+
+
 //const auth = require('../middleware/autentificacion');
 
 // var onlineUsers = {};
@@ -221,83 +227,135 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			console.log('==========> llego', item)
 		})
 
-		// item modificado
-		socket.on('itemModificado', async function(item) {
-			// console.log('itemModificado', item);
+		// cola de procesamiento
+		const queue = async.queue((item, callback) => {
+			apiPwa.processAndEmitItem(item, chanelConect, io)
+				.then(() => callback())
+				.catch(callback);
+		}, 1);
 
-			// manejar cantidad/
+		socket.on('itemAllModificado', async (items) => {
+			 try {
+				// Procesa todos los items en paralelo
+				await Promise.all(items.map(item => apiPwa.processAndEmitItem(item, chanelConect, io)));
 
-			
-
-			// console.log('item', item);
-			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
-			item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
-			
-			// la cantidad viene 999 cuando es nd y la porcion si viene nd
-			// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
-			item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;
-			if (item.cantidad != 'ND') {	
-				console.log('item.sumar', item);	
-				// var _cantItem = parseFloat(item.cantidad);
-
-				// item.venta_x_peso solo para productos
-				var _cantSumar = item.venta_x_peso === 1 ? -item.cantidad : item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;
-				item.cantidadSumar = _cantSumar;
-				console.log('item.cantidadSumar', item.cantidadSumar);
-				// item.cantidad = _cantItem;		
-
-				// console.log('json item ', JSON.stringify(item));
-
-				const rptCantidad = await apiPwa.setItemCarta(0, item);
-				console.log('cantidad update mysql ', rptCantidad);
-
-				// if ( item.isporcion != 'SP' ) {
-				item.cantidad = rptCantidad[0].cantidad;
-				//}				
-
-				// subitems
-				console.log('rptCantidad[0].listSubItems ', rptCantidad[0].listSubItems );
-
-				// console.log('item subitems', item.subitems);
-
-				if ( rptCantidad[0].listSubItems ) {
-					try {
-						rptCantidad[0].listSubItems.map(subitem => {
-
-							if ( !item.subitems ) {
-								item.subitems.map(s => {							
-									let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
-
-									if ( itemFind ) {
-										itemFind.cantidad = subitem.cantidad;
-									}
-								});
-							}						
-						});
-					}
-					catch (error) {
-						console.log(error);
-					}
-				}			
-
-				const rpt = {
-					item : item,
-					listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,	
-					listSubItems: rptCantidad[0].listSubItems				
-				}
-
-				console.log('itemModificado', item);		
-
-				io.to(chanelConect).emit('itemModificado', item); 
-				io.to(chanelConect).emit('itemModificado-pwa', rpt); // para no modificar en web
-			} else {
-				io.to(chanelConect).emit('itemModificado', item);
-				io.to(chanelConect).emit('itemModificado-pwa', item);
-			}			
-			
-			// envia la cantidad a todos incluyendo al emisor, para actualizar en objCarta
-			// io.emit('itemModificado', item);
+				// // Emite un solo evento con todos los items procesados
+				// io.to(chanelConect).emit('itemsModificados', processedItems);
+			} catch (error) {
+				console.error(error);
+				io.to(chanelConect).emit('error', { message: 'Error al modificar los items', error });
+			}
 		});
+
+		socket.on('itemModificado', async function(item) {
+			// vamos a probar con cola de procesamiento
+			queue.push(item);
+			
+			// await apiPwa.processAndEmitItem(item, chanelConect, io);
+
+			// try {
+			// 	item = apiPwa.calculateQuantity(item);
+			// 	if (item.cantidad !== 'ND') {
+			// 		const rptCantidad = await apiPwa.setItemCarta(0, item);
+			// 		item.cantidad = rptCantidad[0].cantidad;
+
+			// 		item = apiPwa.updateSubItems(item, rptCantidad[0].listSubItems);
+			// 		const rpt = {
+			// 			item : item,
+			// 			listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,	
+			// 			listSubItems: rptCantidad[0].listSubItems				
+			// 		}
+			// 		io.to(chanelConect).emit('itemModificado-pwa', rpt);
+			// 		io.to(chanelConect).emit('itemModificado', item); 
+			// 	} else {
+			// 		io.to(chanelConect).emit('itemModificado', item);
+			// 		io.to(chanelConect).emit('itemModificado-pwa', item);
+			// 	}	
+			// } catch (error) {
+			// 	console.error(error);
+			// 	io.to(chanelConect).emit('error', { message: 'Error al modificar el item', error });
+			// }
+			
+		});
+
+
+		// item modificado
+		// socket.on('itemModificado', async function(item) {
+		// 	// console.log('itemModificado', item);
+
+		// 	// manejar cantidad/
+
+			
+
+		// 	// console.log('item', item);
+		// 	// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
+		// 	item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
+			
+		// 	// la cantidad viene 999 cuando es nd y la porcion si viene nd
+		// 	// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
+		// 	item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;
+		// 	if (item.cantidad != 'ND') {	
+		// 		console.log('item.sumar', item);	
+		// 		// var _cantItem = parseFloat(item.cantidad);
+
+		// 		// item.venta_x_peso solo para productos
+		// 		var _cantSumar = item.venta_x_peso === 1 ? -item.cantidad : item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;
+		// 		item.cantidadSumar = _cantSumar;
+		// 		console.log('item.cantidadSumar', item.cantidadSumar);
+		// 		// item.cantidad = _cantItem;		
+
+		// 		// console.log('json item ', JSON.stringify(item));
+
+		// 		const rptCantidad = await apiPwa.setItemCarta(0, item);
+		// 		console.log('cantidad update mysql ', rptCantidad);
+
+		// 		// if ( item.isporcion != 'SP' ) {
+		// 		item.cantidad = rptCantidad[0].cantidad;
+		// 		//}				
+
+		// 		// subitems
+		// 		console.log('rptCantidad[0].listSubItems ', rptCantidad[0].listSubItems );
+
+		// 		// console.log('item subitems', item.subitems);
+
+		// 		if ( rptCantidad[0].listSubItems ) {
+		// 			try {
+		// 				rptCantidad[0].listSubItems.map(subitem => {
+
+		// 					if ( !item.subitems ) {
+		// 						item.subitems.map(s => {							
+		// 							let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
+
+		// 							if ( itemFind ) {
+		// 								itemFind.cantidad = subitem.cantidad;
+		// 							}
+		// 						});
+		// 					}						
+		// 				});
+		// 			}
+		// 			catch (error) {
+		// 				console.log(error);
+		// 			}
+		// 		}			
+
+		// 		const rpt = {
+		// 			item : item,
+		// 			listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,	
+		// 			listSubItems: rptCantidad[0].listSubItems				
+		// 		}
+
+		// 		console.log('itemModificado', item);		
+
+		// 		io.to(chanelConect).emit('itemModificado', item); 
+		// 		io.to(chanelConect).emit('itemModificado-pwa', rpt); // para no modificar en web
+		// 	} else {
+		// 		io.to(chanelConect).emit('itemModificado', item);
+		// 		io.to(chanelConect).emit('itemModificado-pwa', item);
+		// 	}			
+			
+		// 	// envia la cantidad a todos incluyendo al emisor, para actualizar en objCarta
+		// 	// io.emit('itemModificado', item);
+		// });
 
 
 		socket.on('getOnlyCarta', async () => {
@@ -818,13 +876,29 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// ecucha las solicitudes de permisos atendidos del chatbot - restobar borrar pedidos o productos
 		// solicitud anular producto en pedido
-		socket.on('restobar-permiso-remove-producto-mesa', async (payload) => {			
-			socket.to(chanelConect).emit('restobar-permiso-remove-producto-mesa', payload);			
+		socket.on('restobar-permiso-remove-producto-mesa', async (payload) => {
+			// update permissio_delete pedido_detalle
+
+			apiPwa.updatePermissionDeleteItemPedido(payload.idpedido_detalle);
+			socket.to(chanelConect).emit('restobar-permiso-remove-producto-mesa', payload);
 		});
 
 		// solicitud anular todo el pedido
-		socket.on('restobar-permiso-remove-pedido-mesa', async (payload) => {			
+		socket.on('restobar-permiso-remove-pedido-mesa', async (payload) => {	
+			apiPwa.updatePermissionDeleteAllPedido(payload.idpedido);		
 			socket.to(chanelConect).emit('restobar-permiso-remove-pedido-mesa', payload);			
+		});
+		
+		// solicitud cambiar metodo de pago
+		socket.on('restobar-permiso-change-metodo-pago', async (payload) => {	
+			apiPwa.updatePermissionChangeMetodoPago(payload.data.data.idregistro_pago_detalle);		
+			socket.to(chanelConect).emit('restobar-permiso-change-metodo-pago', payload);			
+		});
+
+		// solicitud cerrar caja
+		socket.on('restobar-permiso-cerrar-caja', async (payload) => {	
+			// apiPwa.updatePermissionChangeMetodoPago(payload.data.data.idregistro_pago_detalle);		
+			socket.to(chanelConect).emit('restobar-permiso-cerrar-caja', payload);
 		});
 		
 
@@ -985,6 +1059,19 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// notifica al cliente que repartidor tomo su pedido
 		socket.on('repartidor-notifica-cliente-acepto-pedido', async (listClienteNotifica) => {
 			console.log('repartidor-notifica-cliente-acepto-pedido =========== repartidor', listClienteNotifica)
+			console.log('typeof listClienteNotifica', typeof listClienteNotifica);
+
+			// si listClienteNotifica no es formato json lo convertimos
+			if ( typeof listClienteNotifica === 'string' ) {
+				listClienteNotifica = JSON.parse(listClienteNotifica);
+			}
+			
+			// si no existe la funcion map en listClienteNotifica.map entonces manejamos el error
+			if ( !listClienteNotifica.map ) {
+				console.log('error listClienteNotifica.map', listClienteNotifica);
+				return;
+			}	
+
 			listClienteNotifica.map(c => {
 				c.tipo = 2;
 				sendMsjSocketWsp(c);
@@ -1276,73 +1363,77 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// 0: nuevo pedido notifica comercio
 		// 1: verificar telefono
 		// 2: notifica al cliente el repartidor que acepto pedido
-		console.log('dataMsj ===========> ', dataMsj);
-		dataMsj = typeof dataMsj !== 'object' ? JSON.parse(dataMsj) : dataMsj;
-		const tipo = dataMsj.tipo;
 
-		var _sendServerMsj = {telefono: 0, msj: '', tipo: 0};
-		var msj;
-		var url = '';
-		var _dataUrl = '';
+		console.log('aaaeee')
+		apiMessageWsp.sendMsjSocketWsp(dataMsj, io)
 
-		if ( tipo === 0 ) {
-			_dataUrl = `{"s": "${dataMsj.s}", "p": ${dataMsj.p}, "h": "${dataMsj.h}"}`;
-			// url = `https://comercio.papaya.com.pe/#/order-last?p=${btoa(_dataUrl)}`; // 2322 quitamos el hashtag #
-			url = `https://comercio.papaya.com.pe/order-last?p=${btoa(_dataUrl)}`;
-			msj = `🤖 🎉 🎉 Tienes un nuevo pedido por Papaya Express, chequealo aqui: ${url}`;
-			_sendServerMsj.tipo = 0;
-			_sendServerMsj.telefono = dataMsj.t;
-			_sendServerMsj.msj = msj;
-		}
+		// console.log('dataMsj ===========> ', dataMsj);
+		// dataMsj = typeof dataMsj !== 'object' ? JSON.parse(dataMsj) : dataMsj;
+		// const tipo = dataMsj.tipo;
 
-		// verificar telefono
-		if ( tipo === 1 ) {			
-			_sendServerMsj.tipo = 1;
-			_sendServerMsj.telefono = dataMsj.t;
-			_sendServerMsj.msj = '📞🔐 Papaya Express, su código de verificación es: ' + dataMsj.cod;
-			_sendServerMsj.idcliente = dataMsj.idcliente;
-			_sendServerMsj.idsocket = dataMsj.idsocket;
-		}
+		// var _sendServerMsj = {telefono: 0, msj: '', tipo: 0};
+		// var msj;
+		// var url = '';
+		// var _dataUrl = '';
+
+		// if ( tipo === 0 ) {
+		// 	_dataUrl = `{"s": "${dataMsj.s}", "p": ${dataMsj.p}, "h": "${dataMsj.h}"}`;
+		// 	// url = `https://comercio.papaya.com.pe/#/order-last?p=${btoa(_dataUrl)}`; // 2322 quitamos el hashtag #
+		// 	url = `https://comercio.papaya.com.pe/order-last?p=${btoa(_dataUrl)}`;
+		// 	msj = `🤖 🎉 🎉 Tienes un nuevo pedido por Papaya Express, chequealo aqui: ${url}`;
+		// 	_sendServerMsj.tipo = 0;
+		// 	_sendServerMsj.telefono = dataMsj.t;
+		// 	_sendServerMsj.msj = msj;
+		// }
+
+		// // verificar telefono
+		// if ( tipo === 1 ) {			
+		// 	_sendServerMsj.tipo = 1;
+		// 	_sendServerMsj.telefono = dataMsj.t;
+		// 	_sendServerMsj.msj = '📞🔐 Papaya Express, su código de verificación es: ' + dataMsj.cod;
+		// 	_sendServerMsj.idcliente = dataMsj.idcliente;
+		// 	_sendServerMsj.idsocket = dataMsj.idsocket;
+		// }
 
 
-		// notifica al cliente el repartidor que acepto pedido
-		if ( tipo === 2 ) {			
-			_sendServerMsj.tipo = 2;
-			_sendServerMsj.telefono = dataMsj.telefono;
-			_sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre}, el repartidor que está a cargo de su pedido de ${dataMsj.establecimiento} es: ${dataMsj.repartidor_nom} 📞 ${dataMsj.repartidor_telefono} 🙋‍♂️\n\nLe llamará cuando este cerca ó para informarle de su pedido.`			
-		}
+		// // notifica al cliente el repartidor que acepto pedido
+		// if ( tipo === 2 ) {			
+		// 	_sendServerMsj.tipo = 2;
+		// 	_sendServerMsj.telefono = dataMsj.telefono;
+		// 	_sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre}, el repartidor que está a cargo de su pedido de ${dataMsj.establecimiento} es: ${dataMsj.repartidor_nom} 📞 ${dataMsj.repartidor_telefono} 🙋‍♂️\n\nLe llamará cuando este cerca ó para informarle de su pedido.`			
+		// }
 
-		// notifica url descarga pdf comprobante
-		if ( tipo === 3 ) {
-			const _user_id = dataMsj.user_id ? `/${dataMsj.user_id}` : '';
-			const _concat_external_id = dataMsj.external_id + _user_id;
-			const _ulrComprobante = `https://apifac.papaya.com.pe/downloads/document/pdf/${_concat_external_id}`;
-			_sendServerMsj.tipo = 3;
-			_sendServerMsj.telefono = dataMsj.telefono;
-			// _sendServerMsj.msj = `🤖 Hola, adjuntamos el link de descarga de su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. \n\n 📄👆 ${_ulrComprobante} \n\nTambién lo puede consultar en: papaya.com.pe`;			
-			_sendServerMsj.msj = `🤖 Hola, adjuntamos su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. También lo puede consultar en: papaya.com.pe`;			
+		// // notifica url descarga pdf comprobante
+		// if ( tipo === 3 ) {
+		// 	const _user_id = dataMsj.user_id ? `/${dataMsj.user_id}` : '';
+		// 	const _concat_external_id = dataMsj.external_id + _user_id;
+		// 	const _ulrComprobante = `https://apifac.papaya.com.pe/downloads/document/pdf/${_concat_external_id}`;
+		// 	_sendServerMsj.tipo = 3;
+		// 	_sendServerMsj.telefono = dataMsj.telefono;
+		// 	// _sendServerMsj.msj = `🤖 Hola, adjuntamos el link de descarga de su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. \n\n 📄👆 ${_ulrComprobante} \n\nTambién lo puede consultar en: papaya.com.pe`;			
+		// 	_sendServerMsj.msj = `🤖 Hola, adjuntamos su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. También lo puede consultar en: papaya.com.pe`;			
 			
-			_sendServerMsj.url_comprobante = _ulrComprobante;
-			_sendServerMsj.url_comprobante_xml = _ulrComprobante.replace('/pdf/','/xml/');
-			_sendServerMsj.nombre_file = dataMsj.numero_comprobante;
-		}
+		// 	_sendServerMsj.url_comprobante = _ulrComprobante;
+		// 	_sendServerMsj.url_comprobante_xml = _ulrComprobante.replace('/pdf/','/xml/');
+		// 	_sendServerMsj.nombre_file = dataMsj.numero_comprobante;
+		// }
 
-		// notifica al cliente que pase a recoger el pedido
-		if ( tipo === 4 ) {
-			_sendServerMsj.tipo = 4;
-			_sendServerMsj.telefono = dataMsj.telefono;
-			_sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre} su pedido de ${dataMsj.establecimiento} puede pasar a recogerlo en ${dataMsj.tiempo_entrega} aproximadamente.`;
-		}
+		// // notifica al cliente que pase a recoger el pedido
+		// if ( tipo === 4 ) {
+		// 	_sendServerMsj.tipo = 4;
+		// 	_sendServerMsj.telefono = dataMsj.telefono;
+		// 	_sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre} su pedido de ${dataMsj.establecimiento} puede pasar a recogerlo en ${dataMsj.tiempo_entrega} aproximadamente.`;
+		// }
 
-		// notifica al cliente el repartidor time line del pedido
-		if ( tipo === 5 ) {			
-			_sendServerMsj.tipo = 5;
-			_sendServerMsj.telefono = dataMsj.telefono;
-			// _sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre}, el repartidor que está a cargo de su pedido de ${dataMsj.establecimiento} es: ${dataMsj.repartidor_nom} 📞 ${dataMsj.repartidor_telefono} 🙋‍♂️\n\nLe llamará cuando este cerca ó para informarle de su pedido.`			
-			_sendServerMsj.msj = dataMsj.msj
-		}
+		// // notifica al cliente el repartidor time line del pedido
+		// if ( tipo === 5 ) {			
+		// 	_sendServerMsj.tipo = 5;
+		// 	_sendServerMsj.telefono = dataMsj.telefono;
+		// 	// _sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre}, el repartidor que está a cargo de su pedido de ${dataMsj.establecimiento} es: ${dataMsj.repartidor_nom} 📞 ${dataMsj.repartidor_telefono} 🙋‍♂️\n\nLe llamará cuando este cerca ó para informarle de su pedido.`			
+		// 	_sendServerMsj.msj = dataMsj.msj
+		// }
 
 
-		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
+		// io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
 	}
 }

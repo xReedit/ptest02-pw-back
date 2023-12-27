@@ -188,15 +188,26 @@ const sendEmailSendAWSSES = async function (req, res) {
 	  // Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
 	}
 
-	main().catch((error) => {
-		console.error(error)
-	    return res.json({success:false});
-	});
+	try {
+		main().catch((error) => {
+			console.error(error)
+		    return res.json({success:false});
+		});
 
-	res.status(200).json({
-		ok: true,
-		message: 'Envio correcto'
-	});
+		res.status(200).json({
+			ok: true,
+			message: 'Envio correcto'
+		});
+	} catch(err) {
+		res.status(400).json({
+			ok: false,
+			message: 'Problemas al enviar correcto electronico'
+		});
+	}
+
+	
+
+	
 
 }
 module.exports.sendEmailSendAWSSES = sendEmailSendAWSSES;

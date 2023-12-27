@@ -47,7 +47,7 @@ const emitirRespuestaSP = async (xquery) => {
     } catch (err) {
         console.error(err);
         return false;
-    }
+    } 
 };
 
 

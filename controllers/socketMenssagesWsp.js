@@ -51,7 +51,7 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			_sendServerMsj.telefono = dataMsj.telefono;
 			// _sendServerMsj.msj = `🤖 Hola, adjuntamos el link de descarga de su comprobante electrónico de ${dataMsj.comercio} número ${dataMsj.numero_comprobante}. \n\n 📄👆 ${_ulrComprobante} \n\nTambién lo puede consultar en: papaya.com.pe`;			
 
-			const _adjuntaTelefonoComercio = dataMsj.comercio_telefono ? `\n\n*¡ATENCION!*, este es un mensaje automático enviado a través de nuestro servicio de bot 🤖. Por favor, NO REALIZE NINGUNA TRANSACCION a este número y tampoco responda a este mensaje ya que no llegará a un representante de servicio al cliente. Si tiene alguna duda comunicarse directamente con el comercio: ${dataMsj.comercio} Al telefono 📞: ${dataMsj.comercio_telefono} .` : '';
+			const _adjuntaTelefonoComercio = dataMsj.comercio_telefono ? `\n\n*¡ATENCION!*, este es un mensaje automático enviado a través de nuestro servicio de bot 🤖. Por favor, NO REALIZE NINGUNA TRANSACCION a este número y tampoco responda a este mensaje ya que no llegará a un representante de servicio al cliente. *Si tiene alguna duda comuniquese directamente con el comercio: ${dataMsj.comercio} Al telefono 📞: ${dataMsj.comercio_telefono} .*` : '';
 			_sendServerMsj.msj = `🤖 Hola, por encargo de ${dataMsj.comercio} adjuntamos su comprobante electrónico número ${dataMsj.numero_comprobante}. También lo puede consultar en: papaya.com.pe ${_adjuntaTelefonoComercio}`;			
 			
 			_sendServerMsj.url_comprobante = _ulrComprobante;

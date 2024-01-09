@@ -287,9 +287,12 @@ const setItemCarta = async (op, item) => {
     } else {
 
         // evaluar si item.subitems es undefined
+        console.log('typeof item.subitems ', typeof item.subitems);
         const _existSubItemsWithCantidad = !item.subitems ?  false :
             //evalua si existe algun subitem con cantidad diferente a ND en su propiedad opciones.cantidad
-            item.subitems.some(subitem => subitem.opciones.some(opcion => opcion.cantidad !== 'ND')); 
+            // evaluea si item.subitems es un array
+            typeof item.subitems === 'object' ?
+            item.subitems.some(subitem => subitem.opciones.some(opcion => opcion.cantidad !== 'ND')) : false; 
 
         console.log('_existSubItemsWithCantidad', _existSubItemsWithCantidad);
 
@@ -1058,7 +1061,7 @@ async function processItemPorcion(item) {
         result[0].cantidad = updatedItem[0].cantidad;
 
     } catch (error) {
-        console.error(err);
+        console.error(error);
     }
 
     return result;

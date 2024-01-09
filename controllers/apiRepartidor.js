@@ -14,9 +14,12 @@ let mysql_clean = function (string) {
 };
 
 const emitirRespuesta = async (xquery) => {
-    console.log(xquery);
+    console.log(xquery);		
     try {
-        return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+		// evaluea si es update o inser
+        // return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
+        return await sequelize.query(xquery, { type: queryType });
     } catch (err) {
         console.error(err);
         return false;

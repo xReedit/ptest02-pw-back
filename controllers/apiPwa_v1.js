@@ -246,32 +246,33 @@ module.exports.getReglasCarta = getReglasCarta;
 
 
 
-// const setItemCarta = async function (op, item) {	
-//     // nos aseguramos de quitar los espacios en blanco
-//     let read_query = '';
-//     if ( item.isalmacen.toString() === '1' ) { // si es producto}
-//         const _item = {cantidadSumar: item.cantidadSumar, idcarta_lista: item.idcarta_lista, cantidad_reset: item.cantidad_reset};
-//         console.log('porcedure_pwa_update_cantidad_only_producto', _item)
-//         read_query = `call porcedure_pwa_update_cantidad_only_producto(${op},'${JSON.stringify(_item)}')`;
-//         console.log('read_query', read_query);
-//     } else {
-//         var item = JSON.stringify(item).replace(/\\n/g, '')
-//                                       .replace(/\\'/g, '')
-//                                       .replace(/\\"/g, '')
-//                                       .replace(/\\&/g, '')
-//                                       .replace(/\\r/g, '')
-//                                       .replace(/\\t/g, '')
-//                                       .replace(/\\b/g, '')
-//                                       .replace(/\\f/g, '');               
-//         // const read_query = `call porcedure_pwa_update_cantidad_item(${op},'${JSON.stringify(item)}')`;
+// para el caso de monitor pedidos
+const setItemCartaAfter = async function (op, item) {	
+    // nos aseguramos de quitar los espacios en blanco
+    let read_query = '';
+    if ( item.isalmacen.toString() === '1' ) { // si es producto}
+        const _item = {cantidadSumar: item.cantidadSumar, idcarta_lista: item.idcarta_lista, cantidad_reset: item.cantidad_reset};
+        console.log('porcedure_pwa_update_cantidad_only_producto', _item)
+        read_query = `call porcedure_pwa_update_cantidad_only_producto(${op},'${JSON.stringify(_item)}')`;
+        console.log('read_query', read_query);
+    } else {
+        var item = JSON.stringify(item).replace(/\\n/g, '')
+                                      .replace(/\\'/g, '')
+                                      .replace(/\\"/g, '')
+                                      .replace(/\\&/g, '')
+                                      .replace(/\\r/g, '')
+                                      .replace(/\\t/g, '')
+                                      .replace(/\\b/g, '')
+                                      .replace(/\\f/g, '');               
+        // const read_query = `call porcedure_pwa_update_cantidad_item(${op},'${JSON.stringify(item)}')`;
 
-//         item = item.replace(/[\r\n]/g, '');
-//         read_query = `call porcedure_pwa_update_cantidad_item(${op},'${item}')`;
-//     }
+        item = item.replace(/[\r\n]/g, '');
+        read_query = `call porcedure_pwa_update_cantidad_item(${op},'${item}')`;
+    }
     
-//     return emitirRespuestaSP(read_query);        
-// }
-// module.exports.setItemCarta = setItemCarta;
+    return emitirRespuestaSP(read_query);        
+}
+module.exports.setItemCartaAfter = setItemCartaAfter;
 
 
 const setItemCarta = async (op, item) => {
@@ -325,6 +326,8 @@ const setItemCarta = async (op, item) => {
     }
 };
 module.exports.setItemCarta = setItemCarta;
+
+
 
 
 // const setNuevoPedido = async function (dataCLiente, dataPedido) {
@@ -966,7 +969,11 @@ async function processItem(item) {
 
         try {
             // Calcular la cantidad a actualizar
-            const cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
+            let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
+            
+            // esto porque puede venir de monitoreo de stock
+            // cantidadUpdate = cantidadUpdate === 0 ? item.cantidad : cantidadUpdate;
+            console.log('0cantidadUpdate', cantidadUpdate);
                             
             // Actualizar la cantidad en la tabla carta_lista
             await sequelize.query(`
@@ -1007,10 +1014,10 @@ async function processItemPorcion(item) {
         listSubItems: null
     }];
 
-    console.log('item', item);
+    console.log('item processItemPorcion', item);
 
     try {
-        const cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
+        let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
         console.log('cantidadUpdate', cantidadUpdate);
         // Actualizar la cantidad en la tabla porcion
 

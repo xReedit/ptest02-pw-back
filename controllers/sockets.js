@@ -228,7 +228,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		})
 
 		// cola de procesamiento
-		const queue = async.queue((item, callback) => {
+		const queue = async.queue((item, callback) => {			
 			apiPwa.processAndEmitItem(item, chanelConect, io)
 				.then(() => callback())
 				.catch(callback);
@@ -249,6 +249,14 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		socket.on('itemModificado', async function(item) {
 			// vamos a probar con cola de procesamiento
+
+			// si viene del monitor de pedidos
+			// console.log('item', item);
+			if (item?.from_monitor === true){
+				socketItemModificadoAfter(item);
+				return;
+			}
+
 			queue.push(item);
 			
 			// await apiPwa.processAndEmitItem(item, chanelConect, io);
@@ -281,81 +289,84 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// item modificado
 		// socket.on('itemModificado', async function(item) {
-		// 	// console.log('itemModificado', item);
 
-		// 	// manejar cantidad/
+		// 10124 para monitor de pedidos
+		async function socketItemModificadoAfter(item) {
+			// console.log('itemModificado', item);
+
+			// manejar cantidad/
 
 			
 
-		// 	// console.log('item', item);
-		// 	// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
-		// 	item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
+			// console.log('item', item);
+			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
+			item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
 			
-		// 	// la cantidad viene 999 cuando es nd y la porcion si viene nd
-		// 	// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
-		// 	item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;
-		// 	if (item.cantidad != 'ND') {	
-		// 		console.log('item.sumar', item);	
-		// 		// var _cantItem = parseFloat(item.cantidad);
+			// la cantidad viene 999 cuando es nd y la porcion si viene nd
+			// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
+			item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;
+			if (item.cantidad != 'ND') {	
+				console.log('item.sumar', item);	
+				// var _cantItem = parseFloat(item.cantidad);
 
-		// 		// item.venta_x_peso solo para productos
-		// 		var _cantSumar = item.venta_x_peso === 1 ? -item.cantidad : item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;
-		// 		item.cantidadSumar = _cantSumar;
-		// 		console.log('item.cantidadSumar', item.cantidadSumar);
-		// 		// item.cantidad = _cantItem;		
+				// item.venta_x_peso solo para productos
+				var _cantSumar = item.venta_x_peso === 1 ? -item.cantidad : item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;
+				item.cantidadSumar = _cantSumar;
+				console.log('item.cantidadSumar', item.cantidadSumar);
+				// item.cantidad = _cantItem;		
 
-		// 		// console.log('json item ', JSON.stringify(item));
+				// console.log('json item ', JSON.stringify(item));
 
-		// 		const rptCantidad = await apiPwa.setItemCarta(0, item);
-		// 		console.log('cantidad update mysql ', rptCantidad);
+				const rptCantidad = await apiPwa.setItemCartaAfter(0, item);
+				console.log('cantidad update mysql ', rptCantidad);
 
-		// 		// if ( item.isporcion != 'SP' ) {
-		// 		item.cantidad = rptCantidad[0].cantidad;
-		// 		//}				
+				// if ( item.isporcion != 'SP' ) {
+				item.cantidad = rptCantidad[0].cantidad;
+				//}				
 
-		// 		// subitems
-		// 		console.log('rptCantidad[0].listSubItems ', rptCantidad[0].listSubItems );
+				// subitems
+				console.log('rptCantidad[0].listSubItems ', rptCantidad[0].listSubItems );
 
-		// 		// console.log('item subitems', item.subitems);
+				// console.log('item subitems', item.subitems);
 
-		// 		if ( rptCantidad[0].listSubItems ) {
-		// 			try {
-		// 				rptCantidad[0].listSubItems.map(subitem => {
+				if ( rptCantidad[0].listSubItems ) {
+					try {
+						rptCantidad[0].listSubItems.map(subitem => {
 
-		// 					if ( !item.subitems ) {
-		// 						item.subitems.map(s => {							
-		// 							let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
+							if ( !item.subitems ) {
+								item.subitems.map(s => {							
+									let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
 
-		// 							if ( itemFind ) {
-		// 								itemFind.cantidad = subitem.cantidad;
-		// 							}
-		// 						});
-		// 					}						
-		// 				});
-		// 			}
-		// 			catch (error) {
-		// 				console.log(error);
-		// 			}
-		// 		}			
+									if ( itemFind ) {
+										itemFind.cantidad = subitem.cantidad;
+									}
+								});
+							}						
+						});
+					}
+					catch (error) {
+						console.log(error);
+					}
+				}			
 
-		// 		const rpt = {
-		// 			item : item,
-		// 			listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,	
-		// 			listSubItems: rptCantidad[0].listSubItems				
-		// 		}
+				const rpt = {
+					item : item,
+					listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,	
+					listSubItems: rptCantidad[0].listSubItems				
+				}
 
-		// 		console.log('itemModificado', item);		
+				console.log('itemModificado', item);		
 
-		// 		io.to(chanelConect).emit('itemModificado', item); 
-		// 		io.to(chanelConect).emit('itemModificado-pwa', rpt); // para no modificar en web
-		// 	} else {
-		// 		io.to(chanelConect).emit('itemModificado', item);
-		// 		io.to(chanelConect).emit('itemModificado-pwa', item);
-		// 	}			
+				io.to(chanelConect).emit('itemModificado', item); 
+				io.to(chanelConect).emit('itemModificado-pwa', rpt); // para no modificar en web
+			} else {
+				io.to(chanelConect).emit('itemModificado', item);
+				io.to(chanelConect).emit('itemModificado-pwa', item);
+			}			
 			
-		// 	// envia la cantidad a todos incluyendo al emisor, para actualizar en objCarta
-		// 	// io.emit('itemModificado', item);
-		// });
+			// envia la cantidad a todos incluyendo al emisor, para actualizar en objCarta
+			// io.emit('itemModificado', item);
+		} //);
 
 
 		socket.on('getOnlyCarta', async () => {

@@ -39,7 +39,7 @@ module.exports.setChangeCosto = setChangeCosto;
 
 
 function comandListChangeCosto() {
-	console.log('========== ejecutamos comandListChangeCosto comandListChangeCosto');
+	// console.log('========== ejecutamos comandListChangeCosto comandListChangeCosto');
     const _date = new Date();
     const _dayNow = _date.getDay();
     const _hourNow = _date.getHours();

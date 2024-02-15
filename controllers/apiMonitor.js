@@ -15,8 +15,9 @@ let mysql_clean = function (string) {
 // primer idpedido de la fecha seleccionada
 const getFirtsIdPedidoDate = function (req, res) {
 	const fini = req.body.fromDate;	
-    const read_query = `select COALESCE(min(idpedido), 0) idpedido from pedido where cast(fecha_hora as date) = cast('${fini}' as date) order by idpedido desc`;    ;   
-    emitirRespuesta_RES(read_query, res);      
+    // const read_query = `select COALESCE(min(idpedido), 0) idpedido from pedido where cast(fecha_hora as date) = cast('${fini}' as date) order by idpedido desc`;
+    const read_query = `call procedure_monitor_min_pedido_day('${fini}')`;
+    emitirRespuestaSP_RES(read_query, res);      
 }
 module.exports.getFirtsIdPedidoDate = getFirtsIdPedidoDate;
 

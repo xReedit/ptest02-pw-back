@@ -658,7 +658,7 @@ module.exports.getPedidosRecibidosGroup = getPedidosRecibidosGroup;
 
 async function colocarPedidoEnRepartidor(io, idsede) {
 
-	console.log ( 'xxxxxxxxxxxxxxxxx------colocarPedidoEnRepartidor' );
+	// console.log ( 'xxxxxxxxxxxxxxxxx------colocarPedidoEnRepartidor' );
 
 	// traer lista de pedidos que estan sin repartidor
 	let listGroupPedidos = []; // lista agrupada
@@ -669,7 +669,7 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 	let listLastRepartidor = ''; 
 	listPedidos = JSON.parse(JSON.stringify(listPedidos));
 	
-	console.log ( 'listPedidos listPedidos.lenght', listPedidos.length );
+	// console.log ( 'listPedidos listPedidos.lenght', listPedidos.length );
 	// console.log (' == listPedidos ==', listPedidos)
 
 

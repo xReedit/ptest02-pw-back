@@ -6,7 +6,7 @@ let managerFilter = require('../utilitarios/filters');
 
 const io = require("socket.io-client");
 
-const setPedidoBot = function (req, res) {  
+const setPedidoBot = async function (req, res) {  
 	const payload = req.body	
 	const infoUser = payload.query
 	const pedido = payload.dataSend
@@ -23,13 +23,22 @@ const setPedidoBot = function (req, res) {
 
 
 
-	socket.emit('nuevoPedido', pedido)
+	socket.emit('nuevoPedido', pedido, (rpt) => {		
+		// retornar el id del pedido que esta en rpt[0].idpedido 
+		const data = {
+			idpedido: rpt[0].idpedido,			
+		}
+
+		console.log('respuesta pedido bot ====', data);
+
+		res.json(data)
+	})
 
 }
 
 module.exports.setPedidoBot = setPedidoBot;
 
-
+// RESOTBAR - PERMISO DEL ADMINISTRADOR
 // acepta solicitud de permiso remoto desde chatbot key = link
 const setAceptaSolicitudRemotoBot = function(req, res) {	
 	const payload = req.body	

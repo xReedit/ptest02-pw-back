@@ -16,7 +16,16 @@ const emitirRespuesta = async (xquery) => {
     console.log(xquery);
     try {
         // return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
-        const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
+        const trimmedQuery = xquery.trim().toLowerCase();
+        let queryType;
+        if (trimmedQuery.startsWith('update')) {
+            queryType = sequelize.QueryTypes.UPDATE;
+        } else if (trimmedQuery.startsWith('insert')) {
+            queryType = sequelize.QueryTypes.INSERT;
+        } else {
+            queryType = sequelize.QueryTypes.SELECT;
+        }
+        
         return await sequelize.query(xquery, { type: queryType });
     } catch (err) {
         console.error(err);
@@ -869,6 +878,7 @@ module.exports.getListMesas = getListMesas;
 
 const updateTimeLinePedido = async function (idpedido,time_line) {
     const read_query = `insert into pedido_time_line_entrega (idpedido, time_line) values (${idpedido}, '${JSON.stringify(time_line)}') ON DUPLICATE KEY UPDATE time_line = '${JSON.stringify(time_line)}'`;
+    console.log('updateTimeLinePedido', read_query);
     return await emitirRespuesta(read_query);        
 }
 module.exports.updateTimeLinePedido = updateTimeLinePedido;
@@ -970,6 +980,8 @@ async function processItem(item) {
         try {
             // Calcular la cantidad a actualizar
             let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
+            // Iniciar una transacción
+            const t = await sequelize.transaction();
             
             // esto porque puede venir de monitoreo de stock
             // cantidadUpdate = cantidadUpdate === 0 ? item.cantidad : cantidadUpdate;
@@ -997,7 +1009,29 @@ async function processItem(item) {
             
             result[0].cantidad = updatedItem[0].cantidad;
 
+            result[0].cantidad = updatedItem[0].cantidad;
+            await t.commit();
+
         } catch (err) {
+            await t.rollback();
+
+            let errorObject = {
+                message: err.message,
+                error: err
+            };
+            
+            sequelize.query(`
+                INSERT INTO historial_error (fecha, error, origen) 
+                VALUES (:fecha, :error, :origen)
+            `, {
+                replacements: { 
+                    fecha: new Date(), 
+                    error: JSON.stringify(errorObject), 
+                    origen: 'processItem update cantidad carta_lista' 
+                },
+                type: sequelize.QueryTypes.INSERT
+            });
+
             console.error(err);
             // Maneja el error de la manera que prefieras
         }    

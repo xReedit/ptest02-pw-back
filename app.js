@@ -84,6 +84,6 @@ socketsController.socketsOn(io);
 
 // ejecutar servicio de envio de comprobantes electronicos
 // apiServiceSendCPE.activarEnvioCpe(); // servicio propio
-apiServiceTimerChangeCosto.runTimerCosto()
+// apiServiceTimerChangeCosto.runTimerCosto()
 
 module.exports = app;

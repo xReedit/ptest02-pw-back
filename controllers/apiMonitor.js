@@ -3,6 +3,7 @@ let Sequelize = require('sequelize');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
+let apiFireBase = require('../controllers/apiFireBase');
 
 const serviceTimerChangeCosto = require('./timerChangeCosto.js');
 
@@ -118,7 +119,13 @@ const setAsignarPedidoManual = function (req, res) {
 	const dataPedido = req.body.pedido;
     
     const read_query = `call procedure_delivery_set_pedido_repartidor_manual('${JSON.stringify(dataPedido)}')`;
+    
+    // en firebase se actualiza el repartidor 0524
+    apiFireBase.updateIdPedidosRepartidor(dataPedido.idrepartidor, dataPedido.pedido_asignado_manual);    
+
     emitirRespuestaSP_RES(read_query, res);  
+
+    
 }
 module.exports.setAsignarPedidoManual = setAsignarPedidoManual;
 

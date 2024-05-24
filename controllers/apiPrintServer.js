@@ -1,5 +1,5 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
-let Sequelize = require('sequelize');
+let {Sequelize, QueryTypes} = require('sequelize');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
@@ -12,7 +12,20 @@ let mysql_clean = function (string) {
 
 const socketPrintServerClient = async function (data, socket) {
 
+	// para loguearse version para android
+	socket.on('get-user-print-server-session', async (payload, callback) => {
+		console.log('get-user-print-server-session', payload);
+		const rptUser = await loginUserPrintServer(payload)
+		console.log('rptUser', rptUser);
+		callback({ data: rptUser });
+	});
+	
 	const idsedeSocket = data.idsede;
+	if ( idsedeSocket == '0' ) {
+		console.log('API print server USER APP', data);
+		return;
+	}
+	
 	console.log('LLego al API print server ====================================== ', data);
 
 	// url local
@@ -46,9 +59,7 @@ const socketPrintServerClient = async function (data, socket) {
 		return;
 	}
 
-	// console.log('_payload ============ ', _payload);
-	
-
+	// console.log('_payload ============ ', _payload);	
 
 	// solicita cada 10segundos
 	socket.on('get-ps-max-print', async (payload) => {
@@ -75,6 +86,30 @@ const socketPrintServerClient = async function (data, socket) {
 
 }
 module.exports.socketPrintServerClient = socketPrintServerClient;
+
+async function loginUserPrintServer(payload) {
+	const {username, password} = payload
+	const query = `
+		SELECT idorg o, idsede s
+		FROM usuario 
+		WHERE usuario = :username AND pass = :password
+	`;
+
+	const replacements = { username, password };
+
+	const result = await sequelize.query(query, {
+		replacements: replacements,
+		type: QueryTypes.SELECT
+	});
+
+	if (!result || result.length === 0) {
+		return false;
+	}
+
+	const base64Response = Buffer.from(JSON.stringify(result[0])).toString('base64');
+
+	return base64Response;
+}
 
 
 function setStatusItem(item) {
@@ -159,21 +194,30 @@ function getLogoLocal(idsedeSocket) {
 
 
 
+const emitirRespuesta = async (xquery) => {
+    console.log(xquery);		
+    try {
+		// evaluea si es update o inser
+        // return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
+        return await sequelize.query(xquery, { type: queryType });
+    } catch (err) {
+        console.error(err);
+        return false;
+    }
+};
 
 
-async function emitirRespuesta(xquery) {
-	// console.log(xquery);
-	return await sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
-	.then(function (rows) {
-		return rows;
-	})
-	.catch((err) => {
-		return false;
-	});
-}
-
-
-
+// async function emitirRespuesta(xquery) {
+// 	// console.log(xquery);
+// 	return await sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+// 	.then(function (rows) {
+// 		return rows;
+// 	})
+// 	.catch((err) => {
+// 		return false;
+// 	});
+// }
 
 
 

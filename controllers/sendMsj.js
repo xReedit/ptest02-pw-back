@@ -11,6 +11,9 @@ const nodemailer = require("nodemailer");
 const gcm = require('node-gcm');
 const sender = new gcm.Sender(config.firebaseApikey);
 
+// api de firebase
+let apiFireBase = require('../controllers/apiFireBase');
+
 
 webpush.setVapidDetails(
   'mailto:papaya.restobar@gmail.com',
@@ -407,7 +410,12 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 	});
 
 	
-	
+	// lo ultimo para firebase flutterflow 30042024
+	const _bodyFlutter = {
+		titulo: '🎉 Nuevo Pedido',
+		body: 'Acepta el pedido, tiene un minuto para aceptarlo.'
+	}
+	apiFireBase.sendPushNotification(key_suscripcion_push, _bodyFlutter);
 
 
 
@@ -580,6 +588,16 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
            	console.error("Error sending notification, reason: ", err);
            	// res.sendStatus(500);
         });
+
+
+	// lo ultimo para firebase flutterflow 30042024
+	const _bodyFlutter = {
+		titulo: '🎉 Nuevo Pedido',
+		body: 'Acepta el pedido, tiene un minuto para aceptarlo.'
+	}
+
+	apiFireBase.sendPushNotification(key_suscripcion_push, _bodyFlutter);
+
 
 
 }

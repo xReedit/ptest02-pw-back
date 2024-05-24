@@ -78,6 +78,7 @@ const setAceptaSolicitudRemotoBot = function(req, res) {
 module.exports.setAceptaSolicitudRemotoBot = setAceptaSolicitudRemotoBot;
 
 
+
 function connectBotSocket(infoUser) {
 	const urlSocket = `http://127.0.0.1:${config.portSocket}`
 	console.log('conectando === ', urlSocket)

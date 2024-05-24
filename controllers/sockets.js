@@ -258,31 +258,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			}
 
 			queue.push(item);
-			
-			// await apiPwa.processAndEmitItem(item, chanelConect, io);
-
-			// try {
-			// 	item = apiPwa.calculateQuantity(item);
-			// 	if (item.cantidad !== 'ND') {
-			// 		const rptCantidad = await apiPwa.setItemCarta(0, item);
-			// 		item.cantidad = rptCantidad[0].cantidad;
-
-			// 		item = apiPwa.updateSubItems(item, rptCantidad[0].listSubItems);
-			// 		const rpt = {
-			// 			item : item,
-			// 			listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,	
-			// 			listSubItems: rptCantidad[0].listSubItems				
-			// 		}
-			// 		io.to(chanelConect).emit('itemModificado-pwa', rpt);
-			// 		io.to(chanelConect).emit('itemModificado', item); 
-			// 	} else {
-			// 		io.to(chanelConect).emit('itemModificado', item);
-			// 		io.to(chanelConect).emit('itemModificado-pwa', item);
-			// 	}	
-			// } catch (error) {
-			// 	console.error(error);
-			// 	io.to(chanelConect).emit('error', { message: 'Error al modificar el item', error });
-			// }
+		
 			
 		});
 
@@ -668,6 +644,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('printerOnly', (dataSend) => {			
 			dataSend.hora = n;
 			console.log('printerOnly', dataSend);
+
 			socket.broadcast.to(chanelConect).emit('printerOnly', dataSend);
 			socket.broadcast.to(chanelConect).emit('nuevoPedido-for-list-mesas', dataSend); // app mozo
 
@@ -840,6 +817,14 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('restobar-send-comprobante-url-ws', async (payload) => {
 			payload.tipo = 3;			
 			console.log('restobar-send-comprobante-url-ws', payload);			
+			sendMsjSocketWsp(payload);
+			
+		});
+
+		// restobar envia cupones al whastapp cliente
+		socket.on('restobar-send-cupones-ws', async (payload) => {
+			payload.tipo = 7;			
+			console.log('restobar-send-cupones-ws', payload);
 			sendMsjSocketWsp(payload);
 			
 		});
@@ -1105,7 +1090,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				c.tipo = 5; 
 				switch (c.tipo_msj) {
 					case 1: // llegue al comercio						
-						c.msj = `🤖 Hola, el repartidor a cargo de su pedido ${c.repartidor_nom} ya llegó a ${c.establecimiento}, y esta esperando su pedido. Puede comunicarse con él si tiene alguna indicación adicional. 📞 ${c.repartidor_telefono}`
+						c.msj = `🤖 Hola, el repartidor a cargo de su pedido *${c.repartidor_nom}* ya llegó a ${c.establecimiento}, y esta esperando su pedido. Puede comunicarse con él si tiene alguna indicación adicional. 📞 ${c.repartidor_telefono}`
 						break;
 					case 2: // estoy en camino a entregar el pedido
 						c.msj = `🤖 El repartidor esta camino a entregarle su pedido, por favor este alerta a su teléfono le llamará cuando este cerca.`

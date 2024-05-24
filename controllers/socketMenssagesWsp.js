@@ -89,6 +89,13 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			_sendServerMsj.msj = mjsPermiso
 		}
 
+		// cupones de descuento
+		if ( tipo === 7 ) {
+			_sendServerMsj.tipo = 7;
+			_sendServerMsj.telefono = dataMsj.telefono;
+			_sendServerMsj.msj = dataMsj.msj
+		}
+
 		console.log('_sendServerMsj === ', _sendServerMsj);
 
 

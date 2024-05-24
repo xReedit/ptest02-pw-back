@@ -22,6 +22,8 @@ const auth = require('../middleware/autentificacion');
 const apiSpeech = require('../controllers/speech');
 const pedidoBot = require('../controllers/pedidoBot');
 
+const apiFireBase = require('../controllers/apiFireBase');
+
 
 // var cors = require('cors')
 
@@ -50,6 +52,11 @@ routerV3.get('/', function (req, res, next) {
 		}
 	})
 });
+
+// firebase
+routerV3.post('/firebase/add-repartidor', apiFireBase.addRepartidor);
+routerV3.post('/firebase/update-repartidor', apiFireBase.updateRepartidor);
+routerV3.post('/firebase/update-idpedidos-repartidor', apiFireBase.updateIdPedidosRepartidor);
 
 // PEDIDO BOT
 routerV3.post('/bot/send-bot-pedido', pedidoBot.setPedidoBot);

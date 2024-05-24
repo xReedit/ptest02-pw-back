@@ -24,6 +24,7 @@ const logger = async function (req, res) {
         // console.log('passs ', req.body);
 
         let read_query = "SELECT * FROM `usuario` WHERE `usuario` = '" + usuario + "' and estadistica=1";
+        // let read_query = "SELECT u.* FROM usuario u inner join sede s on u.idsede = s.idsede inner join sede_estado se on s.idsede = se.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0 and se.is_bloqueado = 0 and se.is_baja=0 and u.estadistica=1";
         console.log(read_query);
 
         sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })
@@ -54,7 +55,7 @@ const loggerUsAutorizado = async function (req, res) {
 
         // console.log('passs ', req.body);
 
-        let read_query = "SELECT * FROM `usuario` WHERE `usuario` = '" + usuario + "' and POSITION('A2' IN acc) > 0 and estado = 0";
+        let read_query = "SELECT u.* FROM usuario u inner join sede s on u.idsede = s.idsede inner join sede_estado se on s.idsede = se.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0 and se.is_bloqueado = 0 and se.is_baja=0";
         console.log(read_query);
 
         sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })
@@ -92,8 +93,8 @@ const loggerUsAutorizadoRepartidor = async function (req, res) {
         const pass = req.body.pass;
 
         // console.log('passs ', req.body);
-
-        let read_query = "SELECT idrepartidor, nombre, apellido, ciudad, usuario, pass, idsede_suscrito, telefono  FROM repartidor WHERE usuario = '" + usuario + "' and estado = 0";
+        
+        let read_query = "SELECT u.* FROM usuario u inner join sede s on u.idsede = s.idsede inner join sede_estado se on s.idsede = se.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0 and se.is_bloqueado = 0 and se.is_baja=0 and u.estadistica=1";
         // console.log(read_query);
 
         sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })
@@ -116,7 +117,12 @@ const loggerUsAutorizadoRepartidor = async function (req, res) {
                         
                         // const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: 294400});
                         // no caduca
-                        const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: '2d' });
+                        const payloadTojen = {
+                                idusuario: rows[0].idrepartidor,
+                                idsede_suscrito: rows[0].idsede_suscrito
+                        }
+
+                        const token = jwt.sign({ usuario: payloadTojen }, SEED, { expiresIn: '2d' });
 
                         return ReS(res, { usuario: rows[0], token: token });
 

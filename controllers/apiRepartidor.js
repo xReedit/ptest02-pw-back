@@ -639,7 +639,7 @@ const getPropioPedidos = async function (req, res) {
 module.exports.getPropioPedidos = getPropioPedidos;
 
 const getInfo = async function (req, res) {
-	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
+	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor') || req.body.idrepartidor;
     const read_query = `SELECT * from  repartidor where idrepartidor=${idrepartidor}`;
     return await emitirRespuesta_RES(read_query, res);        
 }

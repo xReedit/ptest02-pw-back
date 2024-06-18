@@ -97,7 +97,7 @@ const loggerUsAutorizadoRepartidor = async function (req, res) {
         
         // let read_query = "SELECT u.* FROM usuario u inner join sede s on u.idsede = s.idsede inner join sede_estado se on s.idsede = se.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0 and se.is_bloqueado = 0 and se.is_baja=0 and u.estadistica=1";
         // let read_query = "SELECT u.* FROM usuario u WHERE u.usuario = '" + usuario + "' and u.estado = 0";
-        let read_query = "SELECT idrepartidor, nombre, apellido, ciudad, usuario, pass, idsede_suscrito, telefono  FROM repartidor WHERE usuario = '" + usuario + "' and estado = 0";
+        let read_query = "SELECT idrepartidor, nombre, apellido, ciudad, usuario, pass, idsede_suscrito, telefono  FROM repartidor WHERE usuario = '" + usuario + "' and estado = 0";        
         // console.log(read_query);
 
         sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })

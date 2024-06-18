@@ -365,7 +365,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// restablecer pedido despues de que se termino el tiempo de espera
 		socket.on('resetPedido', (listPedido) => {
-			console.log('resetPedido ', listPedido);
+			// console.log('resetPedido ', listPedido);
 			// recibe items
 			listPedido.map(async (item) => {				
 				item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
@@ -380,12 +380,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					
 					const rptCantidad = await apiPwa.setItemCarta(1, item);
 					item.cantidad = rptCantidad[0].cantidad;
-					console.log('subitems_view ', item.subitems_view);
-
-					console.log('respuesta reset ', rptCantidad);
+					// console.log('subitems_view ', item.subitems_view);
+					// console.log('respuesta reset ', rptCantidad);
 
 					// subitems
-					console.log('rptCantidad[0].listSubItems ', rptCantidad[0].listSubItems );
+					// console.log('rptCantidad[0].listSubItems ', rptCantidad[0].listSubItems);
 
 					// console.log('item.subitems', item.subitems);
 
@@ -431,7 +430,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// buscar subitems del item seleccionado
 		socket.on('search-subitems-del-item', async (iditem, callback) => {
 			const rpt = await apiPwa.getSearchSubitemsItem(iditem);
-			console.log('respuesta del socket ', rpt);
+			// console.log('respuesta del socket ', rpt);
 			callback(rpt);
 		});
 

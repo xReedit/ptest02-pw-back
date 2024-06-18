@@ -298,40 +298,56 @@ const setItemCarta = async (op, item) => {
 
         // evaluar si item.subitems es undefined
         console.log('typeof item.subitems ', typeof item.subitems);
+        console.log('el item', item);
+        
         const _existSubItemsWithCantidad = !item.subitems ?  false :
             //evalua si existe algun subitem con cantidad diferente a ND en su propiedad opciones.cantidad
             // evaluea si item.subitems es un array
             typeof item.subitems === 'object' ?
             item.subitems.some(subitem => subitem.opciones.some(opcion => opcion.cantidad !== 'ND')) : false; 
 
+        console.log('item.subitems', item.subitems)
         console.log('_existSubItemsWithCantidad', _existSubItemsWithCantidad);
 
-        if (item.isalmacen === 0 && !_existSubItemsWithCantidad) {
-                        
-            // si no es porcion
-            if ( item.isporcion !== 'SP' ) {
-                console.log('ingresa processItem');
-                return await processItem(item)
-            } else {
-                // si es porcion
-                console.log('ingresa processItemPorcion');
-                return await processItemPorcion(item)
-            }
-        } else {
-            const cleanedItem = JSON.stringify(item)
-                .replace(/\\n/g, '')
-                .replace(/\\'/g, '')
-                .replace(/\\"/g, '')
-                .replace(/\\&/g, '')
-                .replace(/\\r/g, '')
-                .replace(/\\t/g, '')
-                .replace(/\\b/g, '')
-                .replace(/\\f/g, '')            
-                .replace(/[\r\n]/g, '').replace(/'/g, '');
-    
-            const query = `CALL porcedure_pwa_update_cantidad_item(${op}, '${cleanedItem}')`;
-            return await emitirRespuestaSP(query);
+        let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
+
+        
+        if ( _existSubItemsWithCantidad && item.subitems_selected) {
+            // item subitems_selected                                
+            item.subitems_selected.forEach(subitem => {
+                console.log('subitem', subitem);
+                processItemSubitemSeleted(subitem, cantidadUpdate);                
+            })
         }
+                    
+        // en ingredientes
+        if ( item.isporcion === 'SP' ) {
+            // si es porcion
+            console.log('ingresa processItemPorcion');
+            return await processItemPorcion(item)
+        } else {
+            // si no es porcion
+            console.log('ingresa processItem');
+            return await processItem(item)
+        }
+        
+        // if (item.isalmacen === 0 && !_existSubItemsWithCantidad) {            
+        // } 
+        // else {        
+        //     const cleanedItem = JSON.stringify(item)
+        //         .replace(/\\n/g, '')
+        //         .replace(/\\'/g, '')
+        //         .replace(/\\"/g, '')
+        //         .replace(/\\&/g, '')
+        //         .replace(/\\r/g, '')
+        //         .replace(/\\t/g, '')
+        //         .replace(/\\b/g, '')
+        //         .replace(/\\f/g, '')            
+        //         .replace(/[\r\n]/g, '').replace(/'/g, '');
+    
+        //     const query = `CALL porcedure_pwa_update_cantidad_item(${op}, '${cleanedItem}')`;
+        //     return await emitirRespuestaSP(query);
+        // }
     }
 };
 module.exports.setItemCarta = setItemCarta;
@@ -974,9 +990,7 @@ async function processItem(item) {
         listItemsPorcion: null,
         listSubItems: null
     }];
-
-        console.log('item', item);
-
+        
         try {
             // Calcular la cantidad a actualizar
             let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
@@ -994,8 +1008,12 @@ async function processItem(item) {
                 WHERE idcarta_lista = :idcarta_lista
             `, {
                 replacements: { cantidadUpdate, idcarta_lista: item.idcarta_lista },
-                type: sequelize.QueryTypes.UPDATE
+                type: sequelize.QueryTypes.UPDATE,
+                transaction: t
             });
+
+            await t.commit();
+            
 
             // Obtener la cantidad actualizada
             const updatedItem = await sequelize.query(`
@@ -1004,16 +1022,16 @@ async function processItem(item) {
                 WHERE idcarta_lista = :idcarta_lista
             `, {
                 replacements: { idcarta_lista: item.idcarta_lista },
-                type: sequelize.QueryTypes.SELECT
-            });
+                type: sequelize.QueryTypes.SELECT,                
+            });            
             
             result[0].cantidad = updatedItem[0].cantidad;
 
             result[0].cantidad = updatedItem[0].cantidad;
-            await t.commit();
+           
 
         } catch (err) {
-            await t.rollback();
+            // await t.rollback();
 
             let errorObject = {
                 message: err.message,
@@ -1029,8 +1047,13 @@ async function processItem(item) {
                     error: JSON.stringify(errorObject), 
                     origen: 'processItem update cantidad carta_lista' 
                 },
-                type: sequelize.QueryTypes.INSERT
+                type: sequelize.QueryTypes.INSERT,
+                transaction: t
             });
+
+            await t.commit();
+
+
 
             console.error(err);
             // Maneja el error de la manera que prefieras
@@ -1047,9 +1070,8 @@ async function processItemPorcion(item) {
         listItemsPorcion: null,
         listSubItems: null
     }];
-
-    console.log('item processItemPorcion', item);
-
+    
+    const t = await sequelize.transaction();
     try {
         let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
         console.log('cantidadUpdate', cantidadUpdate);
@@ -1064,7 +1086,8 @@ async function processItemPorcion(item) {
             WHERE ii.iditem = :xIdItem
         `, {
             replacements: { cantidadUpdate, xIdItem: _idItemUpdate },
-            type: sequelize.QueryTypes.UPDATE
+            type: sequelize.QueryTypes.UPDATE,
+            transaction: t
         })
         // Actualizar la cantidad en la tabla producto_stock si esta relacionados con productos
         await sequelize.query(`
@@ -1074,28 +1097,47 @@ async function processItemPorcion(item) {
             WHERE ii.iditem = :xIdItem
         `, {
             replacements: { cantidadUpdate, xIdItem: _idItemUpdate },
-            type: sequelize.QueryTypes.UPDATE
+            type: sequelize.QueryTypes.UPDATE,
+            transaction: t
         })
 
-        // Obtener la cantidad actualizada
-        const updatedItem = await sequelize.query(`
-            SELECT IF(cll.cantidad='SP',(IFNULL((
-                SELECT FLOOR(if (sum(i1.necesario) >= 1,
-                if(i1.viene_de='1', min(cast(p1.stock as SIGNED)), 
-                    min(cast(ps.stock as SIGNED)))
-                , if(i1.viene_de='1', cast(p1.stock as SIGNED), 
-                    cast(ps.stock as SIGNED))) /i1.cantidad)  cantidad 
-                FROM item_ingrediente AS i1 
-                    left JOIN porcion AS p1 ON i1.idporcion=p1.idporcion 
-                    left JOIN producto_stock ps on ps.idproducto_stock = i1.idproducto_stock
-                WHERE i1.iditem=cll.iditem GROUP BY i1.iditem, i1.necesario ORDER BY i1.necesario desc, i1.iditem_ingrediente limit 1)
-            ,0
-            )),cll.cantidad) as cantidad
-            from carta_lista as cll where cll.idcarta_lista = :idcarta_lista limit 1
-        `, {
-            replacements: { idcarta_lista: item.idcarta_lista },
-            type: sequelize.QueryTypes.SELECT
-        });
+        await t.commit();
+
+        let updatedItem;
+        if (item.isporcion === 'SP') {
+            console.log('query iditem', item.iditem);
+            const t_cantidad = await sequelize.transaction();
+            updatedItem = await sequelize.query(`
+            SELECT FLOOR(
+                IF (
+                    SUM(i1.necesario) >= 1, 
+                    IF(i1.viene_de='1', MIN(CAST(p1.stock AS SIGNED)), MIN(CAST(ps.stock AS SIGNED))),
+                    IF(i1.viene_de='1', CAST(p1.stock AS SIGNED), CAST(ps.stock AS SIGNED))
+                ) / i1.cantidad
+            ) AS cantidad 
+            FROM item_ingrediente AS i1 
+            LEFT JOIN porcion AS p1 ON i1.idporcion=p1.idporcion 
+            LEFT JOIN producto_stock ps ON ps.idproducto_stock = i1.idproducto_stock
+            WHERE i1.iditem = :iditem 
+            GROUP BY i1.iditem, i1.necesario 
+            ORDER BY i1.necesario DESC, i1.iditem_ingrediente 
+            LIMIT 1
+            `, {
+                replacements: { iditem: _idItemUpdate },
+                type: sequelize.QueryTypes.SELECT,  
+                transaction: t_cantidad              
+            });
+            await t_cantidad.commit();
+        } else {
+            updatedItem = await sequelize.query(`
+                SELECT cantidad 
+                    FROM carta_lista 
+                WHERE idcarta_lista = :idcarta_lista
+            `, {
+                replacements: { idcarta_lista: item.idcarta_lista },
+                type: sequelize.QueryTypes.SELECT,                
+            });
+        }
 
         console.log('updatedItem', updatedItem);
 
@@ -1109,6 +1151,61 @@ async function processItemPorcion(item) {
 
 }
 module.exports.processItemPorcion = processItemPorcion;
+
+async function processItemSubitemSeleted(subitem_selected, cantidadSumar) {    
+    const t = await sequelize.transaction();
+    if ( subitem_selected.idporcion > 0 ) {
+        try {
+            await sequelize.query(`
+                UPDATE porcion 
+                SET stock = stock + :cantidad 
+                WHERE idporcion = :idporcion
+            `, {
+                replacements: { cantidad: cantidadSumar, idporcion: subitem_selected.idporcion },
+                type: sequelize.QueryTypes.UPDATE,
+                transaction: t
+            });
+        } catch (error) {
+            console.error(error);
+        }    
+    }
+
+    if ( subitem_selected.idproducto > 0 ) {
+        try {
+            await sequelize.query(`
+                UPDATE producto_stock 
+                SET stock = stock + :cantidad 
+                WHERE idproducto_stock = :idproducto
+            `, {
+                replacements: { cantidad: cantidadSumar, idproducto: subitem_selected.idproducto },
+                type: sequelize.QueryTypes.UPDATE,
+                transaction: t
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    // si acaso no es porcion ni porducto
+    if ( subitem_selected.cantidad !== 'ND' && subitem_selected.idporcion === 0 && subitem_selected.idproducto === 0 ) {
+        try {
+            await sequelize.query(`
+                UPDATE item_subitem 
+                SET cantidad = cantidad + :cantidad 
+                WHERE iditem_subitem = :iditem_subitem
+            `, {
+                replacements: { cantidad: cantidadSumar, iditem_subitem: subitem_selected.iditem_subitem },
+                type: sequelize.QueryTypes.UPDATE,
+                transaction: t
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    await t.commit();
+}
+module.exports.processItemSubitemSeleted = processItemSubitemSeleted;
 
 
 async function processAndEmitItem(item, chanelConect, io, notificar = true) {

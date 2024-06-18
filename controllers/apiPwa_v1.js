@@ -297,8 +297,8 @@ const setItemCarta = async (op, item) => {
     } else {
 
         // evaluar si item.subitems es undefined
-        console.log('typeof item.subitems ', typeof item.subitems);
-        console.log('el item', item);
+        // console.log('typeof item.subitems ', typeof item.subitems);
+        // console.log('el item', item);
         
         const _existSubItemsWithCantidad = !item.subitems ?  false :
             //evalua si existe algun subitem con cantidad diferente a ND en su propiedad opciones.cantidad
@@ -306,16 +306,15 @@ const setItemCarta = async (op, item) => {
             typeof item.subitems === 'object' ?
             item.subitems.some(subitem => subitem.opciones.some(opcion => opcion.cantidad !== 'ND')) : false; 
 
-        console.log('item.subitems', item.subitems)
-        console.log('_existSubItemsWithCantidad', _existSubItemsWithCantidad);
+        // console.log('item.subitems', item.subitems)
+        // console.log('_existSubItemsWithCantidad', _existSubItemsWithCantidad);
 
         let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
 
         
         if ( _existSubItemsWithCantidad && item.subitems_selected) {
             // item subitems_selected                                
-            item.subitems_selected.forEach(subitem => {
-                console.log('subitem', subitem);
+            item.subitems_selected.forEach(subitem => {                
                 processItemSubitemSeleted(subitem, cantidadUpdate);                
             })
         }
@@ -330,7 +329,7 @@ const setItemCarta = async (op, item) => {
             console.log('ingresa processItem');
             return await processItem(item)
         }
-        
+
         // if (item.isalmacen === 0 && !_existSubItemsWithCantidad) {            
         // } 
         // else {        

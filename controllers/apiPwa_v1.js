@@ -927,6 +927,14 @@ const setUserAccountRemove = async (req, res) => {
 };
 module.exports.setUserAccountRemove = setUserAccountRemove;
 
+// listar todos los mozos para change user
+const getAllMozosChangeUser = async function (req, res) {
+    const idsede = req.body.idsede;
+    const read_query = `select idusuario, nombres, usuario from usuario where idsede=13 and estado=0 and acc like '%A2%'`;
+    return await emitirRespuesta_RES(read_query, res);    
+}
+module.exports.getAllMozosChangeUser = getAllMozosChangeUser;
+
 // solicitud remoto de borrar
 const updatePermissionDeleteItemPedido = async function (idpedido_detalle) {
     const read_query = `update pedido_detalle set permission_delete = '1' where idpedido_detalle=${idpedido_detalle}`;

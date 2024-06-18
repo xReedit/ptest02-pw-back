@@ -99,6 +99,7 @@ routerV3.post('/pedido/set-datos-facturacion-cliente', apiPwaAppPedidos.setDatos
 // para buscar todos los clientes
 routerV3.get('/pedido/get-all-clientes', auth.verificarToken, apiPwaAppPedidos.getAllClienteBySearch);
 routerV3.post('/pedido/get-find-cliente-by-name', auth.verificarToken, apiPwaAppPedidos.getAllClienteBySearchName);
+routerV3.get('/pedido/get-user-mozo-change-user', auth.verificarToken, apiPwaAppPedidos.getAllMozosChangeUser);
 
 routerV3.post('/service/consulta-dni-ruc', auth.verificarToken, apiPwaAppPedidos.getConsultaDatosCliente);
 routerV3.post('/service/consulta-dni-ruc-no-tk', apiPwaAppPedidos.getConsultaDatosClienteNoTk);

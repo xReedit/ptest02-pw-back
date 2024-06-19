@@ -121,10 +121,10 @@ const setAsignarPedidoManual = function (req, res) {
     const read_query = `call procedure_delivery_set_pedido_repartidor_manual('${JSON.stringify(dataPedido)}')`;
     
     // en firebase se actualiza el repartidor 0524
-    apiFireBase.updateIdPedidosRepartidor(dataPedido.idrepartidor, dataPedido.pedido_asignado_manual);    
+    // activar luego
+    // apiFireBase.updateIdPedidosRepartidor(dataPedido.idrepartidor, dataPedido.pedido_asignado_manual);    
 
     emitirRespuestaSP_RES(read_query, res);  
-
     
 }
 module.exports.setAsignarPedidoManual = setAsignarPedidoManual;

@@ -45,7 +45,8 @@ module.exports.emitirRespuesta_RES = emitirRespuesta_RES;
 const emitirRespuestaSP = async (xquery) => {
     console.log(xquery);
     try {
-        const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
+        const rows = await sequelize.query(xquery, { type: queryType });		
         const arr = Object.values(rows[0]);
         return arr;
     } catch (err) {

@@ -447,6 +447,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			if ( typeof dataSend === 'string' ) {
 				dataSend = JSON.parse(dataSend);
 			}
+
+			// console.log('dataCliente === ', dataCliente);
 			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
 
 			console.log('respuesta del setNuevoPedido ', rpt);			
@@ -915,7 +917,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 						idprint_server_detalle: x.print.idprint_server_detalle
 					}
 
-					console.log(' ====== printerComanda ===== xMandarImprimirComanda', dataPrintSend);
+					// console.log(' ====== printerComanda ===== xMandarImprimirComanda', dataPrintSend);
 					socket.broadcast.to(chanelConect).emit('printerComanda', dataPrintSend);
 				}				
 			});	

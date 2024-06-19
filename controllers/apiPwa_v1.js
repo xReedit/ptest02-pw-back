@@ -381,7 +381,7 @@ module.exports.setItemCarta = setItemCarta;
 // module.exports.setNuevoPedido = setNuevoPedido;
 
 const setNuevoPedido = async (dataCliente, dataPedido) => {
-    const { idorg, idsede, idusuario } = dataCliente;
+    const { idorg, idsede, idusuario } = dataPedido.dataUsuario ? dataPedido.dataUsuario : dataCliente;
     const _json = JSON.stringify(dataPedido)
         .replace(/\\n/g, '')
         .replace(/\\'/g, '')

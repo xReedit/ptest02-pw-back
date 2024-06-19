@@ -95,12 +95,11 @@ const emitirRespuestaSP_RES = async (xquery, res) => {
 const execSqlQueryNoReturn = async (xquery, res) => {
 	console.log(xquery);
 	try {
-		sequelize.query(xquery, {type: sequelize.QueryTypes.UPDATE}).spread(function(results, metadata) {
-
-		  	return ReS(res, {
+		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
+		const results = await sequelize.query(xquery, { type: queryType });
+		return ReS(res, {
 				data: results
-			});
-		});
+		});		
 	} catch (err) {
         return ReE(res, err);
     }

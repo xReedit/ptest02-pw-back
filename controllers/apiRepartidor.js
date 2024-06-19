@@ -4,7 +4,7 @@ let Sequelize = require('sequelize');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
-let apiFireBase = require('../controllers/apiFireBase');
+// let apiFireBase = require('../controllers/apiFireBase');
 
 let intervalBucaRepartidor = null;
 
@@ -321,7 +321,7 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 			io.to('MONITOR').emit('notifica-server-quita-pedido-repartidor', dataPedido.last_id_repartidor_reasigno);
 
 			// quitamos el pedido de firebase
-			apiFireBase.updateShowPedido(dataPedido.last_id_repartidor_reasigno, false);
+			// apiFireBase.updateShowPedido(dataPedido.last_id_repartidor_reasigno, false);
 		}		
 	}
 
@@ -356,8 +356,8 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 		io.to(getSocketIdRepartidorAsignar[0].socketid).emit('repartidor-nuevo-pedido', [firtsRepartidor, dataPedido]);
 
 		// asignamos el pedido de firebase
-		const idpedidos = dataPedido.pedidos.join(',');
-		apiFireBase.updateShowPedido(firtsRepartidor.idrepartidor, true, idpedidos);
+		// const idpedidos = dataPedido.pedidos.join(',');
+		// apiFireBase.updateShowPedido(firtsRepartidor.idrepartidor, true, idpedidos);
 	}
 
 
@@ -432,7 +432,7 @@ const setAsignarPedido2 = async function (req, res) {
     execSqlQueryNoReturn(read_query, res);     
 
 	// actualizamos el pedido al repartidor firebase	    
-	apiFireBase.updateIdPedidosRepartidor({userid: idrepartidor, idpedidos: idpedido});
+	// apiFireBase.updateIdPedidosRepartidor({userid: idrepartidor, idpedidos: idpedido});
 
 }
 module.exports.setAsignarPedido2 = setAsignarPedido2;

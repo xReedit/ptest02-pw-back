@@ -465,15 +465,25 @@ function execSqlQueryNoReturn(xquery, res) {
 
 
 
-async function emitirRespuesta(xquery) {
+async function emitirRespuesta(xquery, res) {
      console.log(xquery);		
     try {		
 		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
-        return await sequelize.query(xquery, { type: queryType });
+        const results = await sequelize.query(xquery, { type: queryType });
+        //si es update retornar ok
+        if (queryType === sequelize.QueryTypes.UPDATE) {
+            return ReS(res, {
+                data: 'ok'
+            });
+        } else {
+            return ReS(res, {
+                data: results
+            });
+        }
     } catch (err) {
         console.error(err);
-        return false;
-    }
+        return ReE(res, err);
+    }    
 	// console.log(xquery);
 	// return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	// .then(function (rows) {		

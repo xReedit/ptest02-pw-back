@@ -80,7 +80,7 @@ module.exports.getPedidosPendientesRepartidor = getPedidosPendientesRepartidor;
 const setResetRepartidor = async function (req, res) {
 	const idrepartidor = req.body.idrepartidor;
 	const read_query = `update repartidor set pedidos_reasignados = 0 where idrepartidor = ${idrepartidor};`;
-    execSqlQueryNoReturn(read_query, res);       
+    emitirRespuesta(read_query, res);       
 }
 module.exports.setResetRepartidor = setResetRepartidor;
 
@@ -88,14 +88,14 @@ module.exports.setResetRepartidor = setResetRepartidor;
 const setLiberarRepartidor = function (req, res) {  
 	const idrepartidor = req.body.idrepartidor;
     const read_query = `update repartidor set ocupado = 0, flag_paso_pedido = 0, pedido_por_aceptar = null, solicita_liberar_pedido=0 where idrepartidor = ${idrepartidor};`;
-    execSqlQueryNoReturn(read_query, res);     
+    emitirRespuesta(read_query, res);     
 }
 module.exports.setLiberarRepartidor = setLiberarRepartidor;
 
 const setCheckLiquidado = function (req, res) {  
 	const idpedido = req.body.idpedido;
     const read_query = `update pedido set check_liquidado = '1' where idpedido  = ${idpedido};`;
-    execSqlQueryNoReturn(read_query, res);     
+    emitirRespuesta(read_query, res);     
 }
 module.exports.setCheckLiquidado = setCheckLiquidado;
 
@@ -104,14 +104,14 @@ const setCheckAbonado = function (req, res) {
     const idtransaccion = req.body.idpwa_pago_transaction;
     const read_query = `update pedido set check_pagado = '1', check_pago_fecha = now() where idpedido = ${idpedido}; 
                         update pwa_pago_transaction set abonado = 1 where idpwa_pago_transaction = ${idtransaccion}`;
-    execSqlQueryNoReturn(read_query, res);     
+    emitirRespuesta(read_query, res);     
 }
 module.exports.setCheckAbonado = setCheckAbonado;
 
 const setCheckAbonadoRepartidor = function (req, res) {
 	const idpedido = req.body.idpedido;
     const read_query = `update pedido set check_pago_repartidor = '1' where idpedido = ${idpedido};`;
-    execSqlQueryNoReturn(read_query, res);     
+    emitirRespuesta(read_query, res);     
 }
 module.exports.setCheckAbonadoRepartidor = setCheckAbonadoRepartidor;
 
@@ -184,7 +184,7 @@ module.exports.getRepartidoresPedidosAceptados = getRepartidoresPedidosAceptados
 const setSedeInfo = function (req, res) {
 	const registro = req.body.registro;
     const read_query = `update sede set comsion_entrega = ${registro.comision}, costo_restobar_fijo_mensual='${registro.restobar}' where idsede=${registro.idsede}`;
-    execSqlQueryNoReturn(read_query, res);     
+    emitirRespuesta(read_query, res);     
 }
 module.exports.setSedeInfo = setSedeInfo;
 
@@ -226,7 +226,7 @@ module.exports.getItemDescuentosSede = getItemDescuentosSede;
 const deleteItemDescuentosSede = function (req, res) {		
 	const idsede_descuento = req.body.idsede_descuento;    
     const read_query = `update sede_descuento set estado = 1 where idsede_descuento = ${idsede_descuento}`;
-    execSqlQueryNoReturn(read_query, res);  
+    emitirRespuesta(read_query, res);  
 }
 module.exports.deleteItemDescuentosSede = deleteItemDescuentosSede;
 
@@ -250,7 +250,7 @@ const setImporteComisionLluvia = function (req, res) {
 	const costo_x_km_adicional_show = req.body.clima_comision.costo_x_km_adicional_show;    
 	const isRain = req.body.clima_comision.isRain;    
     const read_query = `update sede_config_service_delivery set c_minimo = ${costo_show}, c_km=${costo_x_km_adicional_show}, is_rain=${isRain} where idsede_config_service_delivery = ${idsede_config_service_delivery}`;
-    execSqlQueryNoReturn(read_query, res);  
+    emitirRespuesta(read_query, res);  
 }
 module.exports.setImporteComisionLluvia = setImporteComisionLluvia;
 
@@ -340,7 +340,7 @@ const setOnComercio = function (req, res) {
 	const idsede = req.body.idsede;    
 	const estado = req.body.estado;    
     const read_query = `update sede set pwa_delivery_comercio_online = ${estado} where idsede = ${idsede}`;
-    execSqlQueryNoReturn(read_query, res);  
+    emitirRespuesta(read_query, res);  
 }
 module.exports.setOnComercio = setOnComercio;
 
@@ -360,7 +360,7 @@ const setPedidoNoAntendido = async function (req, res) {
     if ( idpwa_pago_transaction ) {
         read_query = read_query + ` update pwa_pago_transaction set anulado = 1 where idpwa_pago_transaction = ${idpwa_pago_transaction};`;
     }
-    execSqlQueryNoReturn(read_query, res);       
+    emitirRespuesta(read_query, res);       
 }
 module.exports.setPedidoNoAntendido = setPedidoNoAntendido;
 
@@ -413,7 +413,7 @@ const setFacturaConfirmarPagoServicio = async function (req, res) {
     const idconfirmacion = req.body.idconfirmacion;    
     const external_id = req.body.external_id;    
     let read_query = `update sede_pago_confirmacion set external_id = '${external_id}', confirmado=1 where idsede_pago_confirmacion = ${idconfirmacion};`;
-    execSqlQueryNoReturn(read_query, res);       
+    emitirRespuesta(read_query, res);       
 }
 module.exports.setFacturaConfirmarPagoServicio = setFacturaConfirmarPagoServicio;
 
@@ -422,7 +422,7 @@ const setAnularPagoServicio = async function (req, res) {
     const idsede = req.body.idsede;    
     const idsede_pago_confirmacion = req.body.idsede_pago_confirmacion;
     let read_query = `update sede set umf_pago = '${umf_pago}' where idsede = ${idsede}; update sede_pago_confirmacion set no_confirmado = 1 where idsede_pago_confirmacion = ${idsede_pago_confirmacion};`;
-    execSqlQueryNoReturn(read_query, res);       
+    emitirRespuesta(read_query, res);       
 }
 module.exports.setAnularPagoServicio = setAnularPagoServicio;
 
@@ -454,8 +454,6 @@ module.exports.getPedidoById = getPedidoById;
 function execSqlQueryNoReturn(xquery, res) {
 	console.log(xquery);
 	sequelize.query(xquery, {type: sequelize.QueryTypes.UPDATE}).spread(function(results, metadata) {
-  // Results will be an empty array and metadata will contain the number of affected rows.
-
 	  	return ReS(res, {
 			data: results
 		});
@@ -467,24 +465,28 @@ function execSqlQueryNoReturn(xquery, res) {
 
 
 
-function emitirRespuesta(xquery) {
-	console.log(xquery);
-	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
-	.then(function (rows) {
-		
-		// return ReS(res, {
-		// 	data: rows
-		// });
-		return rows;
-	})
-	.catch((err) => {
-		return false;
-	});
+async function emitirRespuesta(xquery) {
+     console.log(xquery);		
+    try {		
+		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
+        return await sequelize.query(xquery, { type: queryType });
+    } catch (err) {
+        console.error(err);
+        return false;
+    }
+	// console.log(xquery);
+	// return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+	// .then(function (rows) {		
+	// 	return rows;
+	// })
+	// .catch((err) => {
+	// 	return false;
+	// });
 }
 
 
 function emitirRespuesta_RES(xquery, res) {
-	console.log(xquery);
+	console.log(xquery);    
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		

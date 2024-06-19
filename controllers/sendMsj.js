@@ -12,7 +12,7 @@ const gcm = require('node-gcm');
 const sender = new gcm.Sender(config.firebaseApikey);
 
 // api de firebase
-let apiFireBase = require('../controllers/apiFireBase');
+// let apiFireBase = require('../controllers/apiFireBase');
 
 
 webpush.setVapidDetails(
@@ -415,7 +415,7 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 		titulo: '🎉 Nuevo Pedido',
 		body: 'Acepta el pedido, tiene un minuto para aceptarlo.'
 	}
-	apiFireBase.sendPushNotification(key_suscripcion_push, _bodyFlutter);
+	// apiFireBase.sendPushNotification(key_suscripcion_push, _bodyFlutter);
 
 
 
@@ -596,7 +596,7 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 		body: 'Acepta el pedido, tiene un minuto para aceptarlo.'
 	}
 
-	apiFireBase.sendPushNotification(key_suscripcion_push, _bodyFlutter);
+	// apiFireBase.sendPushNotification(key_suscripcion_push, _bodyFlutter);
 
 
 

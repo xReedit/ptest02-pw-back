@@ -229,7 +229,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// cola de procesamiento
 		const queue = async.queue((item, callback) => {			
-			apiPwa.processAndEmitItem(item, chanelConect, io)
+			apiPwa.processAndEmitItem(item, chanelConect, io, dataCliente.idsede)
 				.then(() => callback())
 				.catch(callback);
 		}, 1);
@@ -237,7 +237,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('itemAllModificado', async (items) => {
 			 try {
 				// Procesa todos los items en paralelo
-				await Promise.all(items.map(item => apiPwa.processAndEmitItem(item, chanelConect, io)));
+				await Promise.all(items.map(item => apiPwa.processAndEmitItem(item, chanelConect, io, dataCliente.idsede)));
 
 				// // Emite un solo evento con todos los items procesados
 				// io.to(chanelConect).emit('itemsModificados', processedItems);
@@ -378,7 +378,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					item.cantidad_seleccionada = 0;
 					console.log('items recuperar ', item);
 					
-					const rptCantidad = await apiPwa.setItemCarta(1, item);
+					const rptCantidad = await apiPwa.setItemCarta(1, item, dataCliente.idsede);
 					item.cantidad = rptCantidad[0].cantidad;
 					// console.log('subitems_view ', item.subitems_view);
 					// console.log('respuesta reset ', rptCantidad);

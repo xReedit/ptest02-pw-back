@@ -1047,9 +1047,13 @@ async function processItem(item, idsede) {
         iditem2: item.iditem2        
     }
 
-    const updatedItem = await emitirRespuestaSP(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);    
-    result[0].cantidad = updatedItem[0].cantidad;
-    return result;
+    try {        
+        const updatedItem = await emitirRespuestaSP(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);    
+        result[0].cantidad = updatedItem[0].cantidad;
+        return result;
+    } catch (error) {
+        console.error('processItem====', error);
+    }
         
     // cambiamos 220624 -> no funciono, mas funciona lo antrior a esto
     //     try {
@@ -1144,14 +1148,18 @@ async function processItemPorcion(item) {
         iditem2: item.iditem2        
     }
 
-    const updatedItem = await emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_item)}')`);    
-    result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
-    const listItemsJson = JSON.parse(updatedItem[0].listItemsPorcion)
-
-    // buscamos en result[0].listItemsPorcion la cantidad segun item
-    const itemCantidad = listItemsJson.filter(i => i.iditem == _idItemUpdate);
-    result[0].cantidad = itemCantidad[0].cantidad;
-    return result;
+    try {        
+        const updatedItem = await emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_item)}')`);    
+        result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
+        const listItemsJson = JSON.parse(updatedItem[0].listItemsPorcion)
+    
+        // buscamos en result[0].listItemsPorcion la cantidad segun item
+        const itemCantidad = listItemsJson.filter(i => i.iditem == _idItemUpdate);
+        result[0].cantidad = itemCantidad[0].cantidad;
+        return result;
+    } catch (error) {
+        console.error('processItemPorcion====', error);
+    }
     
     // cambiamos 220624 -> no funciono, mas funciona lo antrior a esto
     // const t = await sequelize.transaction();
@@ -1236,10 +1244,14 @@ async function processItemPorcion(item) {
 module.exports.processItemPorcion = processItemPorcion;
 
 async function processAllItemSubitemSeleted(allItems) {
-    const updatedItem = await emitirRespuestaSP(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
-    console.log('updatedItem', updatedItem);
+    try {        
+        const updatedItem = await emitirRespuestaSP(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
+        console.log('updatedItem', updatedItem);
+        return updatedItem;
+    } catch (error) {
+        console.error('processAllItemSubitemSeleted====', error);        
+    }
     // result[0].listItemsPorcion = updatedItem[0].cantidad;
-    return updatedItem;
 }
 module.exports.processAllItemSubitemSeleted = processAllItemSubitemSeleted;
 

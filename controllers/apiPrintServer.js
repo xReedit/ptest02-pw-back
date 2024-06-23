@@ -163,7 +163,31 @@ function getMaxIdPrint(data) {
 }
 
 // obtiene los registros que no se imprimieron
+let debounceTimes = {};
+let debounceKeys = [];
 function getRegisterNoPrint(data) {
+	const now = Date.now();
+    const key = `${data.idsede}_${data.ultimoid || 'none'}`;
+    const lastTime = debounceTimes[key];
+
+	if (lastTime && now - lastTime < 3000) {
+		console.log('getRegisterNoPrint menos de 3seg');
+        // Si la última solicitud fue hace menos de 5 segundos, no procesar la solicitud
+        return Promise.reject(new Error('Too Many Requests'));
+    }
+
+	debounceTimes[key] = now;
+    debounceKeys.push(key);
+
+	// Si debounceTimes tiene más de 30 elementos, eliminar los primeros 20
+    if (debounceKeys.length > 60) {
+        for (let i = 0; i < 40; i++) {
+            const keyToRemove = debounceKeys.shift();
+            delete debounceTimes[keyToRemove];
+        }
+    }
+
+
 	const ultimoId = data.ultimoid ? 'and idprint_server_detalle >' + data.ultimoid : '';		
 	const sql = `SELECT psd.*, pse.nom_documento
 						FROM print_server_detalle as psd

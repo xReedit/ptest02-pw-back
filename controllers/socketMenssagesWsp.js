@@ -80,9 +80,10 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			let mjsPermiso = '';
 			dataMsj.link = `https://chatbot.papaya.com.pe/solicitud-remoto?key=${dataMsj.link}`;
 			// borrar producto de cuenta
-			if ( dataMsj.tipo_permiso === 1 ) {
-				mjsPermiso = `🔐 *[Solicitud de Permiso]*\nEl usuario: ${dataMsj.nomusuario_solicita} de ${dataMsj.nomsede} solicita permiso.\n\nHola ${dataMsj.nomusuario_admin}\n*Solicitud:* ${dataMsj.solicitud}\n*Motivo*: ${dataMsj.motivo}\n\nAutorizalo en este link: ${dataMsj.link}`;
-			}
+			mjsPermiso = `🔐 *[Solicitud de Permiso]*\nEl usuario: ${dataMsj.nomusuario_solicita} de ${dataMsj.nomsede} solicita permiso.\n\nHola ${dataMsj.nomusuario_admin}\n*Solicitud:* ${dataMsj.solicitud}\n*Motivo*: ${dataMsj.motivo}\n\nAutorizalo en este link: ${dataMsj.link}`;
+			
+			// if ( dataMsj.tipo_permiso === 1 ) {
+			// }
 
 			_sendServerMsj.tipo = 6;
 			_sendServerMsj.telefono = dataMsj.telefono_admin;			

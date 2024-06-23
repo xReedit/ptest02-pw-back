@@ -559,6 +559,7 @@ module.exports.setPrinterOtherDocs = setPrinterOtherDocs;
 // }
 // module.exports.getLaCuenta = getLaCuenta;
 let debounceTimes = {};
+let debounceKeys = [];
 const getLaCuenta = async (req, res) => {
     const idorg = req.body.idorg || managerFilter.getInfoToken(req, 'idorg');
     const idsede = req.body.idsede || managerFilter.getInfoToken(req, 'idsede');
@@ -567,22 +568,21 @@ const getLaCuenta = async (req, res) => {
     
     const key = `${idorg}-${idsede}-${mesa}-${idpedido}`;
     const now = Date.now();
-    const lastTime = debounceTimes[key];
-
-    console.log('debounceTimes', debounceTimes);
+    const lastTime = debounceTimes[key];    
 
     if (lastTime && now - lastTime < 3000) {
-        console.log('menos de 2seg');
+        console.log('menos de 3seg');
         // Si la última solicitud fue hace menos de 2 segundos, no procesar la solicitud
         return res.status(429).json({ error: 'Too Many Requests' });
     }
     debounceTimes[key] = now;
+    debounceKeys.push(key);
 
-    // Si debounceTimes tiene más de 30 elementos, eliminar los primeros 20
-    if (Object.keys(debounceTimes).length > 30) {
-        const keys = Object.keys(debounceTimes).sort();
-        for (let i = 0; i < 20; i++) {
-            delete debounceTimes[keys[i]];
+    // Si debounceTimes tiene más de 60 elementos, eliminar los primeros 40
+    if (debounceKeys.length > 60) {
+        for (let i = 0; i < 40; i++) {
+            const keyToRemove = debounceKeys.shift();
+            delete debounceTimes[keyToRemove];
         }
     }
 
@@ -1180,7 +1180,7 @@ async function processItemPorcion(item) {
         result[0].cantidad = itemCantidad[0].cantidad;
         return result;
     } catch (error) {
-        console.error('processItemPorcion====', error , updatedItem);
+        console.error('processItemPorcion====', error);
     }
     
     // cambiamos 220624 -> no funciono, mas funciona lo antrior a esto

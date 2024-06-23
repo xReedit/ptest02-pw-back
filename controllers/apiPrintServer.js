@@ -173,7 +173,8 @@ function getRegisterNoPrint(data) {
 	if (lastTime && now - lastTime < 3000) {
 		console.log('getRegisterNoPrint menos de 3seg');
         // Si la última solicitud fue hace menos de 5 segundos, no procesar la solicitud
-        return Promise.reject(new Error('Too Many Requests'));
+        // return Promise.reject(new Error('Too Many Requests'));
+		return Promise.resolve({ success: false, error: 'Too Many Requests' });
     }
 
 	debounceTimes[key] = now;

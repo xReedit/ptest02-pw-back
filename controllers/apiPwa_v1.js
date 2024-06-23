@@ -558,13 +558,33 @@ module.exports.setPrinterOtherDocs = setPrinterOtherDocs;
 //     // return emitirRespuestaSP(read_query);        
 // }
 // module.exports.getLaCuenta = getLaCuenta;
-
+let debounceTimes = {};
 const getLaCuenta = async (req, res) => {
     const idorg = req.body.idorg || managerFilter.getInfoToken(req, 'idorg');
     const idsede = req.body.idsede || managerFilter.getInfoToken(req, 'idsede');
     const mesa = req.body.mesa ? req.body.mesa : '0';
     const idpedido = req.body.idpedido ? req.body.idpedido : '';
     
+    const key = `${idorg}-${idsede}-${mesa}-${idpedido}`;
+    const now = Date.now();
+    const lastTime = debounceTimes[key];
+
+    console.log('debounceTimes', debounceTimes);
+
+    if (lastTime && now - lastTime < 3000) {
+        console.log('menos de 2seg');
+        // Si la última solicitud fue hace menos de 2 segundos, no procesar la solicitud
+        return res.status(429).json({ error: 'Too Many Requests' });
+    }
+    debounceTimes[key] = now;
+
+    // Si debounceTimes tiene más de 30 elementos, eliminar los primeros 20
+    if (Object.keys(debounceTimes).length > 30) {
+        const keys = Object.keys(debounceTimes).sort();
+        for (let i = 0; i < 20; i++) {
+            delete debounceTimes[keys[i]];
+        }
+    }
 
     const query = `CALL procedure_bus_pedido_bd_3051(${mesa}, '', '${idpedido}', ${idorg}, ${idsede}, 0, -1);`;
     return await emitirRespuestaSP_RES(query, res);
@@ -572,6 +592,7 @@ const getLaCuenta = async (req, res) => {
 module.exports.getLaCuenta = getLaCuenta;
 
 // la cuenta desde el cliente
+
 const getLaCuentaFromCliente = async function (req, res) {	
 	const idsede = req.body.idsede;
     const idcliente = req.body.idcliente;
@@ -1150,6 +1171,7 @@ async function processItemPorcion(item) {
 
     try {        
         const updatedItem = await emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_item)}')`);    
+        console.log('updatedItem', updatedItem);
         result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
         const listItemsJson = JSON.parse(updatedItem[0].listItemsPorcion)
     
@@ -1158,7 +1180,7 @@ async function processItemPorcion(item) {
         result[0].cantidad = itemCantidad[0].cantidad;
         return result;
     } catch (error) {
-        console.error('processItemPorcion====', error);
+        console.error('processItemPorcion====', error , updatedItem);
     }
     
     // cambiamos 220624 -> no funciono, mas funciona lo antrior a esto

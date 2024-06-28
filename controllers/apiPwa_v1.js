@@ -1069,7 +1069,8 @@ async function processItem(item, idsede) {
         iditem2: item.iditem2        
     }
 
-    try {        
+    try {     
+        const sqlQuery = `call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`;   
         const updatedItem = await emitirRespuestaSP(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);    
         result[0].cantidad = updatedItem[0].cantidad;
         return result;
@@ -1077,7 +1078,12 @@ async function processItem(item, idsede) {
         const dataError = {
             error: {
                 message: error,
-                data: _item
+                data: {
+                    item_process: _item,
+                    item: item,
+                    query: sqlQuery,
+                    res_query: updatedItem
+                }
             },
             origen: 'processItem'            
         }
@@ -1179,6 +1185,7 @@ async function processItemPorcion(item) {
     }
 
     try {        
+        const sqlQuery = `call procedure_stock_item_porcion('${JSON.stringify(_item)}')`;
         const updatedItem = await emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_item)}')`);    
         console.log('updatedItem', updatedItem);
         result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
@@ -1193,9 +1200,14 @@ async function processItemPorcion(item) {
         const dataError = {
             error: {
                 message: error,
-                data: _item
+                data: {
+                    item_process: _item,
+                    item: item,
+                    query: sqlQuery,
+                    res_query: updatedItem
+                }
             },
-            origen: 'processItemPorcion'            
+            origen: 'processItemPorcion'
         }
         errorManager.logError(dataError);
 
@@ -1285,6 +1297,8 @@ async function processItemPorcion(item) {
 module.exports.processItemPorcion = processItemPorcion;
 
 async function processAllItemSubitemSeleted(allItems) {
+    
+    const sqlQuery = `call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`;
     try {        
         const updatedItem = await emitirRespuestaSP(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
         console.log('updatedItem', updatedItem);
@@ -1294,7 +1308,12 @@ async function processAllItemSubitemSeleted(allItems) {
         const dataError = {
             error: {
                 message: error,
-                data: allItems
+                data: {
+                    item_process: _item,
+                    item: allItems,
+                    query: sqlQuery,
+                    res_query: updatedItem
+                }
             },
             origen: 'processAllItemSubitemSeleted'            
         }
@@ -1396,7 +1415,11 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
         const dataError = {
             error: {
                 message: error,
-                data: item
+                data: {
+                    item_process: item,
+                    item: item,                    
+                    res_query: rpt
+                }
             },
             origen: 'processAndEmitItem'            
         }

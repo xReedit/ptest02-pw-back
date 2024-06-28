@@ -1,5 +1,6 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
 let Sequelize = require('sequelize');
+let errorManager = require('../service/error.manager');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
@@ -1073,6 +1074,14 @@ async function processItem(item, idsede) {
         result[0].cantidad = updatedItem[0].cantidad;
         return result;
     } catch (error) {
+        const dataError = {
+            error: {
+                message: error,
+                data: _item
+            },
+            origen: 'processItem'            
+        }
+        errorManager.logError(dataError);
         console.error('processItem====', error);
     }
         
@@ -1180,6 +1189,16 @@ async function processItemPorcion(item) {
         result[0].cantidad = itemCantidad[0].cantidad;
         return result;
     } catch (error) {
+
+        const dataError = {
+            error: {
+                message: error,
+                data: _item
+            },
+            origen: 'processItemPorcion'            
+        }
+        errorManager.logError(dataError);
+
         console.error('processItemPorcion====', error);
     }
     
@@ -1271,6 +1290,16 @@ async function processAllItemSubitemSeleted(allItems) {
         console.log('updatedItem', updatedItem);
         return updatedItem;
     } catch (error) {
+
+        const dataError = {
+            error: {
+                message: error,
+                data: allItems
+            },
+            origen: 'processAllItemSubitemSeleted'            
+        }
+        errorManager.logError(dataError);
+
         console.error('processAllItemSubitemSeleted====', error);        
     }
     // result[0].listItemsPorcion = updatedItem[0].cantidad;
@@ -1363,6 +1392,16 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
         }   
     } catch (error) {
         console.error(error);
+        
+        const dataError = {
+            error: {
+                message: error,
+                data: item
+            },
+            origen: 'processAndEmitItem'            
+        }
+        errorManager.logError(dataError);
+
         io.to(chanelConect).emit('error', { message: 'Error al modificar el item', error });
     }
 }

@@ -1069,9 +1069,10 @@ async function processItem(item, idsede) {
         iditem2: item.iditem2        
     }
 
+    let updatedItem;
     try {     
         const sqlQuery = `call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`;   
-        const updatedItem = await emitirRespuestaSP(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);    
+        updatedItem = await emitirRespuestaSP(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);    
         result[0].cantidad = updatedItem[0].cantidad;
         return result;
     } catch (error) {
@@ -1080,7 +1081,7 @@ async function processItem(item, idsede) {
                 message: error,
                 data: {
                     item_process: _item,
-                    item: item,
+                    // item: item,
                     query: sqlQuery,
                     res_query: updatedItem
                 }
@@ -1184,9 +1185,10 @@ async function processItemPorcion(item) {
         iditem2: item.iditem2        
     }
 
+    let updatedItem;
     try {        
         const sqlQuery = `call procedure_stock_item_porcion('${JSON.stringify(_item)}')`;
-        const updatedItem = await emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_item)}')`);    
+        updatedItem = await emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_item)}')`);    
         console.log('updatedItem', updatedItem);
         result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
         const listItemsJson = JSON.parse(updatedItem[0].listItemsPorcion)
@@ -1202,7 +1204,7 @@ async function processItemPorcion(item) {
                 message: error,
                 data: {
                     item_process: _item,
-                    item: item,
+                    // item: item,
                     query: sqlQuery,
                     res_query: updatedItem
                 }
@@ -1299,8 +1301,9 @@ module.exports.processItemPorcion = processItemPorcion;
 async function processAllItemSubitemSeleted(allItems) {
     
     const sqlQuery = `call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`;
+    let updatedItem;
     try {        
-        const updatedItem = await emitirRespuestaSP(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
+        updatedItem = await emitirRespuestaSP(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
         console.log('updatedItem', updatedItem);
         return updatedItem;
     } catch (error) {
@@ -1310,7 +1313,7 @@ async function processAllItemSubitemSeleted(allItems) {
                 message: error,
                 data: {
                     item_process: _item,
-                    item: allItems,
+                    // item: allItems,
                     query: sqlQuery,
                     res_query: updatedItem
                 }
@@ -1387,6 +1390,7 @@ module.exports.processAllItemSubitemSeleted = processAllItemSubitemSeleted;
 
 async function processAndEmitItem(item, chanelConect, io, idsede, notificar = true) {
     try {
+        let rpt;
         console.log('idsede', idsede);
         item = calculateQuantity(item);
         if (item.cantidad !== 'ND') {
@@ -1394,7 +1398,7 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
             item.cantidad = rptCantidad[0].cantidad;
 
             item = updateSubItems(item, rptCantidad[0].listSubItems);
-            const rpt = {
+            rpt = {
                 item : item,
                 listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,    
                 listSubItems: rptCantidad[0].listSubItems                
@@ -1417,7 +1421,7 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
                 message: error,
                 data: {
                     item_process: item,
-                    item: item,                    
+                    // item: item,                    
                     res_query: rpt
                 }
             },

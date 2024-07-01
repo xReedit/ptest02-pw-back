@@ -1077,11 +1077,10 @@ async function processItem(item, idsede) {
         return result;
     } catch (error) {
         const dataError = {
-            error: {
+            incidencia: {
                 message: error,
                 data: {
-                    item_process: _item,
-                    // item: item,
+                    item_process: _item,                    
                     query: sqlQuery,
                     res_query: updatedItem
                 }
@@ -1200,7 +1199,7 @@ async function processItemPorcion(item) {
     } catch (error) {
 
         const dataError = {
-            error: {
+            incidencia: {
                 message: error,
                 data: {
                     item_process: _item,
@@ -1300,7 +1299,7 @@ module.exports.processItemPorcion = processItemPorcion;
 
 async function processAllItemSubitemSeleted(allItems) {
     
-    const sqlQuery = `call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`;
+    // const sqlQuery = `call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`;
     let updatedItem;
     try {        
         updatedItem = await emitirRespuestaSP(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
@@ -1309,11 +1308,10 @@ async function processAllItemSubitemSeleted(allItems) {
     } catch (error) {
 
         const dataError = {
-            error: {
+            incidencia: {
                 message: error,
                 data: {
-                    item_process: _item,
-                    // item: allItems,
+                    item_process: _item,                    
                     query: sqlQuery,
                     res_query: updatedItem
                 }
@@ -1417,11 +1415,10 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
         console.error(error);
         
         const dataError = {
-            error: {
+            incidencia: {
                 message: error,
                 data: {
-                    item_process: item,
-                    // item: item,                    
+                    item_process: item,                               
                     res_query: rpt
                 }
             },

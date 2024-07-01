@@ -4,16 +4,34 @@ let sequelize = new Sequelize(config.database, config.username, config.password,
 
 
 // registrar errores
+// const logError = function (payload) {
+//     const data = payload;
+    
+//     const errorString = JSON.stringify(data.error);
+//     const query = `INSERT INTO historial_error (error, origen, fecha) VALUES ('${errorString}', '${data.origen}', NOW())`;
+//     console.log(query);
+
+//     sequelize.query(query, { type: QueryTypes.INSERT })
+//         .then(function (rows) {
+//             console.log('Error logged successfully');
+//         })
+//         .catch((err) => { console.error('Error logging error:', err); });
+// }
+// module.exports.logError = logError;
+
+
 const logError = function (payload) {
     const data = payload;
     
-    const errorString = JSON.stringify(data);
-    const query = `INSERT INTO historial_error (error, origen, fecha) VALUES ('${errorString}', '${data.origen}', NOW())`;
-    
-    sequelize.query(query, { type: QueryTypes.INSERT })
-        .then(function (rows) {
-            console.log('Error logged successfully');
-        })
-        .catch((err) => { console.error('Error logging error:', err); });
+    const query = `INSERT INTO historial_error (error, origen, fecha) VALUES (:error, :origen, NOW())`;
+
+    sequelize.query(query, { 
+        replacements: { error: data, origen: data.origen },
+        type: QueryTypes.INSERT 
+    })
+    .then(function (rows) {
+        console.log('Error logged successfully');
+    })
+    .catch((err) => { console.error('Error logging error:', err); });
 }
 module.exports.logError = logError;

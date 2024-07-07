@@ -11,8 +11,8 @@ const nodemailer = require("nodemailer");
 // create reusable transporter object using the default SMTP transport
 const transporter = nodemailer.createTransport({
     host: "email-smtp.us-east-2.amazonaws.com",
-    port: 587,
-    secure: false, // true for 465, false for other ports
+    port: 465,
+    secure: true, // true for 465, false for other ports
     auth: {
         user: config.SEED_SES_USER, // generated ethereal user
         pass: config.SEED_SES_PASS, // generated ethereal password

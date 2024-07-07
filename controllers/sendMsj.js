@@ -7,6 +7,18 @@ let Sequelize = require('sequelize');
 
 const nodemailer = require("nodemailer");
 
+
+// create reusable transporter object using the default SMTP transport
+const transporter = nodemailer.createTransport({
+    host: "email-smtp.us-east-2.amazonaws.com",
+    port: 587,
+    secure: false, // true for 465, false for other ports
+    auth: {
+        user: config.SEED_SES_USER, // generated ethereal user
+        pass: config.SEED_SES_PASS, // generated ethereal password
+    },
+});
+
 // notificaciones push
 const gcm = require('node-gcm');
 const sender = new gcm.Sender(config.firebaseApikey);
@@ -154,7 +166,7 @@ const sendEmailSendGrid = async function (req, res) {
 }
 module.exports.sendEmailSendGrid = sendEmailSendGrid;
 
-const sendEmailSendAWSSES = async function (req, res) {
+/*const sendEmailSendAWSSES = async function (req, res) {
 
 	const _msj = req.body.msj;
 
@@ -214,7 +226,37 @@ const sendEmailSendAWSSES = async function (req, res) {
 
 }
 module.exports.sendEmailSendAWSSES = sendEmailSendAWSSES;
+*/
 
+const sendEmailSendAWSSES = async function (req, res) {
+    const _msj = req.body.msj;
+
+    try {
+        // send mail with defined transport object
+        let info = await transporter.sendMail({
+            from: 'papaya.restobar@gmail.com', // sender address
+            to: _msj.to, // list of receivers
+            subject: _msj.asunto, // Subject line
+            text: _msj.titulo, // plain text body
+            html: _msj.htmlContent, // html body
+        });
+
+        console.log("Message sent: %s", info.messageId);
+
+        res.status(200).json({
+            ok: true,
+            message: 'Envio correcto'
+        });
+    } catch(err) {
+        console.error(err);
+        res.status(400).json({
+            ok: false,
+            message: 'Problemas al enviar correo electrónico' + err
+        });
+    }
+}
+
+module.exports.sendEmailSendAWSSES = sendEmailSendAWSSES;
 
 // notificaciones push
 // guardar suscripcion notificacion push

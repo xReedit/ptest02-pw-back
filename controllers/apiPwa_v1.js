@@ -1069,13 +1069,13 @@ async function processItem(item, idsede) {
         iditem2: item.iditem2        
     }
 
-    let updatedItem;
+    let updatedItem;    
     try {     
-        const sqlQuery = `call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`;   
         updatedItem = await emitirRespuestaSP(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);    
         result[0].cantidad = updatedItem[0].cantidad;
         return result;
     } catch (error) {
+        const sqlQuery = `call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`;
         const dataError = {
             incidencia: {
                 message: error,
@@ -1184,9 +1184,8 @@ async function processItemPorcion(item) {
         iditem2: item.iditem2        
     }
 
-    let updatedItem;
+    let updatedItem;    
     try {        
-        const sqlQuery = `call procedure_stock_item_porcion('${JSON.stringify(_item)}')`;
         updatedItem = await emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_item)}')`);    
         console.log('updatedItem', updatedItem);
         result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
@@ -1197,6 +1196,7 @@ async function processItemPorcion(item) {
         result[0].cantidad = itemCantidad[0].cantidad;
         return result;
     } catch (error) {
+        const sqlQuery = `call procedure_stock_item_porcion('${JSON.stringify(_item)}')`;
 
         const dataError = {
             incidencia: {
@@ -1306,6 +1306,7 @@ async function processAllItemSubitemSeleted(allItems) {
         console.log('updatedItem', updatedItem);
         return updatedItem;
     } catch (error) {
+        const sqlQuery = `call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`;
 
         const dataError = {
             incidencia: {
@@ -1387,8 +1388,8 @@ module.exports.processAllItemSubitemSeleted = processAllItemSubitemSeleted;
 
 
 async function processAndEmitItem(item, chanelConect, io, idsede, notificar = true) {
+    let rpt;
     try {
-        let rpt;
         console.log('idsede', idsede);
         item = calculateQuantity(item);
         if (item.cantidad !== 'ND') {

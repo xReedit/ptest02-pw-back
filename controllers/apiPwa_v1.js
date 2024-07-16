@@ -1175,17 +1175,17 @@ async function processItemPorcion(item) {
     const _idItemUpdate = item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem;
 
     // mandamos como item solo los datos necesarios para actualizar
-    const _item = {
-        iditem: item.iditem,
-        idcarta_lista: item.idcarta_lista,
-        cantidad_reset: item.cantidad_reset,
-        cantidadSumar: item.cantidadSumar,
-        isporcion: item.isporcion,
-        iditem2: item.iditem2        
-    }
-
-    let updatedItem;    
-    try {        
+    let updatedItem; 
+    try { 
+        const _item = {
+            iditem: item.iditem,
+            idcarta_lista: item.idcarta_lista,
+            cantidad_reset: item.cantidad_reset,
+            cantidadSumar: item.cantidadSumar,
+            isporcion: item.isporcion,
+            iditem2: item.iditem2        
+        }       
+           
         updatedItem = await emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_item)}')`);    
         console.log('updatedItem', updatedItem);
         result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
@@ -1412,12 +1412,12 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
                 io.to(chanelConect).emit('itemModificado-pwa', item);
             }
         }   
-    } catch (error) {
-        console.error(error);
+    } catch (_error) {
+        console.error(_error);
         
         const dataError = {
             incidencia: {
-                message: error,
+                message: _error,
                 data: {
                     item_process: item,                               
                     res_query: rpt
@@ -1427,7 +1427,7 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
         }
         errorManager.logError(dataError);
 
-        io.to(chanelConect).emit('error', { message: 'Error al modificar el item', error });
+        io.to(chanelConect).emit('error', { message: 'Error al modificar el item', _error });
     }
 }
 module.exports.processAndEmitItem = processAndEmitItem;

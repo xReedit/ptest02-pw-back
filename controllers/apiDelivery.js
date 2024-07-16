@@ -81,6 +81,9 @@ module.exports.getEstablecimientos = getEstablecimientos;
 
 const getParametrosTiendaLinea = async function(req, res) {
     const idsede = req.body.idsede
+    if (!idsede) {
+        return ReE(res, 'idsede es requerido');
+    }
     const read_query = `select parametros from sede_costo_delivery where idsede=${idsede}`;
     return await emitirRespuesta_RES(read_query, res);
 }

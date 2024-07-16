@@ -17,6 +17,7 @@ const logError = function (payload) {
             // })
             // .catch((err) => { console.error('Error logging error:', err); });
     } catch (error) {
+        
         console.error('Error logging error:', error);        
     }
 }

@@ -1194,8 +1194,9 @@ async function processItemPorcion(item) {
 
     // mandamos como item solo los datos necesarios para actualizar
     let updatedItem; 
+    let _itemProcessPorcion = {};
     try { 
-        const _item = {
+        _itemProcessPorcion = {
             iditem: item.iditem,
             idcarta_lista: item.idcarta_lista,
             cantidad_reset: item.cantidad_reset,
@@ -1204,7 +1205,7 @@ async function processItemPorcion(item) {
             iditem2: item.iditem2        
         }       
            
-        updatedItem = await emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_item)}')`);    
+        updatedItem = await emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);    
         console.log('updatedItem', updatedItem);
         result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
         const listItemsJson = JSON.parse(updatedItem[0].listItemsPorcion)
@@ -1214,13 +1215,13 @@ async function processItemPorcion(item) {
         result[0].cantidad = itemCantidad[0].cantidad;
         return result;
     } catch (error) {
-        const sqlQuery = `call procedure_stock_item_porcion('${JSON.stringify(_item)}')`;
+        const sqlQuery = `call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`;
 
         const dataError = {
             incidencia: {
-                message: error,
+                message: error.toString(),
                 data: {
-                    item_process: _item,
+                    item_process: _itemProcessPorcion,
                     // item: item,
                     query: sqlQuery,
                     res_query: updatedItem

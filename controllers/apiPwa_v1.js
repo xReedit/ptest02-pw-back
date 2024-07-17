@@ -313,48 +313,66 @@ const setItemCarta = async (op, item, idsede) => {
         let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
 
         
-        if ( _existSubItemsWithCantidad && item.subitems_selected) {
-            // item subitems_selected                        
-            let _idporcion = [];
-            let _idproducto = [];
-            let _iditem_subitem = [];
-
-            // obtenemos los ids porcion y productos de los subitems seleccionados
-            item.subitems_selected.forEach(subitem => {          
-                // processItemSubitemSeleted(subitem, cantidadUpdate);     
-                if (subitem.idporcion !== 0) { _idporcion.push(subitem.idporcion) }
-                if (subitem.idproducto !== 0) { _idproducto.push(subitem.idproducto);}                
-                _iditem_subitem.push(subitem.iditem_subitem);
-            })
+        try {
             
-            _idporcion = _idporcion.length === 0 ? '' : _idporcion.join(',');
-            _idproducto = _idproducto.length === 0 ? '' :_idproducto.join(',');
-            _iditem_subitem = _iditem_subitem.length === 0 ? '' :_iditem_subitem.join(',');
-            const showProcedureAllItems = _idporcion.length + _idproducto.length + _iditem_subitem.length > 0;
-
-            if ( showProcedureAllItems ){
-                const allItems = {
-                    idporcion: _idporcion,
-                    idproducto: _idproducto,
-                    iditem_subitem: _iditem_subitem,
-                    iditem: item.iditem,
-                    idcarta_lista: item.idcarta_lista,
-                    cantidad_reset: item.cantidad_reset,
-                    cantidadSumar: item.cantidadSumar,
-                    isporcion: item.isporcion,
-                    iditem2: item.iditem2,
-                    cantidad: item.cantidad,  
+            if ( _existSubItemsWithCantidad && item.subitems_selected) {
+                // item subitems_selected                        
+                let _idporcion = [];
+                let _idproducto = [];
+                let _iditem_subitem = [];
+    
+                // obtenemos los ids porcion y productos de los subitems seleccionados
+                item.subitems_selected.forEach(subitem => {          
+                    // processItemSubitemSeleted(subitem, cantidadUpdate);     
+                    if (subitem.idporcion !== 0) { _idporcion.push(subitem.idporcion) }
+                    if (subitem.idproducto !== 0) { _idproducto.push(subitem.idproducto);}                
+                    _iditem_subitem.push(subitem.iditem_subitem);
+                })
+                
+                _idporcion = _idporcion.length === 0 ? '' : _idporcion.join(',');
+                _idproducto = _idproducto.length === 0 ? '' :_idproducto.join(',');
+                _iditem_subitem = _iditem_subitem.length === 0 ? '' :_iditem_subitem.join(',');
+                const showProcedureAllItems = _idporcion.length + _idproducto.length + _iditem_subitem.length > 0;
+    
+                if ( showProcedureAllItems ){
+                    const allItems = {
+                        idporcion: _idporcion,
+                        idproducto: _idproducto,
+                        iditem_subitem: _iditem_subitem,
+                        iditem: item.iditem,
+                        idcarta_lista: item.idcarta_lista,
+                        cantidad_reset: item.cantidad_reset,
+                        cantidadSumar: item.cantidadSumar,
+                        isporcion: item.isporcion,
+                        iditem2: item.iditem2,
+                        cantidad: item.cantidad,  
+                    }
+        
+                    processAllItemSubitemSeleted(allItems);
                 }
     
-                processAllItemSubitemSeleted(allItems);
+                console.log('_idporcion', _idporcion);
+                console.log('_idproducto', _idproducto);
+                console.log('_iditem_subitem', _iditem_subitem);
+                
+    
+            }
+        } catch (error) {
+            const dataError = {
+                incidencia: {
+                    message: error.toString(),
+                    existSubItemsWithCantidad: _existSubItemsWithCantidad,
+                    subitems_selected: item.subitems_selected,
+                    data: {
+                        item                        
+                    }
+                },
+                origen: 'setItemCarta'
             }
 
-            console.log('_idporcion', _idporcion);
-            console.log('_idproducto', _idproducto);
-            console.log('_iditem_subitem', _iditem_subitem);
-            
-
+            errorManager.logError(dataError);
         }
+
                     
         // en ingredientes
         if ( item.isporcion === 'SP' ) {
@@ -1417,7 +1435,7 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
         
         const dataError = {
             incidencia: {
-                message: _error,
+                message: _error.toString(),
                 data: {
                     item_process: item,                               
                     res_query: rpt

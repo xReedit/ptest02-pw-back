@@ -6,6 +6,8 @@ let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 // let utilitarios = require('../utilitarios/fecha.js');
 
+let handleStock = require('../service/handle.stock');
+
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
 let mysql_clean = function (string) {
@@ -286,104 +288,108 @@ module.exports.setItemCartaAfter = setItemCartaAfter;
 
 
 const setItemCarta = async (op, item, idsede) => {
-    if (item.isalmacen === 1) {// si es producto
-        const _item = {
-            cantidadSumar: item.cantidadSumar,
-            idcarta_lista: item.idcarta_lista,
-            cantidad_reset: item.cantidad_reset
-        };
-        const query = `
-            CALL porcedure_pwa_update_cantidad_only_producto(${op}, '${JSON.stringify(_item)}')`;
-        return await emitirRespuestaSP(query);
-    } else {
+    return handleStock.setItemCarta(op, item, idsede);
+    
+    // if (item.isalmacen === 1) {// si es producto
+    //     const _item = {
+    //         cantidadSumar: item.cantidadSumar,
+    //         idcarta_lista: item.idcarta_lista,
+    //         cantidad_reset: item.cantidad_reset
+    //     };
+    //     const query = `
+    //         CALL porcedure_pwa_update_cantidad_only_producto(${op}, '${JSON.stringify(_item)}')`;
+    //     return await emitirRespuestaSP(query);
+    // } else {
 
-        // evaluar si item.subitems es undefined
-        // console.log('typeof item.subitems ', typeof item.subitems);
-        // console.log('el item', item);
+    //     // evaluar si item.subitems es undefined
+    //     // console.log('typeof item.subitems ', typeof item.subitems);
+    //     // console.log('el item', item);
         
-        const _existSubItemsWithCantidad = !item.subitems ?  false :
-            //evalua si existe algun subitem con cantidad diferente a ND en su propiedad opciones.cantidad
-            // evaluea si item.subitems es un array
-            typeof item.subitems === 'object' ?
-            item.subitems.some(subitem => subitem.opciones.some(opcion => opcion.cantidad !== 'ND')) : false; 
+    //     const _existSubItemsWithCantidad = !item.subitems ?  false :
+    //         //evalua si existe algun subitem con cantidad diferente a ND en su propiedad opciones.cantidad
+    //         // evaluea si item.subitems es un array
+    //         typeof item.subitems === 'object' ?
+    //         item.subitems.some(subitem => subitem.opciones.some(opcion => opcion.cantidad !== 'ND')) : false; 
 
-        // console.log('item.subitems', item.subitems)
-        // console.log('_existSubItemsWithCantidad', _existSubItemsWithCantidad);
+    //     // console.log('item.subitems', item.subitems)
+    //     // console.log('_existSubItemsWithCantidad', _existSubItemsWithCantidad);
 
-        let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
+    //     let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
 
         
-        try {
+    //     try {
             
-            if ( _existSubItemsWithCantidad && item.subitems_selected) {
-                // item subitems_selected                        
-                let _idporcion = [];
-                let _idproducto = [];
-                let _iditem_subitem = [];
+    //         if ( _existSubItemsWithCantidad && item.subitems_selected) {
+    //             // item subitems_selected                        
+    //             let _idporcion = [];
+    //             let _idproducto = [];
+    //             let _iditem_subitem = [];
     
-                // obtenemos los ids porcion y productos de los subitems seleccionados
-                item.subitems_selected.forEach(subitem => {          
-                    // processItemSubitemSeleted(subitem, cantidadUpdate);     
-                    if (subitem.idporcion !== 0) { _idporcion.push(subitem.idporcion) }
-                    if (subitem.idproducto !== 0) { _idproducto.push(subitem.idproducto);}                
-                    _iditem_subitem.push(subitem.iditem_subitem);
-                })
+    //             // obtenemos los ids porcion y productos de los subitems seleccionados
+    //             item.subitems_selected.forEach(subitem => {          
+    //                 // processItemSubitemSeleted(subitem, cantidadUpdate);     
+    //                 if (subitem.idporcion !== 0) { _idporcion.push(subitem.idporcion) }
+    //                 if (subitem.idproducto !== 0) { _idproducto.push(subitem.idproducto);}                
+    //                 _iditem_subitem.push(subitem.iditem_subitem);
+    //             })
                 
-                _idporcion = _idporcion.length === 0 ? '' : _idporcion.join(',');
-                _idproducto = _idproducto.length === 0 ? '' :_idproducto.join(',');
-                _iditem_subitem = _iditem_subitem.length === 0 ? '' :_iditem_subitem.join(',');
-                const showProcedureAllItems = _idporcion.length + _idproducto.length + _iditem_subitem.length > 0;
+    //             _idporcion = _idporcion.length === 0 ? '' : _idporcion.join(',');
+    //             _idproducto = _idproducto.length === 0 ? '' :_idproducto.join(',');
+    //             _iditem_subitem = _iditem_subitem.length === 0 ? '' :_iditem_subitem.join(',');
+    //             const showProcedureAllItems = _idporcion.length + _idproducto.length + _iditem_subitem.length > 0;
     
-                if ( showProcedureAllItems ){
-                    const allItems = {
-                        idporcion: _idporcion,
-                        idproducto: _idproducto,
-                        iditem_subitem: _iditem_subitem,
-                        iditem: item.iditem,
-                        idcarta_lista: item.idcarta_lista,
-                        cantidad_reset: item.cantidad_reset,
-                        cantidadSumar: item.cantidadSumar,
-                        isporcion: item.isporcion,
-                        iditem2: item.iditem2,
-                        cantidad: item.cantidad,  
-                    }
+    //             if ( showProcedureAllItems ){
+    //                 const allItems = {
+    //                     idporcion: _idporcion,
+    //                     idproducto: _idproducto,
+    //                     iditem_subitem: _iditem_subitem,
+    //                     iditem: item.iditem,
+    //                     idcarta_lista: item.idcarta_lista,
+    //                     cantidad_reset: item.cantidad_reset,
+    //                     cantidadSumar: item.cantidadSumar,
+    //                     isporcion: item.isporcion,
+    //                     iditem2: item.iditem2,
+    //                     cantidad: item.cantidad,  
+    //                 }
         
-                    processAllItemSubitemSeleted(allItems);
-                }
+    //                 processAllItemSubitemSeleted(allItems);
+    //             }
     
-                console.log('_idporcion', _idporcion);
-                console.log('_idproducto', _idproducto);
-                console.log('_iditem_subitem', _iditem_subitem);
+    //             console.log('_idporcion', _idporcion);
+    //             console.log('_idproducto', _idproducto);
+    //             console.log('_iditem_subitem', _iditem_subitem);
                 
     
-            }
-        } catch (error) {
-            const dataError = {
-                incidencia: {
-                    message: error.toString(),
-                    existSubItemsWithCantidad: _existSubItemsWithCantidad,
-                    subitems_selected: item.subitems_selected,
-                    data: {
-                        item                        
-                    }
-                },
-                origen: 'setItemCarta'
-            }
+    //         }
+    //     } catch (error) {
+    //         const dataError = {
+    //             incidencia: {
+    //                 message: error.toString(),
+    //                 existSubItemsWithCantidad: _existSubItemsWithCantidad,
+    //                 subitems_selected: item.subitems_selected,
+    //                 data: {
+    //                     item                        
+    //                 }
+    //             },
+    //             origen: 'setItemCarta'
+    //         }
 
-            errorManager.logError(dataError);
-        }
+    //         errorManager.logError(dataError);
+    //     }
 
                     
-        // en ingredientes
-        if ( item.isporcion === 'SP' ) {
-            // si es porcion
-            console.log('ingresa processItemPorcion');
-            return await processItemPorcion(item)
-        } else {
-            // si no es porcion
-            console.log('ingresa processItem');
-            return await processItem(item, idsede)
-        }
+    //     // en ingredientes
+    //     if ( item.isporcion === 'SP' ) {
+    //         // si es porcion
+    //         console.log('ingresa processItemPorcion');
+    //         return await processItemPorcion(item)
+    //     } else {
+    //         // si no es porcion
+    //         console.log('ingresa processItem');
+    //         return await processItem(item, idsede)
+    //     }
+
+
 
 
         // esto hasta el momento venia funcionando mejor
@@ -404,7 +410,7 @@ const setItemCarta = async (op, item, idsede) => {
         //     const query = `CALL porcedure_pwa_update_cantidad_item(${op}, '${cleanedItem}')`;
         //     return await emitirRespuestaSP(query);
         // }
-    }
+    
 };
 module.exports.setItemCarta = setItemCarta;
 
@@ -1071,280 +1077,280 @@ module.exports.updateSubItems = updateSubItems;
 
 // separar proceso de actualizar stock de porcedure_pwa_update_cantidad_item
 
-async function processItem(item, idsede) {
-    let result = [{
-        cantidad: null,
-        listItemsPorcion: null,
-        listSubItems: null
-    }];
+// async function processItem(item, idsede) {
+//     let result = [{
+//         cantidad: null,
+//         listItemsPorcion: null,
+//         listSubItems: null
+//     }];
 
-    const _item = {
-        iditem: item.iditem,
-        idcarta_lista: item.idcarta_lista,
-        cantidad_reset: item.cantidad_reset,
-        cantidadSumar: item.cantidadSumar,
-        isporcion: item.isporcion,
-        iditem2: item.iditem2        
-    }
+//     const _item = {
+//         iditem: item.iditem,
+//         idcarta_lista: item.idcarta_lista,
+//         cantidad_reset: item.cantidad_reset,
+//         cantidadSumar: item.cantidadSumar,
+//         isporcion: item.isporcion,
+//         iditem2: item.iditem2        
+//     }
 
-    let updatedItem;    
-    try {     
-        updatedItem = await emitirRespuestaSP(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);    
-        result[0].cantidad = updatedItem[0].cantidad;
-        return result;
-    } catch (error) {
-        const sqlQuery = `call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`;
-        const dataError = {
-            incidencia: {
-                message: error,
-                data: {
-                    item_process: _item,                    
-                    query: sqlQuery,
-                    res_query: updatedItem
-                }
-            },
-            origen: 'processItem'            
-        }
-        errorManager.logError(dataError);
-        console.error('processItem====', error);
-    }
+//     let updatedItem;    
+//     try {     
+//         updatedItem = await emitirRespuestaSP(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);    
+//         result[0].cantidad = updatedItem[0].cantidad;
+//         return result;
+//     } catch (error) {
+//         const sqlQuery = `call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`;
+//         const dataError = {
+//             incidencia: {
+//                 message: error,
+//                 data: {
+//                     item_process: _item,                    
+//                     query: sqlQuery,
+//                     res_query: updatedItem
+//                 }
+//             },
+//             origen: 'processItem'            
+//         }
+//         errorManager.logError(dataError);
+//         console.error('processItem====', error);
+//     }
         
-    // cambiamos 220624 -> no funciono, mas funciona lo antrior a esto
-    //     try {
-    //         // Calcular la cantidad a actualizar
-    //         let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
-    //         // Iniciar una transacción
-    //         const t = await sequelize.transaction();
+//     // cambiamos 220624 -> no funciono, mas funciona lo antrior a esto
+//     //     try {
+//     //         // Calcular la cantidad a actualizar
+//     //         let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
+//     //         // Iniciar una transacción
+//     //         const t = await sequelize.transaction();
             
-    //         // esto porque puede venir de monitoreo de stock
-    //         // cantidadUpdate = cantidadUpdate === 0 ? item.cantidad : cantidadUpdate;
-    //         console.log('0cantidadUpdate', cantidadUpdate);
+//     //         // esto porque puede venir de monitoreo de stock
+//     //         // cantidadUpdate = cantidadUpdate === 0 ? item.cantidad : cantidadUpdate;
+//     //         console.log('0cantidadUpdate', cantidadUpdate);
                             
-    //         // Actualizar la cantidad en la tabla carta_lista
-    //         await sequelize.query(`
-    //             UPDATE carta_lista 
-    //             SET cantidad = cantidad + :cantidadUpdate 
-    //             WHERE idcarta_lista = :idcarta_lista
-    //         `, {
-    //             replacements: { cantidadUpdate, idcarta_lista: item.idcarta_lista },
-    //             type: sequelize.QueryTypes.UPDATE,
-    //             transaction: t
-    //         });
+//     //         // Actualizar la cantidad en la tabla carta_lista
+//     //         await sequelize.query(`
+//     //             UPDATE carta_lista 
+//     //             SET cantidad = cantidad + :cantidadUpdate 
+//     //             WHERE idcarta_lista = :idcarta_lista
+//     //         `, {
+//     //             replacements: { cantidadUpdate, idcarta_lista: item.idcarta_lista },
+//     //             type: sequelize.QueryTypes.UPDATE,
+//     //             transaction: t
+//     //         });
 
-    //         await t.commit();
+//     //         await t.commit();
             
 
-    //         // Obtener la cantidad actualizada
-    //         const updatedItem = await sequelize.query(`
-    //             SELECT cantidad 
-    //             FROM carta_lista 
-    //             WHERE idcarta_lista = :idcarta_lista
-    //         `, {
-    //             replacements: { idcarta_lista: item.idcarta_lista },
-    //             type: sequelize.QueryTypes.SELECT,                
-    //         });            
+//     //         // Obtener la cantidad actualizada
+//     //         const updatedItem = await sequelize.query(`
+//     //             SELECT cantidad 
+//     //             FROM carta_lista 
+//     //             WHERE idcarta_lista = :idcarta_lista
+//     //         `, {
+//     //             replacements: { idcarta_lista: item.idcarta_lista },
+//     //             type: sequelize.QueryTypes.SELECT,                
+//     //         });            
             
-    //         result[0].cantidad = updatedItem[0].cantidad;
+//     //         result[0].cantidad = updatedItem[0].cantidad;
 
-    //         result[0].cantidad = updatedItem[0].cantidad;
+//     //         result[0].cantidad = updatedItem[0].cantidad;
            
 
-    //     } catch (err) {
-    //         // await t.rollback();
+//     //     } catch (err) {
+//     //         // await t.rollback();
 
-    //         let errorObject = {
-    //             message: err.message,
-    //             error: err
-    //         };
+//     //         let errorObject = {
+//     //             message: err.message,
+//     //             error: err
+//     //         };
             
-    //         sequelize.query(`
-    //             INSERT INTO historial_error (fecha, error, origen) 
-    //             VALUES (:fecha, :error, :origen)
-    //         `, {
-    //             replacements: { 
-    //                 fecha: new Date(), 
-    //                 error: JSON.stringify(errorObject), 
-    //                 origen: 'processItem update cantidad carta_lista' 
-    //             },
-    //             type: sequelize.QueryTypes.INSERT,
-    //             transaction: t
-    //         });
+//     //         sequelize.query(`
+//     //             INSERT INTO historial_error (fecha, error, origen) 
+//     //             VALUES (:fecha, :error, :origen)
+//     //         `, {
+//     //             replacements: { 
+//     //                 fecha: new Date(), 
+//     //                 error: JSON.stringify(errorObject), 
+//     //                 origen: 'processItem update cantidad carta_lista' 
+//     //             },
+//     //             type: sequelize.QueryTypes.INSERT,
+//     //             transaction: t
+//     //         });
 
-    //         await t.commit();
-
-
-
-    //         console.error(err);
-    //         // Maneja el error de la manera que prefieras
-    //     }    
-
-    // return result;
-}
-module.exports.processItem = processItem;
+//     //         await t.commit();
 
 
-async function processItemPorcion(item) {    
-    let result = [{
-        cantidad: null,
-        listItemsPorcion: null,
-        listSubItems: null
-    }];
 
-    const _idItemUpdate = item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem;
+//     //         console.error(err);
+//     //         // Maneja el error de la manera que prefieras
+//     //     }    
 
-    // mandamos como item solo los datos necesarios para actualizar
-    let updatedItem; 
-    let _itemProcessPorcion = {};
-    try { 
-        _itemProcessPorcion = {
-            iditem: item.iditem,
-            idcarta_lista: item.idcarta_lista,
-            cantidad_reset: item.cantidad_reset,
-            cantidadSumar: item.cantidadSumar,
-            isporcion: item.isporcion,
-            iditem2: item.iditem2        
-        }       
+//     // return result;
+// }
+// module.exports.processItem = processItem;
+
+
+// async function processItemPorcion(item) {    
+//     let result = [{
+//         cantidad: null,
+//         listItemsPorcion: null,
+//         listSubItems: null
+//     }];
+
+//     const _idItemUpdate = item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem;
+
+//     // mandamos como item solo los datos necesarios para actualizar
+//     let updatedItem; 
+//     let _itemProcessPorcion = {};
+//     try { 
+//         _itemProcessPorcion = {
+//             iditem: item.iditem,
+//             idcarta_lista: item.idcarta_lista,
+//             cantidad_reset: item.cantidad_reset,
+//             cantidadSumar: item.cantidadSumar,
+//             isporcion: item.isporcion,
+//             iditem2: item.iditem2        
+//         }       
            
-        updatedItem = await emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);    
-        console.log('updatedItem', updatedItem);
-        result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
-        const listItemsJson = JSON.parse(updatedItem[0].listItemsPorcion)
+//         updatedItem = await emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);    
+//         console.log('updatedItem', updatedItem);
+//         result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
+//         const listItemsJson = JSON.parse(updatedItem[0].listItemsPorcion)
     
-        // buscamos en result[0].listItemsPorcion la cantidad segun item
-        const itemCantidad = listItemsJson.filter(i => i.iditem == _idItemUpdate);
-        result[0].cantidad = itemCantidad[0].cantidad;
-        return result;
-    } catch (error) {
-        const sqlQuery = `call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`;
+//         // buscamos en result[0].listItemsPorcion la cantidad segun item
+//         const itemCantidad = listItemsJson.filter(i => i.iditem == _idItemUpdate);
+//         result[0].cantidad = itemCantidad[0].cantidad;
+//         return result;
+//     } catch (error) {
+//         const sqlQuery = `call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`;
 
-        const dataError = {
-            incidencia: {
-                message: error.toString(),
-                data: {
-                    item_process: _itemProcessPorcion,
-                    // item: item,
-                    query: sqlQuery,
-                    res_query: updatedItem
-                }
-            },
-            origen: 'processItemPorcion'
-        }
-        errorManager.logError(dataError);
+//         const dataError = {
+//             incidencia: {
+//                 message: error.toString(),
+//                 data: {
+//                     item_process: _itemProcessPorcion,
+//                     // item: item,
+//                     query: sqlQuery,
+//                     res_query: updatedItem
+//                 }
+//             },
+//             origen: 'processItemPorcion'
+//         }
+//         errorManager.logError(dataError);
 
-        console.error('processItemPorcion====', error);
-    }
+//         console.error('processItemPorcion====', error);
+//     }
     
-    // cambiamos 220624 -> no funciono, mas funciona lo antrior a esto
-    // const t = await sequelize.transaction();
-    // try {
-    //     let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
-    //     console.log('cantidadUpdate', cantidadUpdate);
-    //     // Actualizar la cantidad en la tabla porcion
+//     // cambiamos 220624 -> no funciono, mas funciona lo antrior a esto
+//     // const t = await sequelize.transaction();
+//     // try {
+//     //     let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
+//     //     console.log('cantidadUpdate', cantidadUpdate);
+//     //     // Actualizar la cantidad en la tabla porcion
 
-    //     const _idItemUpdate = item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem;
+//     //     const _idItemUpdate = item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem;
 
-    //     await sequelize.query(`
-    //         UPDATE porcion AS p
-	// 			LEFT JOIN item_ingrediente AS ii using (idporcion)
-	// 		 SET p.stock = p.stock + (:cantidadUpdate * (ii.cantidad))
-    //         WHERE ii.iditem = :xIdItem
-    //     `, {
-    //         replacements: { cantidadUpdate, xIdItem: _idItemUpdate },
-    //         type: sequelize.QueryTypes.UPDATE,
-    //         transaction: t
-    //     })
-    //     // Actualizar la cantidad en la tabla producto_stock si esta relacionados con productos
-    //     await sequelize.query(`
-    //         UPDATE producto_stock AS ps
-	// 			LEFT JOIN item_ingrediente AS ii using (idproducto_stock)					
-	// 		SET ps.stock= ps.stock + (:cantidadUpdate * (ii.cantidad))
-    //         WHERE ii.iditem = :xIdItem
-    //     `, {
-    //         replacements: { cantidadUpdate, xIdItem: _idItemUpdate },
-    //         type: sequelize.QueryTypes.UPDATE,
-    //         transaction: t
-    //     })
+//     //     await sequelize.query(`
+//     //         UPDATE porcion AS p
+// 	// 			LEFT JOIN item_ingrediente AS ii using (idporcion)
+// 	// 		 SET p.stock = p.stock + (:cantidadUpdate * (ii.cantidad))
+//     //         WHERE ii.iditem = :xIdItem
+//     //     `, {
+//     //         replacements: { cantidadUpdate, xIdItem: _idItemUpdate },
+//     //         type: sequelize.QueryTypes.UPDATE,
+//     //         transaction: t
+//     //     })
+//     //     // Actualizar la cantidad en la tabla producto_stock si esta relacionados con productos
+//     //     await sequelize.query(`
+//     //         UPDATE producto_stock AS ps
+// 	// 			LEFT JOIN item_ingrediente AS ii using (idproducto_stock)					
+// 	// 		SET ps.stock= ps.stock + (:cantidadUpdate * (ii.cantidad))
+//     //         WHERE ii.iditem = :xIdItem
+//     //     `, {
+//     //         replacements: { cantidadUpdate, xIdItem: _idItemUpdate },
+//     //         type: sequelize.QueryTypes.UPDATE,
+//     //         transaction: t
+//     //     })
 
-    //     await t.commit();
+//     //     await t.commit();
 
-    //     let updatedItem;
-    //     if (item.isporcion === 'SP') {
-    //         console.log('query iditem', item.iditem);
-    //         const t_cantidad = await sequelize.transaction();
-    //         updatedItem = await sequelize.query(`
-    //         SELECT FLOOR(
-    //             IF (
-    //                 SUM(i1.necesario) >= 1, 
-    //                 IF(i1.viene_de='1', MIN(CAST(p1.stock AS SIGNED)), MIN(CAST(ps.stock AS SIGNED))),
-    //                 IF(i1.viene_de='1', CAST(p1.stock AS SIGNED), CAST(ps.stock AS SIGNED))
-    //             ) / i1.cantidad
-    //         ) AS cantidad 
-    //         FROM item_ingrediente AS i1 
-    //         LEFT JOIN porcion AS p1 ON i1.idporcion=p1.idporcion 
-    //         LEFT JOIN producto_stock ps ON ps.idproducto_stock = i1.idproducto_stock
-    //         WHERE i1.iditem = :iditem 
-    //         GROUP BY i1.iditem, i1.necesario 
-    //         ORDER BY i1.necesario DESC, i1.iditem_ingrediente 
-    //         LIMIT 1
-    //         `, {
-    //             replacements: { iditem: _idItemUpdate },
-    //             type: sequelize.QueryTypes.SELECT,  
-    //             transaction: t_cantidad              
-    //         });
-    //         await t_cantidad.commit();
-    //     } else {
-    //         updatedItem = await sequelize.query(`
-    //             SELECT cantidad 
-    //                 FROM carta_lista 
-    //             WHERE idcarta_lista = :idcarta_lista
-    //         `, {
-    //             replacements: { idcarta_lista: item.idcarta_lista },
-    //             type: sequelize.QueryTypes.SELECT,                
-    //         });
-    //     }
+//     //     let updatedItem;
+//     //     if (item.isporcion === 'SP') {
+//     //         console.log('query iditem', item.iditem);
+//     //         const t_cantidad = await sequelize.transaction();
+//     //         updatedItem = await sequelize.query(`
+//     //         SELECT FLOOR(
+//     //             IF (
+//     //                 SUM(i1.necesario) >= 1, 
+//     //                 IF(i1.viene_de='1', MIN(CAST(p1.stock AS SIGNED)), MIN(CAST(ps.stock AS SIGNED))),
+//     //                 IF(i1.viene_de='1', CAST(p1.stock AS SIGNED), CAST(ps.stock AS SIGNED))
+//     //             ) / i1.cantidad
+//     //         ) AS cantidad 
+//     //         FROM item_ingrediente AS i1 
+//     //         LEFT JOIN porcion AS p1 ON i1.idporcion=p1.idporcion 
+//     //         LEFT JOIN producto_stock ps ON ps.idproducto_stock = i1.idproducto_stock
+//     //         WHERE i1.iditem = :iditem 
+//     //         GROUP BY i1.iditem, i1.necesario 
+//     //         ORDER BY i1.necesario DESC, i1.iditem_ingrediente 
+//     //         LIMIT 1
+//     //         `, {
+//     //             replacements: { iditem: _idItemUpdate },
+//     //             type: sequelize.QueryTypes.SELECT,  
+//     //             transaction: t_cantidad              
+//     //         });
+//     //         await t_cantidad.commit();
+//     //     } else {
+//     //         updatedItem = await sequelize.query(`
+//     //             SELECT cantidad 
+//     //                 FROM carta_lista 
+//     //             WHERE idcarta_lista = :idcarta_lista
+//     //         `, {
+//     //             replacements: { idcarta_lista: item.idcarta_lista },
+//     //             type: sequelize.QueryTypes.SELECT,                
+//     //         });
+//     //     }
 
-    //     console.log('updatedItem', updatedItem);
+//     //     console.log('updatedItem', updatedItem);
 
-    //     result[0].cantidad = updatedItem[0].cantidad;
+//     //     result[0].cantidad = updatedItem[0].cantidad;
 
-    // } catch (error) {
-    //     console.error(error);
-    // }
+//     // } catch (error) {
+//     //     console.error(error);
+//     // }
 
-    // return result;
+//     // return result;
 
-}
-module.exports.processItemPorcion = processItemPorcion;
+// }
+// module.exports.processItemPorcion = processItemPorcion;
 
-async function processAllItemSubitemSeleted(allItems) {
+// async function processAllItemSubitemSeleted(allItems) {
     
-    // const sqlQuery = `call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`;
-    let updatedItem;
-    try {        
-        updatedItem = await emitirRespuestaSP(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
-        console.log('updatedItem', updatedItem);
-        return updatedItem;
-    } catch (error) {
-        const sqlQuery = `call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`;
+//     // const sqlQuery = `call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`;
+//     let updatedItem;
+//     try {        
+//         updatedItem = await emitirRespuestaSP(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
+//         console.log('updatedItem', updatedItem);
+//         return updatedItem;
+//     } catch (error) {
+//         const sqlQuery = `call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`;
 
-        const dataError = {
-            incidencia: {
-                message: error,
-                data: {
-                    item_process: _item,                    
-                    query: sqlQuery,
-                    res_query: updatedItem
-                }
-            },
-            origen: 'processAllItemSubitemSeleted'            
-        }
-        errorManager.logError(dataError);
+//         const dataError = {
+//             incidencia: {
+//                 message: error,
+//                 data: {
+//                     item_process: _item,                    
+//                     query: sqlQuery,
+//                     res_query: updatedItem
+//                 }
+//             },
+//             origen: 'processAllItemSubitemSeleted'            
+//         }
+//         errorManager.logError(dataError);
 
-        console.error('processAllItemSubitemSeleted====', error);        
-    }
-    // result[0].listItemsPorcion = updatedItem[0].cantidad;
-}
-module.exports.processAllItemSubitemSeleted = processAllItemSubitemSeleted;
+//         console.error('processAllItemSubitemSeleted====', error);        
+//     }
+//     // result[0].listItemsPorcion = updatedItem[0].cantidad;
+// }
+// module.exports.processAllItemSubitemSeleted = processAllItemSubitemSeleted;
 
 
 // cambiamos 220624 -> no funciono, mas funciona lo antrior a esto

@@ -252,10 +252,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			// si viene del monitor de pedidos
 			// console.log('item', item);
+			console.log('itemModificado');
 			if (item?.from_monitor === true){
 				socketItemModificadoAfter(item);
 				return;
 			}
+
+			console.log('queue.push', item);
 
 			queue.push(item);
 		

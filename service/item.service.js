@@ -72,8 +72,7 @@ class ItemService {
             const listItemsJson = JSON.parse(updatedItem[0].listItemsPorcion)
         
             const itemCantidad = listItemsJson.filter(i => i.iditem == _idItemUpdate);
-            result[0].cantidad = itemCantidad[0].cantidad;
-            console.log('result', result);
+            result[0].cantidad = itemCantidad[0].cantidad;            
             return result;
         } catch (error) {
             const sqlQuery = `call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`;

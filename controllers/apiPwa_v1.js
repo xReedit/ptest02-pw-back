@@ -288,7 +288,7 @@ module.exports.setItemCartaAfter = setItemCartaAfter;
 
 
 const setItemCarta = async (op, item, idsede) => {
-    return handleStock.setItemCarta(op, item, idsede);
+    return handleStock.updateStock(op, item, idsede);
     
     // if (item.isalmacen === 1) {// si es producto
     //     const _item = {

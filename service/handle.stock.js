@@ -3,7 +3,7 @@ const ResponseService = require('./query.service');
 let ItemService = require('./item.service');
 let errorManager = require('./error.manager');
 
-const setItemCarta = async (op, item, idsede) => {
+const updateStock = async (op, item, idsede) => {
     if (item.isalmacen === 1) {
         const _item = {
             cantidadSumar: item.cantidadSumar,
@@ -75,4 +75,4 @@ const setItemCarta = async (op, item, idsede) => {
     }
 }
 
-module.exports.setItemCarta = setItemCarta;
+module.exports.updateStock = updateStock;

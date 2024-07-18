@@ -232,7 +232,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			apiPwa.processAndEmitItem(item, chanelConect, io, dataCliente.idsede)
 				.then(() => callback())
 				.catch(callback);
-		}, 1);
+		}, 8);
 
 		socket.on('itemAllModificado', async (items) => {
 			 try {
@@ -258,7 +258,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				return;
 			}
 
-			console.log('queue.push', item);
+			// console.log('queue.push', item);
 
 			queue.push(item);
 		

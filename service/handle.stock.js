@@ -13,9 +13,15 @@ const updateStock = async (op, item, idsede) => {
         const query = `CALL porcedure_pwa_update_cantidad_only_producto(${op}, '${JSON.stringify(_item)}')`;
         return await ResponseService.emitirRespuestaSP(query);
     } else {
+        // const _existSubItemsWithCantidad = !item.subitems ? false :
+        //     typeof item.subitems === 'object' ?
+        //         item.subitems.some(subitem => subitem.opciones.some(opcion => opcion.cantidad !== 'ND')) : false; 
+        
         const _existSubItemsWithCantidad = !item.subitems ? false :
-            typeof item.subitems === 'object' ?
-                item.subitems.some(subitem => subitem.opciones.some(opcion => opcion.cantidad !== 'ND')) : false; 
+            Array.isArray(item.subitems) ?
+                item.subitems.some(subitem => 
+                    Array.isArray(subitem.opciones) && subitem.opciones.some(opcion => opcion.cantidad !== 'ND')
+                ) : false;
 
         // let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
 

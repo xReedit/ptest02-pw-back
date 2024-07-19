@@ -7,7 +7,8 @@ let sequelize = new Sequelize(config.database, config.username, config.password,
 const logError = function (payload) {
     const data = payload;
     try {        
-        const errorString = JSON.stringify(data);
+        let errorString = JSON.stringify(data);        
+        errorString = errorString.replace(/'/g, "\\'");
         const query = `INSERT INTO historial_error (error, origen, fecha) VALUES ('${errorString}', '${data.origen}', NOW())`;
         console.log(query);
             

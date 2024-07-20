@@ -1419,6 +1419,7 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
         item = calculateQuantity(item);
         if (item.cantidad !== 'ND') {
             const rptCantidad = await setItemCarta(0, item, idsede);
+            console.log('rptCantidad === ', rptCantidad);
             item.cantidad = rptCantidad[0].cantidad;
 
             item = updateSubItems(item, rptCantidad[0].listSubItems);

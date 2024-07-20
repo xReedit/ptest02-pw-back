@@ -5,6 +5,7 @@ let errorManager = require('./error.manager');
 
 const updateStock = async (op, item, idsede) => {
     if (item.isalmacen === 1) {
+        console.log('es de almacen');
         const _item = {
             cantidadSumar: item.cantidadSumar,
             idcarta_lista: item.idcarta_lista,
@@ -27,6 +28,7 @@ const updateStock = async (op, item, idsede) => {
 
         try {
             if (_existSubItemsWithCantidad && item.subitems_selected) {
+                console.log('tiene subitems con cantidad');
                 let _idporcion = [];
                 let _idproducto = [];
                 let _iditem_subitem = [];
@@ -54,7 +56,8 @@ const updateStock = async (op, item, idsede) => {
                         iditem2: item.iditem2,
                         cantidad: item.cantidad,  
                     };
-                    return await ItemService.processAllItemSubitemSeleted(allItems);
+                    
+                    await ItemService.processAllItemSubitemSeleted(allItems);
                 }
             }
         } catch (error) {

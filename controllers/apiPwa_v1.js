@@ -1043,7 +1043,12 @@ const updatePermissionChangeMetodoPago = async function (idregistro_pago_detalle
 module.exports.updatePermissionChangeMetodoPago = updatePermissionChangeMetodoPago;
 
 const calculateQuantity = (item) => {
-    item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
+
+    if ( !item.cantidad && item.isporcion === 'SP' ) {
+        item.cantidad = item.cantidad_seleccionada || 1;
+    }
+
+    item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND' : item.cantidad;
     item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;
     if (item.cantidad != 'ND') {
         var _cantSumar = item.venta_x_peso === 1 ? -item.cantidad : item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;

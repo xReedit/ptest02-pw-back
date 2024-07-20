@@ -51,7 +51,10 @@ class ItemService {
             listSubItems: null
         }];
 
-        const _idItemUpdate = item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem;
+        // sino existe idcarta_lista entonces toma el valor de iditem para luego tomar el valor de iditem2
+        item.idcarta_lista = item.idcarta_lista ? item.idcarta_lista : item.iditem;
+        item.iditem2 = item.iditem2 ? item.iditem2 : item.iditem;
+        let _idItemUpdate = item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem;        
 
         let updatedItem; 
         let _itemProcessPorcion = {};

@@ -26,8 +26,8 @@ const updateStock = async (op, item, idsede) => {
 
         // let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
 
-        try {
-            if (_existSubItemsWithCantidad && item.subitems_selected) {
+        if (_existSubItemsWithCantidad && item.subitems_selected) {
+            try {
                 console.log('tiene subitems con cantidad');
                 let _idporcion = [];
                 let _idproducto = [];
@@ -59,19 +59,19 @@ const updateStock = async (op, item, idsede) => {
 
                     ItemService.processAllItemSubitemSeleted(allItems);
                 }
+            } catch (error) {
+                const dataError = {
+                    incidencia: {
+                        message: error,
+                        existSubItemsWithCantidad: _existSubItemsWithCantidad,
+                        subitems_selected: item.subitems_selected,
+                        data: { item }
+                    },
+                    origen: 'setItemCarta'
+                }
+                errorManager.logError(dataError);
+                throw error;
             }
-        } catch (error) {
-            const dataError = {
-                incidencia: {
-                    message: error,
-                    existSubItemsWithCantidad: _existSubItemsWithCantidad,
-                    subitems_selected: item.subitems_selected,
-                    data: { item }
-                },
-                origen: 'setItemCarta'
-            }
-            errorManager.logError(dataError);
-            throw error;
         }
 
         if (item.isporcion === 'SP') {

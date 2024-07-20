@@ -56,8 +56,8 @@ const updateStock = async (op, item, idsede) => {
                         iditem2: item.iditem2,
                         cantidad: item.cantidad,  
                     };
-                    
-                    await ItemService.processAllItemSubitemSeleted(allItems);
+
+                    ItemService.processAllItemSubitemSeleted(allItems);
                 }
             }
         } catch (error) {

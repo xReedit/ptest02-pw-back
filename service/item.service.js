@@ -67,15 +67,17 @@ class ItemService {
                 isporcion: item.isporcion,
                 iditem2: item.iditem2        
             }      
-            
-            console.log('_itemProcessPorcion', _itemProcessPorcion);
-            
-            updatedItem = await ResponseService.emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);    
+                        
+            updatedItem = await ResponseService.emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);
             result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
             const listItemsJson = JSON.parse(updatedItem[0].listItemsPorcion)
-        
-            const itemCantidad = listItemsJson.filter(i => i.iditem == _idItemUpdate);
-            result[0].cantidad = itemCantidad[0].cantidad;            
+            if ( listItemsJson.length > 0 ) {            
+                const itemCantidad = listItemsJson.filter(i => i.iditem == _idItemUpdate);                
+                result[0].cantidad = itemCantidad[0].cantidad;
+            } else {
+                // no deberia llegar a este punto ya que siempre deberia retornar un item con cantidad ya que es porcion
+                result[0].cantidad = item.cantidad - item.cantidadSumar;
+            }
             return result;
         } catch (error) {
             const sqlQuery = `call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`;

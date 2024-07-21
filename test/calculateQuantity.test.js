@@ -1,4 +1,4 @@
-const { calculateQuantity } = require('../controllers/apiPwa_v1'); // Ajusta la ruta según sea necesario
+const { calculateQuantity, setItemCarta } = require('../controllers/apiPwa_v1'); // Ajusta la ruta según sea necesario
 
 describe('calculateQuantity', () => {
     test('debe manejar cantidad no definida', () => {
@@ -53,37 +53,57 @@ describe('calculateQuantity', () => {
         // expect(result.cantidad).toBe(1000);
     });
 
-    test('un item especifico', () => {
+    test('un item especifico', async() => {
         const item = {
-    "des": "PROMOCION PIZZA PERSONAL",
+    "des": "PROMOCION AQUI ES",
     "img": "",
-    "iditem": 58190,
-    "precio": 10,
+    "iditem": 58185,
+    "precio": 20,
     "procede": 1,
+    "cantidad": 102,
     "detalles": "",
     "subitems": [
         {
-            "des": "SABOR",
-            "iditem": 58190,
+            "des": "GASEOSA",
+            "iditem": 58185,
             "opciones": [
                 {
-                    "des": "1 Americana",
+                    "des": "Fanta",
                     "precio": "0.00",
                     "cantidad": "ND",
                     "idporcion": 0,
                     "idproducto": 0,
-                    "iditem_subitem": 8695,
+                    "iditem_subitem": 8647,
                     "cantidad_porcion": "ND",
                     "precio_visible": true,
                     "cantidad_visible": false,
-                    "selected": true,
-                    "cantidad_selected": 1,
-                    "cantidad_seleccionada": 1,
-                    "isSuma_selected": true,
-                    "desIni": "Americana",
-                    "precio_first": 0,
-                    "stop_add": false,
-                    "idtipo_consumo": 315
+                    "selected": false
+                }
+            ],
+            "show_cant_item": 0,
+            "subitem_cant_select": 1,
+            "iditem_subitem_content": 2750,
+            "subitem_cant_select_ini": 0,
+            "subitem_required_select": 0,
+            "isSoloUno": false,
+            "isObligatorio": false,
+            "des_cant_select": "Hasta 1"
+        },
+        {
+            "des": "SABOR ",
+            "iditem": 58185,
+            "opciones": [
+                {
+                    "des": "Americana ",
+                    "precio": "0.00",
+                    "cantidad": "ND",
+                    "idporcion": 0,
+                    "idproducto": 0,
+                    "iditem_subitem": 8652,
+                    "cantidad_porcion": "ND",
+                    "precio_visible": true,
+                    "cantidad_visible": false,
+                    "selected": false
                 },
                 {
                     "des": "Hawaiana",
@@ -91,12 +111,11 @@ describe('calculateQuantity', () => {
                     "cantidad": "ND",
                     "idporcion": 0,
                     "idproducto": 0,
-                    "iditem_subitem": 8696,
+                    "iditem_subitem": 8653,
                     "cantidad_porcion": "ND",
                     "precio_visible": true,
                     "cantidad_visible": false,
-                    "selected": false,
-                    "stop_add": false
+                    "selected": false
                 },
                 {
                     "des": "Kings",
@@ -104,12 +123,12 @@ describe('calculateQuantity', () => {
                     "cantidad": "ND",
                     "idporcion": 0,
                     "idproducto": 0,
-                    "iditem_subitem": 8697,
+                    "iditem_subitem": 8654,
                     "cantidad_porcion": "ND",
                     "precio_visible": true,
                     "cantidad_visible": false,
-                    "selected": false,
-                    "stop_add": false
+                    "selected": true,
+                    "idtipo_consumo": 316
                 },
                 {
                     "des": "Peperoni",
@@ -117,59 +136,31 @@ describe('calculateQuantity', () => {
                     "cantidad": "ND",
                     "idporcion": 0,
                     "idproducto": 0,
-                    "iditem_subitem": 8698,
+                    "iditem_subitem": 8655,
                     "cantidad_porcion": "ND",
                     "precio_visible": true,
                     "cantidad_visible": false,
-                    "selected": false,
-                    "stop_add": false
-                }
-            ],
-            "show_cant_item": 1,
-            "subitem_cant_select": 30,
-            "iditem_subitem_content": 2768,
-            "subitem_cant_select_ini": 30,
-            "subitem_required_select": 0,
-            "isSoloUno": false,
-            "isObligatorio": false,
-            "des_cant_select": "Hasta 30"
-        },
-        {
-            "des": "GASEOSA",
-            "iditem": 58190,
-            "opciones": [
-                {
-                    "des": "Gaseosa casenelli 300 ml",
-                    "precio": "0",
-                    "cantidad": "1",
-                    "idporcion": 0,
-                    "idproducto": 14404,
-                    "iditem_subitem": 8722,
-                    "cantidad_porcion": "ND",
-                    "precio_visible": true,
-                    "cantidad_visible": true,
-                    "selected": true,
-                    "idtipo_consumo": 315
+                    "selected": false
                 }
             ],
             "show_cant_item": 0,
-            "subitem_cant_select": 1,
-            "iditem_subitem_content": 2772,
+            "subitem_cant_select": 4,
+            "iditem_subitem_content": 2753,
             "subitem_cant_select_ini": 0,
             "subitem_required_select": 0,
             "isSoloUno": false,
             "isObligatorio": false,
-            "des_cant_select": "Hasta 1"
+            "des_cant_select": "Hasta 4"
         }
     ],
     "idseccion": 866,
     "isalmacen": 0,
     "isporcion": "SP",
     "idcategoria": 128,
-    "idcarta_lista": "9911012186658190",
+    "idcarta_lista": "9911012186658185",
     "count_subitems": 2,
-    "precio_default": 10,
-    "precio_unitario": 10,
+    "precio_default": 20,
+    "precio_unitario": 20,
     "imprimir_comanda": 1,
     "is_recomendacion": "0",
     "subitem_cant_select": 0,
@@ -180,111 +171,78 @@ describe('calculateQuantity', () => {
             "descripcion": "CONSUMIR EN EL LOCAL",
             "idtipo_consumo": 315,
             "titulo": "LOCAL",
-            "idimpresora": 196,
-            "cantidad_seleccionada": 1
+            "idimpresora": 0
         },
         {
             "descripcion": "PARA LLEVAR",
             "idtipo_consumo": 316,
             "titulo": "",
-            "idimpresora": 196
+            "idimpresora": 918,
+            "cantidad_seleccionada": 1
         },
         {
             "descripcion": "DELIVERY",
             "idtipo_consumo": 317,
             "titulo": "",
-            "idimpresora": 196
+            "idimpresora": 918
         }
     ],
     "subitems_selected": [
         {
-            "des": "1 Americana",
+            "des": "Kings",
             "precio": "0.00",
             "cantidad": "ND",
             "idporcion": 0,
             "idproducto": 0,
-            "iditem_subitem": 8695,
+            "iditem_subitem": 8654,
             "cantidad_porcion": "ND",
             "precio_visible": true,
             "cantidad_visible": false,
             "selected": true,
-            "cantidad_selected": 1,
-            "cantidad_seleccionada": 1,
-            "isSuma_selected": true,
-            "desIni": "Americana",
-            "precio_first": 0,
-            "stop_add": false,
-            "idtipo_consumo": 315
-        },
-        {
-            "des": "Gaseosa casenelli 300 ml",
-            "precio": "0",
-            "cantidad": "1",
-            "idporcion": 0,
-            "idproducto": 14404,
-            "iditem_subitem": 8722,
-            "cantidad_porcion": "ND",
-            "precio_visible": true,
-            "cantidad_visible": true,
-            "selected": true,
-            "idtipo_consumo": 315
+            "idtipo_consumo": 316
         }
     ],
     "subitems_view": [
         {
-            "id": "86958722",
-            "des": "1 americana, Gaseosa casenelli 300 ml",
+            "id": "8654",
+            "des": "Kings",
             "listDes": [
-                "1 americana",
-                "Gaseosa casenelli 300 ml"
+                "Kings"
             ],
             "cantidad_seleccionada": 1,
             "precio": 0,
             "indicaciones": "",
             "subitems": [
                 {
-                    "des": "1 Americana",
+                    "des": "Kings",
                     "precio": "0.00",
                     "cantidad": "ND",
                     "idporcion": 0,
                     "idproducto": 0,
-                    "iditem_subitem": 8695,
+                    "iditem_subitem": 8654,
                     "cantidad_porcion": "ND",
                     "precio_visible": true,
                     "cantidad_visible": false,
                     "selected": true,
-                    "cantidad_selected": 1,
-                    "cantidad_seleccionada": 1,
-                    "isSuma_selected": true,
-                    "desIni": "Americana",
-                    "precio_first": 0,
-                    "stop_add": false,
-                    "idtipo_consumo": 315
-                },
-                {
-                    "des": "Gaseosa casenelli 300 ml",
-                    "precio": "0",
-                    "cantidad": "1",
-                    "idporcion": 0,
-                    "idproducto": 14404,
-                    "iditem_subitem": 8722,
-                    "cantidad_porcion": "ND",
-                    "precio_visible": true,
-                    "cantidad_visible": true,
-                    "selected": true,
-                    "idtipo_consumo": 315
+                    "idtipo_consumo": 316
                 }
             ],
-            "idtipo_consumo": 315
+            "idtipo_consumo": 316
         }
     ],
     "is_search_subitems": true,
     "indicaciones": "",
     "sumar": true,
     "cantidad_seleccionada": 1,
-    "cantidadSumar": -1
+    "cantidadSumar": -1,
+    "iditem2": 58185
 };
         const result = calculateQuantity(item);
+        if (result.cantidad !== 'ND') {
+            console.log('ingresa a setItemCarta');
+            const rptCantidad = await setItemCarta(0, item, 13);
+            console.log('rptCantidad === ', rptCantidad);
+        }
         // expect(result.cantidadSumar).toBe(-5);
         console.log(result.cantidad, result.cantidadSumar);
     });

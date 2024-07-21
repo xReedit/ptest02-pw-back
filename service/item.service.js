@@ -29,7 +29,7 @@ class ItemService {
             const sqlQuery = `call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`;
             const dataError = {
                 incidencia: {
-                    message: error,
+                    message: error.toString(),
                     data: {
                         item_process: _item,                    
                         query: sqlQuery,
@@ -84,7 +84,7 @@ class ItemService {
 
             const dataError = {
                 incidencia: {
-                    message: error,
+                    message: error.toString(),
                     data: {
                         item_process: _itemProcessPorcion,
                         query: sqlQuery,

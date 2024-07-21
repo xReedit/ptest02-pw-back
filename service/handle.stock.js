@@ -62,7 +62,7 @@ const updateStock = async (op, item, idsede) => {
             } catch (error) {
                 const dataError = {
                     incidencia: {
-                        message: error,
+                        message: error.toString(),
                         existSubItemsWithCantidad: _existSubItemsWithCantidad,
                         subitems_selected: item.subitems_selected,
                         data: { item }

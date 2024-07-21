@@ -2,8 +2,9 @@
 const ResponseService = require('./query.service');
 let ItemService = require('./item.service');
 let errorManager = require('./error.manager');
+const { ChallengeContext } = require('twilio/lib/rest/verify/v2/service/entity/challenge');
 
-const updateStock = async (op, item, idsede) => {
+const updateStock = async (op, item, idsede) => {    
     if (item.isalmacen === 1) {
         console.log('es de almacen');
         const _item = {

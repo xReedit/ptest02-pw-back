@@ -19,11 +19,13 @@ class ItemService {
             isporcion: item.isporcion,
             iditem2: item.iditem2        
         }
+        
+        console.log('_item', _item);
 
         let updatedItem;    
         try {     
-            updatedItem = await ResponseService.emitirRespuestaSP(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);    
-            result[0].cantidad = updatedItem[0].cantidad;
+            updatedItem = await ResponseService.emitirRespuestaSP(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);                
+            result[0].cantidad = parseFloat(updatedItem[0].cantidad);
             return result;
         } catch (error) {
             const sqlQuery = `call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`;

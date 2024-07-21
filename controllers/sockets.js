@@ -371,6 +371,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// console.log('resetPedido ', listPedido);
 			// recibe items
 			listPedido.map(async (item) => {				
+				// si la cantidad seleccionada es 0 entonces continua al siguiente
+				if ( parseFloat(item.cantidad_seleccionada) === 0 ) {
+					return;
+				}
+
 				item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
 				// item.cantidad = parseInt(item.cantidad) === 999 ? item.isporcion : item.cantidad; // la cantidad viene 999 cuando es nd y la porcion si viene nd
 				// la cantidad viene 999 cuando es nd y la porcion si viene nd
@@ -380,7 +385,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					item.cantidad_reset = item.cantidad_seleccionada;					
 					item.cantidad_seleccionada = 0;
 					console.log('items recuperar ', item);
-					
+										
 					const rptCantidad = await apiPwa.setItemCarta(1, item, dataCliente.idsede);
 					item.cantidad = rptCantidad[0].cantidad;
 					// console.log('subitems_view ', item.subitems_view);

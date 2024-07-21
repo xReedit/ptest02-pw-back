@@ -1044,9 +1044,22 @@ module.exports.updatePermissionChangeMetodoPago = updatePermissionChangeMetodoPa
 
 const calculateQuantity = (item) => {
 
+    // si la cantidad es un string como una operacion matematica como '5-1' o '4+1' entonces resolverla
+    console.log('item.cantidad ====', item.cantidad);
+    if (typeof item.cantidad === 'string' && item.cantidad.match(/[\+\-\*\/]/)) {
+        item.cantidad = 1;
+    }
+    console.log('item.cantidad ====', item.cantidad);
+
+
     if ( !item.cantidad && item.isporcion === 'SP' ) {
         item.cantidad = item.cantidad_seleccionada || 1;
     }
+
+    // convertir la cantidad a int
+    item.cantidad = item.cantidad !== 'ND' && item.cantidad !== 'SP' && item.cantidad === undefined ? parseInt(item.cantidad) : item.cantidad;
+
+
 
     item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND' : item.cantidad;
     item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;
@@ -1420,11 +1433,10 @@ module.exports.updateSubItems = updateSubItems;
 async function processAndEmitItem(item, chanelConect, io, idsede, notificar = true) {
     let rpt;
     try {
-        console.log('idsede', idsede);
         item = calculateQuantity(item);
+        
         if (item.cantidad !== 'ND') {
-            const rptCantidad = await setItemCarta(0, item, idsede);
-            console.log('rptCantidad === ', rptCantidad);
+            const rptCantidad = await setItemCarta(0, item, idsede);            
             item.cantidad = rptCantidad[0].cantidad;
 
             item = updateSubItems(item, rptCantidad[0].listSubItems);
@@ -1433,6 +1445,8 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
                 listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,    
                 listSubItems: rptCantidad[0].listSubItems                
             }
+
+            console.log('rpt', rpt);
             if ( notificar ) {
                 io.to(chanelConect).emit('itemModificado-pwa', rpt);
                 io.to(chanelConect).emit('itemModificado', item); 

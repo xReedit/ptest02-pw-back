@@ -23,8 +23,8 @@ const logger = async function (req, res) {
 
         // console.log('passs ', req.body);
 
-        let read_query = "SELECT * FROM `usuario` WHERE `usuario` = '" + usuario + "' and estadistica=1";
-        // let read_query = "SELECT u.* FROM usuario u inner join sede s on u.idsede = s.idsede inner join sede_estado se on s.idsede = se.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0 and se.is_bloqueado = 0 and se.is_baja=0 and u.estadistica=1";
+        // let read_query = "SELECT * FROM `usuario` WHERE `usuario` = '" + usuario + "' and estadistica=1";
+        let read_query = "SELECT u.* FROM usuario u inner join sede s on u.idsede = s.idsede left join sede_estado se on s.idsede = se.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0 and se.is_bloqueado = 0 and se.is_baja=0 and u.estadistica=1";
         console.log(read_query);
 
         sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })
@@ -55,8 +55,8 @@ const loggerUsAutorizado = async function (req, res) {
 
         // console.log('passs ', req.body);
 
-        // let read_query = "SELECT u.* FROM usuario u inner join sede s on u.idsede = s.idsede inner join sede_estado se on s.idsede = se.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0 and se.is_bloqueado = 0 and se.is_baja=0";
-        let read_query = "SELECT u.* FROM usuario u inner join sede s on u.idsede = s.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0";
+        let read_query = "SELECT u.* FROM usuario u inner join sede s on u.idsede = s.idsede left join sede_estado se on s.idsede = se.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0 and se.is_bloqueado = 0 and se.is_baja=0";
+        // let read_query = "SELECT u.* FROM usuario u inner join sede s on u.idsede = s.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0";
         console.log(read_query);
 
         sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })

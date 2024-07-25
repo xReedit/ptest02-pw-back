@@ -35,7 +35,7 @@ class ItemService {
                     data: {
                         item_process: _item,                    
                         query: sqlQuery,
-                        res_query: w
+                        res_query: updatedItem
                     }
                 },
                 origen: 'processItem'            

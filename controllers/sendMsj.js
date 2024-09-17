@@ -8,16 +8,16 @@ let Sequelize = require('sequelize');
 const nodemailer = require("nodemailer");
 
 
-// create reusable transporter object using the default SMTP transport
-const transporter = nodemailer.createTransport({
-    host: "email-smtp.us-east-2.amazonaws.com",
-    port: 465,
-    secure: true, // true for 465, false for other ports
-    auth: {
-        user: config.SEED_SES_USER, // generated ethereal user
-        pass: config.SEED_SES_PASS, // generated ethereal password
-    },
-});
+// // create reusable transporter object using the default SMTP transport
+// const transporter = nodemailer.createTransport({
+//     host: "email-smtp.us-east-2.amazonaws.com",
+//     port: 465,
+//     secure: true, // true for 465, false for other ports
+//     auth: {
+//         user: config.SEED_SES_USER, // generated ethereal user
+//         pass: config.SEED_SES_PASS, // generated ethereal password
+//     },
+// });
 
 // notificaciones push
 const gcm = require('node-gcm');
@@ -232,6 +232,21 @@ const sendEmailSendAWSSES = async function (req, res) {
     const _msj = req.body.msj;
 
     try {
+
+		
+
+
+		// create reusable transporter object using the default SMTP transport
+		const transporter = nodemailer.createTransport({
+			host: "email-smtp.us-east-2.amazonaws.com",
+			port: 465,
+			secure: true, // true for 465, false for other ports
+			auth: {
+				user: config.SEED_SES_USER, // generated ethereal user
+				pass: config.SEED_SES_PASS, // generated ethereal password
+			},
+		});
+
         // send mail with defined transport object
         let info = await transporter.sendMail({
             from: 'papaya.restobar@gmail.com', // sender address

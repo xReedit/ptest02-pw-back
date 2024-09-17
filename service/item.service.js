@@ -70,7 +70,9 @@ class ItemService {
                 iditem2: item.iditem2        
             }      
                         
+            console.log(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);
             updatedItem = await ResponseService.emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);
+            console.log('updatedItem', updatedItem);
             result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
             const listItemsJson = JSON.parse(updatedItem[0].listItemsPorcion)
             if ( listItemsJson.length > 0 ) {            

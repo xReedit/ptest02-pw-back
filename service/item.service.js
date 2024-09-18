@@ -74,7 +74,7 @@ class ItemService {
             updatedItem = await ResponseService.emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);
             console.log('updatedItem', updatedItem);
             result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
-            const listItemsJson = JSON.parse(updatedItem[0].listItemsPorcion)
+            const listItemsJson = typeof updatedItem[0].listItemsPorcion === 'string' ? JSON.parse(updatedItem[0].listItemsPorcion) : updatedItem[0].listItemsPorcion;
             if ( listItemsJson.length > 0 ) {            
                 const itemCantidad = listItemsJson.filter(i => i.iditem == _idItemUpdate);                
                 result[0].cantidad = itemCantidad[0].cantidad;

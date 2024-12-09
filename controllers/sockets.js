@@ -3,6 +3,7 @@ const apiPwaRepartidor = require('./apiRepartidor.js');
 const apiPwaComercio = require('./apiComercio.js');
 const apiMessageWsp = require('./socketMenssagesWsp.js');
 let apiPrintServer = require('./apiPrintServer');
+let socketPinPad = require('./socketPinPad.js');
 const async = require('async');
 var btoa = require('btoa');
 
@@ -48,7 +49,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// console.log('datos socket', socket.handshake.headers.query);		
 		let dataSocket = socket.handshake.query;
 		// console.log('dataSocket ==== ', dataSocket.idorg)
-
+		
 		// si viene de un websocket isFromBot // socket.handshake.headers.query
 		dataSocket = dataSocket.isFromBot === 1 ? JSON.parse(socket.handshake.headers.query) : dataSocket
 		dataSocket.socketid = socket.id;		
@@ -129,6 +130,21 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socketClienteCashAtm(dataCliente,socket);
 			return;
 		}
+
+		// si es el servicio local pinpad
+		if (dataCliente.isPinPad === '1') {
+			// socketMaster = socket; 
+			// socketLocalPinpad(dataCliente,socket);
+			const chanelConectPinPad = `pinpad-${dataCliente.pinPadSN}`;
+			dataCliente.room = chanelConectPinPad;
+			console.log('isLocalPinpad conectado al room ', chanelConectPinPad);
+
+			socket.join(chanelConectPinPad);
+
+			socketPinPad.connection(dataCliente, socket, io);
+			return;
+		}
+
 
 		
 
@@ -904,6 +920,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('restobar-permiso-cerrar-caja', async (payload) => {	
 			// apiPwa.updatePermissionChangeMetodoPago(payload.data.data.idregistro_pago_detalle);		
 			socket.to(chanelConect).emit('restobar-permiso-cerrar-caja', payload);
+		});
+
+		// solicitud anular registro de pagos
+		socket.on('restobar-permiso-remove-registro-pago', async (payload) => {				
+			apiPwa.updatePermissionRemoveRegistroPago(payload.data.data.idregistro_pago);
+			socket.to(chanelConect).emit('restobar-permiso-remove-registro-pago', payload);
 		});
 		
 

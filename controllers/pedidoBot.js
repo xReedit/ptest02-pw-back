@@ -74,6 +74,12 @@ const setAceptaSolicitudRemotoBot = function(req, res) {
 		socket.emit('restobar-permiso-cerrar-caja', data)
 	}
 
+	// anualr registro pago
+	if ( data.tipo_permiso == 5 ) {
+		console.log('restobar-permiso-remove-registro-pago', data)
+		socket.emit('restobar-permiso-remove-registro-pago', data)
+	}
+
 }
 module.exports.setAceptaSolicitudRemotoBot = setAceptaSolicitudRemotoBot;
 

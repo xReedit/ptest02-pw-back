@@ -31,7 +31,8 @@
     "socket.io": "^2.4.1",
     "socket.io-client": "^2.4.0",
     "twilio": "^3.30.0",
-    "web-push": "^3.4.3"
+    "web-push": "^3.4.3",
+    "webtransactor-backend": "file:"
   },
   "devDependencies": {
     "jest": "^29.7.0",

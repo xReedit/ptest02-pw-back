@@ -1015,7 +1015,7 @@ module.exports.setUserAccountRemove = setUserAccountRemove;
 
 // listar todos los mozos para change user
 const getAllMozosChangeUser = async function (req, res) {
-    const idsede = req.body.idsede;
+    const idsede = managerFilter.getInfoToken(req, 'idsede');
     const read_query = `select idusuario, nombres, usuario from usuario where idsede=${idsede} and estado=0 and acc like '%A2%'`;
     return await emitirRespuesta_RES(read_query, res);    
 }
@@ -1041,6 +1041,12 @@ const updatePermissionChangeMetodoPago = async function (idregistro_pago_detalle
     await ejecutarQuery(read_query);        
 }
 module.exports.updatePermissionChangeMetodoPago = updatePermissionChangeMetodoPago;
+
+const updatePermissionRemoveRegistroPago = async function (idregistro_pago) {
+    const read_query = `update registro_pago set permission_delete = '1' where idregistro_pago = ${idregistro_pago}`;
+    await ejecutarQuery(read_query);        
+}
+module.exports.updatePermissionRemoveRegistroPago = updatePermissionRemoveRegistroPago;
 
 const calculateQuantity = (item) => {
 

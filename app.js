@@ -26,6 +26,9 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '50mb', extended: true, p
 var appV3 = require('./routes/v3');
 app.use('/v3',appV3);
 
+var routesPinPad = require('./routes/routesPinPad'); 
+app.use('/pinpad', routesPinPad);
+
 app.use(function(req, res, next) {    
     var err = new Error('Not Found');
     err.status = 404;

@@ -24,7 +24,6 @@ const pedidoBot = require('../controllers/pedidoBot');
 
 const apiFireBase = require('../controllers/apiFireBase');
 
-
 // var cors = require('cors')
 
 // var whitelist = ['http://example1.com', 'http://example2.com', 'http://localhost/*']

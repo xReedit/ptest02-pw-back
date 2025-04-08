@@ -2,6 +2,7 @@ const apiPwa = require('./apiPwa_v1.js');
 const apiPwaRepartidor = require('./apiRepartidor.js');
 const apiPwaComercio = require('./apiComercio.js');
 const apiMessageWsp = require('./socketMenssagesWsp.js');
+const apiHoldingServices = require('./../service/holding.sevice.js');
 let apiPrintServer = require('./apiPrintServer');
 let socketPinPad = require('./socketPinPad.js');
 const async = require('async');
@@ -25,6 +26,7 @@ var btoa = require('btoa');
 // hora
 var d = new Date();
 var n = d.toLocaleTimeString(); 
+const nameRoomMozo = 'MOZO';
 // var socketMaster; 
 
 
@@ -63,6 +65,20 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		console.log('datos socket JSON', dataSocket);
 
 		const dataCliente = dataSocket;
+
+		if (dataCliente.isClienteHolding === '1') {			
+			
+			socket.on('restobar-send-number-table-client', (data) => {
+				console.log('restobar-send-number-table-client', data);
+				io.to(data.rooms).emit('restobar-send-number-table-client', data);				
+			});
+		}		
+
+		if (dataCliente.isHolding === '1') {
+			const chanelHoldingMozo = `${nameRoomMozo}${dataCliente.idusuario}`;
+			console.log('chanelHoldingMozo', chanelHoldingMozo);
+			socket.join(chanelHoldingMozo);
+		}
 
 		// mensaje de confirmacion de telefono
 		socket.on('msj-confirma-telefono', async (data) => {
@@ -144,6 +160,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socketPinPad.connection(dataCliente, socket, io);
 			return;
 		}
+
+		
 
 
 		
@@ -463,8 +481,6 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// hay un nuevo pedido - guardar
 		socket.on('nuevoPedido', async (dataSend, callback) => {
-			console.log('tipo dato', typeof dataSend);
-
 			var telefonoComercio = '';
 
 			// console.log('nuevoPedido ', dataSend);			
@@ -472,11 +488,20 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				dataSend = JSON.parse(dataSend);
 			}
 
+			/// <<<<< 250124 >>>> //
+			// si es holding ///			
+			if ( dataSend.dataPedido.p_header.is_holding == 1 ) {				
+				const rptPedidoHolding = await apiHoldingServices.proccessSavePedidoHolding(dataSend, io);				
+				io.to(socket.id).emit('nuevoPedidoRes', rptPedidoHolding)
+				if ( callback ) {
+					callback(rptPedidoHolding);	
+				}
+				return;	
+			}
+
 			// console.log('dataCliente === ', dataCliente);
 			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
-
-			console.log('respuesta del setNuevoPedido ', rpt);			
-			console.log('data socketid res ==== > ', socket.id);
+									
 			io.to(socket.id).emit('nuevoPedidoRes', rpt)
 
 			if ( callback ) {
@@ -830,6 +855,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			});			
 		});
 
+		
+
 
 
 		// restobar envia notificacion de pago de servcio
@@ -927,6 +954,26 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			apiPwa.updatePermissionRemoveRegistroPago(payload.data.data.idregistro_pago);
 			socket.to(chanelConect).emit('restobar-permiso-remove-registro-pago', payload);
 		});
+
+
+		// llamar a mozo indicando que pedido esta listo en marca
+		socket.on('restobar-call-mozo-holding', async (payload) => {
+			const roomMozo = `${nameRoomMozo}${payload.idusuario}`;
+			console.log('restobar-call-mozo-holding', roomMozo);
+			apiPwa.saveCallMozoHolding(payload);
+			socket.to(roomMozo).emit('restobar-call-mozo-holding', payload);
+		});
+
+		// holding - mozo notifica a marca que esta en camino
+		socket.on('notificar-marca-mozo-en-camino', async (data) => {
+			console.log('data', data);			
+			const roomMarcaHolding = `room${data.idorg_notificar}${data.idsede_notificar}`;
+			console.log('notificar-marca-mozo-en-camino', roomMarcaHolding);
+			socket.broadcast.to(roomMarcaHolding).emit('notificar-marca-mozo-en-camino', data.idpedido);
+
+			apiPwa.saveCallMozoHoldingEstado(data.idpedido);
+		});		
+
 		
 
 	});

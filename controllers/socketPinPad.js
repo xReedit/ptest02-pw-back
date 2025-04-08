@@ -42,33 +42,82 @@ const convertAmount = (amount) => {
     return Math.round(amount * 100);
 }
 
+// const assignRoomAndListen = async (pinPadSN, eventToEmit, responseEvent, payload = {}, timeout = 10000) => {
+//     const room = getRoom(pinPadSN);
+//     return new Promise((resolve, reject) => {
+//         console.log('room pinpad =====>> ', room, 'eventToEmite ===>> ', eventToEmit);
+//         socketIO.to(room).emit(eventToEmit, payload);
+//         console.log('socketIO', socketIO);
+//         const roomExist = socketIO.sockets.adapter.rooms[room];           
+//         console.log('¿roomExist ==>', roomExist);
+//         if (roomExist) {            
+//             // Obtener el socket específico
+//             const socket = roomExist.sockets;            
+//             const socketId = Object.keys(socket)[0];
+//             const specificSocket = socketIO.sockets.sockets[socketId];            
+    
+//             // Escuchar la respuesta en el contexto del socket específico
+//             specificSocket.once(responseEvent, (data) => {                
+//                 resolve(
+//                     {
+//                         success: data.success != undefined ? data.success : true,
+//                         data
+//                     });
+//             });
+//         } else {
+//             reject({success: false, message: 'PinPad no disponible'});
+//         }
+
+//         setTimeout(() => {
+//             reject({success: false, message: 'PinPad no disponible - timeout'});
+//         }, timeout);
+//     });
+// }
+
 const assignRoomAndListen = async (pinPadSN, eventToEmit, responseEvent, payload = {}, timeout = 10000) => {
     const room = getRoom(pinPadSN);
-    return new Promise((resolve, reject) => {
-        console.log('room pinpad == ', room);
+    return new Promise(async (resolve, reject) => {
+        console.log('room pinpad =====>> ', room, 'eventToEmit ===>> ', eventToEmit);
+        
+        // Emitir el evento al room
         socketIO.to(room).emit(eventToEmit, payload);
-        const roomExist = socketIO.sockets.adapter.rooms[room];           
-        if (roomExist) {            
-            // Obtener el socket específico
-            const socket = roomExist.sockets;            
-            const socketId = Object.keys(socket)[0];
-            const specificSocket = socketIO.sockets.sockets[socketId];            
-    
-            // Escuchar la respuesta en el contexto del socket específico
-            specificSocket.once(responseEvent, (data) => {                
-                resolve(
-                    {
-                        success: data.success != undefined ? data.success : true,
-                        data
-                    });
-            });
-        } else {
-            reject({success: false, message: 'PinPad no disponible'});
-        }
+        
+        try {
+            // Obtener todos los sockets en la sala
+            const sockets = await socketIO.in(room).allSockets();
+            console.log('Sockets en la sala:', Array.from(sockets));
+            
+            if (sockets.size === 0) {
+                reject({ success: false, message: 'PinPad no disponible' });
+                return;
+            }
 
-        setTimeout(() => {
-            reject({success: false, message: 'PinPad no disponible - timeout'});
-        }, timeout);
+            // Obtener el primer socket en la sala
+            const socketId = Array.from(sockets)[0];
+            const specificSocket = socketIO.sockets.sockets.get(socketId);
+            
+            if (!specificSocket) {
+                reject({ success: false, message: 'PinPad no disponible' });
+                return;
+            }
+
+            // Escuchar la respuesta en el contexto del socket específico
+            specificSocket.once(responseEvent, (data) => {
+                resolve({
+                    success: data.success !== undefined ? data.success : true,
+                    data
+                });
+            });
+
+            // Manejar el tiempo de espera
+            setTimeout(() => {
+                reject({ success: false, message: 'PinPad no disponible - timeout' });
+            }, timeout);
+
+        } catch (error) {
+            console.error('Error al obtener los sockets en la sala:', error);
+            reject({ success: false, message: 'Error al obtener los sockets en la sala' });
+        }
     });
 }
 

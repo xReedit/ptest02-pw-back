@@ -4,6 +4,7 @@ const socketPinPad = require('../controllers/socketPinPad');
 const handlePinPadRequest = async (req, res, pinPadFunction) => {
     const { pinPadSN, transaction, idsede } = req.body;    
     let response;
+    console.log('pinPadSN == ', pinPadSN);
     try {
         const payload = { pinPadSN, transaction, idsede };
         console.log('payload == ', payload);

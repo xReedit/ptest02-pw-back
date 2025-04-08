@@ -30,36 +30,47 @@ const updateStock = async (op, item, idsede) => {
         if (_existSubItemsWithCantidad && item.subitems_selected) {
             try {
                 console.log('tiene subitems con cantidad');
-                let _idporcion = [];
-                let _idproducto = [];
-                let _iditem_subitem = [];
+                // let _idporcion = '';
+                // let _idproducto = '';
+                // let _iditem_subitem = '';
 
-                item.subitems_selected.forEach(subitem => {          
-                    if (subitem.idporcion !== 0) { _idporcion.push(subitem.idporcion) }
-                    if (subitem.idproducto !== 0) { _idproducto.push(subitem.idproducto); }                
-                    _iditem_subitem.push(subitem.iditem_subitem);
+                console.log('el item ==> ', item);
+
+                item.subitems_selected.forEach(subitem => {      
+                    console.log('subitem ==> ', subitem);    
+                    // if (subitem.idporcion !== 0) { _idporcion.push(subitem.idporcion) }
+                    // if (subitem.idproducto !== 0) { _idproducto.push(subitem.idproducto); }                
+                    // _iditem_subitem.push(subitem.iditem_subitem);
+                
+                
+                    const _idporcion = subitem.idporcion !== 0 ? subitem.idporcion : '';
+                    const _idproducto = subitem.idproducto !== 0 ? subitem.idproducto : '';
+                    const _iditem_subitem = subitem.iditem_subitem !== 0 ? subitem.iditem_subitem : '';
+                    // _iditem_subitem = _iditem_subitem.length === 0 ? '' :_iditem_subitem.join(',');
+    
+                    // if (_idporcion.length + _idproducto.length + _iditem_subitem.length > 0) {
+                        const cantSelected = subitem.cantidad_selected || 1;  
+                        const cantSumar = item.cantidadSumar * cantSelected;
+                        const cantReset = item.cantidad_reset * cantSelected;
+    
+    
+                        const allItems = {
+                            idporcion: _idporcion,
+                            idproducto: _idproducto,
+                            iditem_subitem: _iditem_subitem,
+                            iditem: item.iditem,
+                            idcarta_lista: item.idcarta_lista,
+                            cantidad_reset: cantReset, //item.cantidad_reset,
+                            cantidadSumar: cantSumar, //item.cantidadSumar,
+                            isporcion: item.isporcion,
+                            iditem2: item.iditem2,
+                            cantidad: item.cantidad,  
+                        };
+    
+                        ItemService.processAllItemSubitemSeleted(allItems);
+                    // }
                 });
 
-                _idporcion = _idporcion.length === 0 ? '' : _idporcion.join(',');
-                _idproducto = _idproducto.length === 0 ? '' :_idproducto.join(',');
-                _iditem_subitem = _iditem_subitem.length === 0 ? '' :_iditem_subitem.join(',');
-
-                if (_idporcion.length + _idproducto.length + _iditem_subitem.length > 0) {
-                    const allItems = {
-                        idporcion: _idporcion,
-                        idproducto: _idproducto,
-                        iditem_subitem: _iditem_subitem,
-                        iditem: item.iditem,
-                        idcarta_lista: item.idcarta_lista,
-                        cantidad_reset: item.cantidad_reset,
-                        cantidadSumar: item.cantidadSumar,
-                        isporcion: item.isporcion,
-                        iditem2: item.iditem2,
-                        cantidad: item.cantidad,  
-                    };
-
-                    ItemService.processAllItemSubitemSeleted(allItems);
-                }
             } catch (error) {
                 const dataError = {
                     incidencia: {

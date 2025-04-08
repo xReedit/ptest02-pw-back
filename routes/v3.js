@@ -147,6 +147,7 @@ routerV3.post('/delivery/verificar-codigo-sms', apiPwaAppDelivery.verificarCodig
 // routerV3.post('/delivery/send-sms-confirmation', auth.verificarTokenSms, apiPwaSMS.sendMsjConfirmacion);
 routerV3.post('/delivery/send-sms-confirmation-out', apiPwaSMS.sendMsjConfirmacion);
 routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepartidorTEST);
+routerV3.post('/delivery/send-push-webpush-test', apiPwaSMS.sendPushWebTest);
 // routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepartidor);
 routerV3.post('/delivery/send-sms-test-out', apiPwaSMS.sendMsjSMSNewPedido);
 routerV3.post('/delivery/send-sms-out', apiPwaSMS.sendMsjSMS);
@@ -291,6 +292,9 @@ routerV3.post('/monitor/set-anular-confirmacion-pago-servicio', auth.verificarTo
 routerV3.post('/monitor/get-show-pedidos-asignados-repartidor', auth.verificarToken, apiPwaAppMonitor.getShowPedidosAsignadosRepartidor);
 routerV3.post('/monitor/get-pedido-by-id', auth.verificarToken, apiPwaAppMonitor.getPedidoById);
 
+
+/// HOLDING ///
+routerV3.get('/holding/list-call-mozo', auth.verificarToken, apiPwaAppPedidos.getListCallMozoHolding);
 
 
 //// MONITOR ///

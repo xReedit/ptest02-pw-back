@@ -52,7 +52,7 @@ const emitirRespuesta_RES = async (xquery, res) => {
 module.exports.emitirRespuesta_RES = emitirRespuesta_RES;
 
 const emitirRespuestaSP = async (xquery) => {
-    console.log(xquery);
+    // console.log(xquery);
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
         const arr = Object.values(rows[0]);
@@ -173,6 +173,7 @@ const getObjCarta = async (dataCliente) => {
     const isClienteValue = iscliente === 'true' ? 1 : 0;
 
     const query = `CALL porcedure_pwa_pedido_carta(${idorg}, ${idsede}, ${isClienteValue})`;
+    console.log('carta === > ', query)
     return await emitirRespuestaSP(query);
 };
 module.exports.getObjCarta = getObjCarta;
@@ -444,19 +445,37 @@ module.exports.setItemCarta = setItemCarta;
 // module.exports.setNuevoPedido = setNuevoPedido;
 
 const setNuevoPedido = async (dataCliente, dataPedido) => {
-    console.log('pasa a =========== procedure_pwa_pedido_guardar 1');
+    console.log('pasa a =========== procedure_pwa_pedido_guardar 1');    
     const { idorg, idsede, idusuario } = dataPedido.dataUsuario ? dataPedido.dataUsuario : dataCliente;
+
+
+    // const _json = JSON.stringify(dataPedido)
+    //     .replace(/\\n/g, '')
+    //     .replace(/\\'/g, '')
+    //     .replace(/\\"/g, '')
+    //     .replace(/\\&/g, '')
+    //     .replace(/\\r/g, '')
+    //     .replace(/\\t/g, '')
+    //     .replace(/\\b/g, '')
+    //     .replace(/\\f/g, '');
+
+    // Sanitizar JSON
     const _json = JSON.stringify(dataPedido)
-        .replace(/\\n/g, '')
-        .replace(/\\'/g, '')
-        .replace(/\\"/g, '')
-        .replace(/\\&/g, '')
-        .replace(/\\r/g, '')
-        .replace(/\\t/g, '')
-        .replace(/\\b/g, '')
-        .replace(/\\f/g, '');
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+        .replace(/\\\\+/g, '\\') // Remove multiple backslashes
+        .replace(/[^\x20-\x7E\xA0-\xFF]/g, '') // Remove non-printable chars            
+        .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width chars
+        .replace(/\\/g, '\\\\') // Escape backslashes
+        .replace(/'/g, "\\'") // Escape single quotes
+        .replace(/"/g, '\\"') // Escape double quotes
+        .replace(/\n/g, '\\n') // Handle newlines
+        .replace(/\r/g, '\\r') // Handle carriage returns
+        .replace(/\t/g, '\\t') // Handle tabs
+        .replace(/\f/g, '\\f') // Handle form feeds
+        .replace(/[\x00-\x1F\x7F-\x9F]/g, '');  // Remove control chars again
 
     const query = `CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
+    // console.log(`CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPedido)}')`);
     // return await emitirRespuestaSP(query);
 
     try {
@@ -466,6 +485,8 @@ const setNuevoPedido = async (dataCliente, dataPedido) => {
     }
 };
 module.exports.setNuevoPedido = setNuevoPedido;
+
+
 
 
 // para evitar pedidos perdidos cuando el socket pierde conexion
@@ -707,7 +728,7 @@ module.exports.getDataSedeIni = getDataSedeIni;
 const getIdSedeFromNickName = async function (req, res) {  
     const nomsede = req.body.nomsede;
     // console.log('cuenta de mesa: ', mesa);
-    const read_query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit from sede where link_carta='${nomsede}' AND estado=0`;    
+    const read_query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit, is_holding from sede where link_carta='${nomsede}' AND estado=0`;    
     return await emitirRespuesta_RES(read_query, res);
 }
 module.exports.getIdSedeFromNickName = getIdSedeFromNickName;
@@ -779,7 +800,7 @@ module.exports.setEncuestaGuardar = setEncuestaGuardar;
 const getSedeRequiereGPS = async function (req, res) {	
     const idsede = req.body.idsede;
         
-    const read_query = `select pwa_requiere_gps from sede where idsede=${idsede} and estado=0`;
+    const read_query = `select pwa_requiere_gps, is_holding from sede where idsede=${idsede} and estado=0`;
     // return emitirRespuestaSP(read_query);      
     return await emitirRespuesta_RES(read_query, res);  
 }
@@ -1098,6 +1119,26 @@ const updateSubItems = (item, listSubItems) => {
 }
 module.exports.updateSubItems = updateSubItems;
 
+
+const saveCallMozoHolding = (data) => {
+    const {idpedido, idusuario} = data;
+    const read_query = `insert into sede_holding_call_pedido_listo(fecha, idpedido, idusuario, data) values (now(), ${idpedido}, ${idusuario}, '${JSON.stringify(data)}')`;
+    return emitirRespuesta(read_query);
+}
+module.exports.saveCallMozoHolding = saveCallMozoHolding;
+
+const saveCallMozoHoldingEstado = (idpedido) => {
+    const read_query = `update sede_holding_call_pedido_listo set estado='1' where idpedido=${idpedido}`;
+    return emitirRespuesta(read_query);
+}
+module.exports.saveCallMozoHoldingEstado = saveCallMozoHoldingEstado;
+
+const getListCallMozoHolding = async function (req, res) {
+    const idusuario= managerFilter.getInfoToken(req, 'idusuario');
+    const read_query = `select * from sede_holding_call_pedido_listo where estado=0 and idusuario=${idusuario}`;
+    return await emitirRespuesta_RES(read_query, res);    
+}
+module.exports.getListCallMozoHolding = getListCallMozoHolding;
 
 // separar proceso de actualizar stock de porcedure_pwa_update_cantidad_item
 

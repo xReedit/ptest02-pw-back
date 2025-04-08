@@ -9,6 +9,8 @@ var cors=require('cors');
 
 app.use(cors());
 
+// "socket.io": "^2.4.1",
+// "socket.io-client": "^2.4.0",
 
 // var config = require('./config');
 var config = require('./_config');
@@ -29,11 +31,16 @@ app.use('/v3',appV3);
 var routesPinPad = require('./routes/routesPinPad'); 
 app.use('/pinpad', routesPinPad);
 
+var routesHolding = require('./routes/routesHolding'); 
+app.use('/v3/holding', routesHolding);
+
 app.use(function(req, res, next) {    
     var err = new Error('Not Found');
     err.status = 404;
     next(err);
 });
+
+
 
     
 // error handler
@@ -55,10 +62,37 @@ var server = http.createServer(app);
 
 // // desarrollo
 // 271220 cambiamos pingTimeout: 5000, a 30000
-var io = socketIo(server, {
-    pingInterval: 10000,
-    pingTimeout: 30000,    
-    cookie: false
+// var io = socketIo(server, {
+//     pingInterval: 10000,
+//     pingTimeout: 30000,    
+//     cookie: false,    
+// }).listen(config.portSocket);
+
+const corsOptions = {
+    origin: function(origin, callback) {
+        callback(null, origin); // Permite cualquier origen pero mantiene las credenciales
+    },
+    credentials: true,
+    // methods: ["GET", "POST", "OPTIONS"],
+    // allowedHeaders: ["my-custom-header", "content-type"],
+};
+
+const io = socketIo(server, {    
+    // path: '/socket.io', // Asegúrate que coincida con la configuración del cliente
+    pingInterval: 25000,
+    pingTimeout: 60000,
+    allowEIO3: true,
+    // transports: ['polling', 'websocket'], // Polling primero para compatibilidad
+    cors: corsOptions,
+    connectTimeout: 45000,
+    maxHttpBufferSize: 1e8,
+    allowUpgrades: true, // Permite actualizar de polling a websocket
+    // perMessageDeflate: false, // Deshabilita la compresión para mejor compatibilidad
+    logger: {
+        debug: (msg) => console.log('Socket.IO debug:', msg),
+        info: (msg) => console.log('Socket.IO info:', msg),
+        error: (msg) => console.error('Socket.IO error:', msg)
+    }
 }).listen(config.portSocket);
 
 server.listen(config.port, function () {

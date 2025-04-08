@@ -661,7 +661,63 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 module.exports.sendPushNotificactionOneRepartidorTEST = sendPushNotificactionOneRepartidorTEST;
 
 
+const sendPushWebTest = async function (req, res) {
+    try {
+        const { key_suscripcion_push, payload } = req.body;
+        
+        // Validar key_suscripcion_push
+        if (!key_suscripcion_push) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'key_suscripcion_push is required' 
+            });
+        }
 
+        // Parsear key_suscripcion_push si viene como string
+        const subscription = typeof key_suscripcion_push === 'string' 
+            ? JSON.parse(key_suscripcion_push) 
+            : key_suscripcion_push;
+
+        // Payload por defecto
+        const defaultPayload = {
+            notification: {
+                title: "🎉 Nuevo Pedido",
+                body: "Nuevo Pedido Papaya Express",
+                icon: "./favicon.ico",
+                badge: "./favicon.ico",
+                lang: "es",
+                tag: "pedido",
+                requireInteraction: true,
+                renotify: true,
+                vibrate: [100, 50, 100],
+                sound: "./notification.mp3",
+                timestamp: Date.now()
+            }
+        };
+
+        // Usar payload personalizado o el default
+        const finalPayload = payload || defaultPayload;
+
+        // Enviar notificación
+        await webpush.sendNotification(
+            subscription,
+            JSON.stringify(finalPayload)
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: 'Notificación enviada correctamente'
+        });
+
+    } catch (error) {
+        console.error('Error sending web push:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+module.exports.sendPushWebTest = sendPushWebTest;
 
 
 function emitirRespuestaSP(xquery) {

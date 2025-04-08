@@ -98,6 +98,7 @@ let filter = {
 
     getInfoToken: (req, key) => {        
         // obtiene los valores del token segun key: idorg=idorg => val a buscar idorg        
+        console.log('req.usuariotoken', req.usuariotoken);
         return req.usuariotoken[key] || null;
     },
     

@@ -10,7 +10,7 @@ const holdingService = require('../service/holding.sevice');
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
 const emitirRespuesta = async (xquery) => {
-    console.log(xquery);
+    // console.log(xquery);
     try {
         return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
     } catch (err) {
@@ -76,7 +76,7 @@ const saveRegistroPagoPedido = async function (pedido, itemsPedidoDetalle) {
     const _itemsPedidoDetalle = JSON.stringify(itemsPedidoDetalle);   
     // console.log(`call procedure_save_pedido_holding( '${_pedido}', '${_itemsPedidoDetalle}');`); 
     const xquery = `call procedure_save_pedido_holding(?,?);`;
-    console.log(`call procedure_save_pedido_holding( '${_pedido}', '${_itemsPedidoDetalle}');`);
+    // console.log(`call procedure_save_pedido_holding( '${_pedido}', '${_itemsPedidoDetalle}');`);
 
     return await queryService.emitirRespuestaSP_RAW(xquery, [_pedido, _itemsPedidoDetalle]);
 }
@@ -191,7 +191,7 @@ function setPedidoClienteAtendido (req, res) {
 function setPedidoClientePagado (req, res) {
     const { idpedido_cliente_confirmar_holding } = req.body;
     const xquery = `update pedido_cliente_confirmar_holding set pagado = '1' where idpedido_cliente_confirmar_holding = ${idpedido_cliente_confirmar_holding}`;
-    console.log(xquery);
+    // console.log(xquery);
     queryService.emitirRespuesta_UPDATE(xquery, res);
     return ReS(res, {
         success: true,

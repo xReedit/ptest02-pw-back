@@ -20,12 +20,12 @@ class ItemService {
             iditem2: item.iditem2        
         }
         
-        console.log('_item', _item);
+        // console.log('_item', _item);
 
         let updatedItem;    
         try {     
             // updatedItem = await ResponseService.emitirRespuestaSP(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);
-            console.log(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);
+            // console.log(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);
             updatedItem = await ResponseService.emitirRespuestaSP_RAW('call procedure_stock_item(?, ?)', [
                 JSON.stringify(_item),
                 idsede
@@ -75,12 +75,12 @@ class ItemService {
                 iditem2: item.iditem2        
             }      
                         
-            console.log(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);
+            // console.log(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);
             // updatedItem = await ResponseService.emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);
             updatedItem = await ResponseService.emitirRespuestaSP_RAW('call procedure_stock_item_porcion(?)', [
                 JSON.stringify(_itemProcessPorcion)
             ]);
-            console.log('updatedItem', updatedItem);
+            // console.log('updatedItem', updatedItem);
             result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
             const listItemsJson = typeof updatedItem[0].listItemsPorcion === 'string' ? JSON.parse(updatedItem[0].listItemsPorcion) : updatedItem[0].listItemsPorcion;
             if ( listItemsJson.length > 0 ) {            
@@ -114,12 +114,12 @@ class ItemService {
     static async processAllItemSubitemSeleted(allItems) {
         let updatedItem;
         try {        
-            console.log(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
+            // console.log(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
             updatedItem = await ResponseService.emitirRespuestaSP_RAW('call procedure_stock_all_subitems(?)', [
                 JSON.stringify(allItems)
             ]);
 
-            console.log('updatedItem', updatedItem);
+            // console.log('updatedItem', updatedItem);
             return updatedItem;
         } catch (error) {
             const sqlQuery = `call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`;

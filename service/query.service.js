@@ -6,7 +6,7 @@ let sequelize = new Sequelize(config.database, config.username, config.password,
 class QueryService {
     
     static emitirRespuesta = async (xquery) => {
-        console.log(xquery);
+        // console.log(xquery);
         try {
             return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
         } catch (err) {
@@ -17,7 +17,7 @@ class QueryService {
 
     // procesar solicitud update
     static emitirRespuesta_UPDATE = async (xquery) => {
-        console.log(xquery);
+        // console.log(xquery);
         try {
             return await sequelize.query(xquery);
         } catch (err) {

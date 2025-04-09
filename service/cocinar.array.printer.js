@@ -9,7 +9,7 @@
  */
 function relationRowToPrint(pedido, impresoras, isCliente=false) {
   // Verificamos que tengamos datos válidos
-  console.log('pedido', pedido);
+  // console.log('pedido', pedido);
   if (!pedido || !pedido.p_body || !pedido.p_body.tipoconsumo || !impresoras) {
     console.error("Datos insuficientes para procesar impresión");
     return [];

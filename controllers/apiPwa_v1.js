@@ -447,32 +447,33 @@ module.exports.setItemCarta = setItemCarta;
 const setNuevoPedido = async (dataCliente, dataPedido) => {
     console.log('pasa a =========== procedure_pwa_pedido_guardar 1');    
     const { idorg, idsede, idusuario } = dataPedido.dataUsuario ? dataPedido.dataUsuario : dataCliente;
+    console.log('idorg, idsede, idusuario === ', idorg, idsede, idusuario);
 
 
-    // const _json = JSON.stringify(dataPedido)
-    //     .replace(/\\n/g, '')
-    //     .replace(/\\'/g, '')
-    //     .replace(/\\"/g, '')
-    //     .replace(/\\&/g, '')
-    //     .replace(/\\r/g, '')
-    //     .replace(/\\t/g, '')
-    //     .replace(/\\b/g, '')
-    //     .replace(/\\f/g, '');
 
-    // Sanitizar JSON
-    const _json = JSON.stringify(dataPedido)
-        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
-        .replace(/\\\\+/g, '\\') // Remove multiple backslashes
-        .replace(/[^\x20-\x7E\xA0-\xFF]/g, '') // Remove non-printable chars            
-        .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width chars
-        .replace(/\\/g, '\\\\') // Escape backslashes
-        .replace(/'/g, "\\'") // Escape single quotes
-        .replace(/"/g, '\\"') // Escape double quotes
-        .replace(/\n/g, '\\n') // Handle newlines
-        .replace(/\r/g, '\\r') // Handle carriage returns
-        .replace(/\t/g, '\\t') // Handle tabs
-        .replace(/\f/g, '\\f') // Handle form feeds
-        .replace(/[\x00-\x1F\x7F-\x9F]/g, '');  // Remove control chars again
+
+    // Enfoque simplificado para sanitizar JSON
+    // 1. Primero limpiamos el objeto para eliminar caracteres problemáticos
+    const cleanObject = JSON.parse(JSON.stringify(dataPedido, (key, value) => {
+        // Si es un string, limpiamos caracteres problemáticos
+        if (typeof value === 'string') {
+            return value
+                .replace(/[\u0000-\u001F]/g, '') // Eliminar caracteres de control
+                .replace(/[\u007F-\u009F]/g, '') // Eliminar caracteres de control adicionales
+                .replace(/[\u200B-\u200D\uFEFF]/g, '') // Eliminar caracteres de ancho cero
+                .replace(/\n/g, ' ') // Reemplazar saltos de línea por espacios
+                .replace(/\r/g, ' ') // Reemplazar retornos de carro por espacios
+                .replace(/\t/g, ' ') // Reemplazar tabulaciones por espacios
+                .replace(/\f/g, ' '); // Reemplazar form feeds por espacios
+        }
+        return value;
+    }));
+    
+    // 2. Convertir a JSON y escapar comillas simples para SQL
+    let _json = JSON.stringify(cleanObject).replace(/'/g, "\\'"); // Escape single quotes
+// Ya no necesitamos estos reemplazos adicionales
+
+
 
     const query = `CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
     // console.log(`CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPedido)}')`);
@@ -515,8 +516,6 @@ module.exports.setNuevoPedido = setNuevoPedido;
 //     const read_query = `call procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
 //     // console.log(read_query);
 //     emitirRespuestaSP_RES(read_query, res);        
-// }
-// module.exports.setNuevoPedido2 = setNuevoPedido2;
 
 
 // para evitar pedidos perdidos cuando el socket pierde conexion
@@ -525,16 +524,27 @@ const setNuevoPedido2 = async (req, res) => {
     const dataPedido = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const _dataCliente = dataPedido.dataUsuario;
     const { idorg, idsede, idusuario } = _dataCliente;
-    const _json = JSON.stringify(dataPedido)
-        .replace(/\\n/g, '')
-        .replace(/\\'/g, '')
-        .replace(/\\"/g, '')
-        .replace(/\\&/g, '')
-        .replace(/\\r/g, '')
-        .replace(/\\t/g, '')
-        .replace(/\\b/g, '')
-        .replace(/\\f/g, '');
-
+    
+    // Enfoque simplificado para sanitizar JSON
+    // 1. Primero limpiamos el objeto para eliminar caracteres problemáticos
+    const cleanObject = JSON.parse(JSON.stringify(dataPedido, (key, value) => {
+        // Si es un string, limpiamos caracteres problemáticos
+        if (typeof value === 'string') {
+            return value
+                .replace(/[\u0000-\u001F]/g, '') // Eliminar caracteres de control
+                .replace(/[\u007F-\u009F]/g, '') // Eliminar caracteres de control adicionales
+                .replace(/[\u200B-\u200D\uFEFF]/g, '') // Eliminar caracteres de ancho cero
+                .replace(/\n/g, ' ') // Reemplazar saltos de línea por espacios
+                .replace(/\r/g, ' ') // Reemplazar retornos de carro por espacios
+                .replace(/\t/g, ' ') // Reemplazar tabulaciones por espacios
+                .replace(/\f/g, ' '); // Reemplazar form feeds por espacios
+        }
+        return value;
+    }));
+    
+    // 2. Convertir a JSON y escapar comillas simples para SQL
+    const _json = JSON.stringify(cleanObject).replace(/'/g, "\\'");
+    
     const query = `CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
 
     try {
@@ -544,11 +554,6 @@ const setNuevoPedido2 = async (req, res) => {
     }
 };
 module.exports.setNuevoPedido2 = setNuevoPedido2;
-
-
-
-// const setPrintComanda = async function (dataCLiente, dataPrint) {
-// 	const idorg = dataCLiente.idorg;
 //     const idsede = dataCLiente.idsede;		              
 //     const idusuario = dataCLiente.idusuario;		              
 //     const read_query = `call procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}')`;
@@ -1000,7 +1005,7 @@ module.exports.getListMesas = getListMesas;
 
 const updateTimeLinePedido = async function (idpedido,time_line) {
     const read_query = `insert into pedido_time_line_entrega (idpedido, time_line) values (${idpedido}, '${JSON.stringify(time_line)}') ON DUPLICATE KEY UPDATE time_line = '${JSON.stringify(time_line)}'`;
-    console.log('updateTimeLinePedido', read_query);
+    // console.log('updateTimeLinePedido', read_query);
     return await emitirRespuesta(read_query);        
 }
 module.exports.updateTimeLinePedido = updateTimeLinePedido;
@@ -1018,7 +1023,7 @@ module.exports.updateTimeLinePedido = updateTimeLinePedido;
 
 const setUserAccountRemove = async (req, res) => {
     const user = req.body.user;
-    console.log('user remove', user);
+    // console.log('user remove', user);
 
     try {
         if (user.isCliente) {

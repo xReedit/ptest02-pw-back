@@ -34,10 +34,10 @@ const updateStock = async (op, item, idsede) => {
                 // let _idproducto = '';
                 // let _iditem_subitem = '';
 
-                console.log('el item ==> ', item);
+                // console.log('el item ==> ', item);
 
                 item.subitems_selected.forEach(subitem => {      
-                    console.log('subitem ==> ', subitem);    
+                    // console.log('subitem ==> ', subitem);    
                     // if (subitem.idporcion !== 0) { _idporcion.push(subitem.idporcion) }
                     // if (subitem.idproducto !== 0) { _idproducto.push(subitem.idproducto); }                
                     // _iditem_subitem.push(subitem.iditem_subitem);

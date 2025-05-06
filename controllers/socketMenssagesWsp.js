@@ -8,9 +8,19 @@ const saludos = [
 	"¡Un gusto saludarte! 🙌",
 	"¡Esperamos que estés bien! 🍀",
 	"¡Gracias por preferirnos! 🧡",
-	"¡Hola estimado cliente! 🤗",	
+	"¡Hola estimado cliente! 🤗",
 	"¡Te damos la bienvenida! 🎉",
-	"¡Un placer atenderte! 🤝"
+	"¡Un placer atenderte! 🤝",
+	"¡Qué tal! 👋",
+	"¿Cómo le va? Esperamos muy bien 🌟",
+	"¡Encantados de saludarte! 💫",
+	"¡Qué gusto contactarte! 📱",
+	"¡Feliz de tenerte como cliente! 🎊",
+	"¡Hola! ¿Cómo estás hoy? 🌞",
+	"¡Saludos cordiales! 🌹",
+	"¡Nos alegra atenderte! 😃",
+	"¡Bienvenido nuevamente! 🔄",
+	"¡Un cordial saludo! 📬"	
 ];
 
 const frasesNuevoPedido = [
@@ -23,7 +33,17 @@ const frasesNuevoPedido = [
 	"¡Felicidades, tienes una venta nueva! 💰",
 	"¡Atención! Pedido listo para procesar 🔔",
 	"¡Sigue creciendo tu negocio con este pedido! 📈",
-	"¡Otro cliente confió en ti! 🙏"
+	"¡Otro cliente confió en ti! 🙏",
+	"¡Nueva orden recibida con éxito! ✅",
+	"¡Llegó un pedido a tu tienda! 🏪",
+	"¡Buenas noticias! Tienes un pedido nuevo 🎯",
+	"Un cliente está esperando tu servicio 🤝",
+	"¡Alerta de nuevo pedido en tu sistema! 🔔",
+	"¡Acaba de entrar un pedido fresco! 🆕",
+	"¡Tu negocio sigue creciendo! Nuevo pedido 📊",
+	"¡Tienes trabajo! Llegó un nuevo pedido 💼",
+	"¡Genial! Alguien más eligió tu negocio 🌟",
+	"¡Prepárate! Hay un pedido esperando ser procesado ⏱️"
 ];
 
 const frasesRepartidor = [
@@ -36,7 +56,16 @@ const frasesRepartidor = [
 	"Nuestro equipo se encarga de tu entrega 💪",
 	"Pronto recibirás tu pedido de manos de nuestro repartidor 😊",
 	"Tu repartidor está en camino 🗺️",
-	"¡Listos para entregar tu pedido! 📦"
+	"¡Listos para entregar tu pedido! 📦",
+	"Hemos asignado a un profesional para tu entrega 🏆",
+	"Un experto en entregas llevará tu pedido 📬",
+	"Tu repartidor ha sido notificado y está preparándose 🔄",
+	"Un miembro de nuestro equipo de reparto te atenderá 👥",
+	"Tu pedido ya tiene quien lo lleve hasta ti 🚶‍♂️",
+	"Hemos seleccionado al mejor repartidor para ti 🌟",
+	"Tu entrega está siendo coordinada por nuestro repartidor 📋",
+	"Un especialista en entregas se dirige hacia ti 🧭",
+	"Contamos con un excelente repartidor para tu pedido 🥇"
 ];
 
 const frasesComprobante = [
@@ -60,7 +89,15 @@ const advertenciasComercio = [
 	"*Por tu seguridad*: Comunícate solo con {comercio} al 📞 {comercio_telefono} para cualquier duda. No respondas a este mensaje. 🔒",
 	"*Mensaje automático*: No realices transferencias ni respondas aquí. {comercio} te atenderá en el 📞 {comercio_telefono} 🛡️",
 	"*Cuidado*: Este canal no recibe respuestas. Contacta a {comercio} directamente: 📞 {comercio_telefono} 💬",
-	"*Nota*: Si necesitas ayuda, llama a {comercio} al 📞 {comercio_telefono}. No respondas a este mensaje. ☎️"
+	"*Nota*: Si necesitas ayuda, llama a {comercio} al 📞 {comercio_telefono}. No respondas a este mensaje. ☎️",
+	"*Advertencia de seguridad*: Este es un canal automatizado. Para atención personalizada, contacta a {comercio}: 📞 {comercio_telefono} 🚨",
+	"*Precaución*: No compartas datos personales ni bancarios por este medio. Contacta directamente a {comercio}: 📞 {comercio_telefono} 🔐",
+	"*Información importante*: Este número es solo para envío de notificaciones. Para consultas: {comercio} 📞 {comercio_telefono} ℹ️",
+	"*Alerta*: No respondas a este mensaje. Para cualquier gestión, comunícate con {comercio} al 📞 {comercio_telefono} 📢",
+	"*Ten en cuenta*: Este es un servicio de mensajería automática. Contacta a {comercio} al 📞 {comercio_telefono} para asistencia 📌",
+	"*Aviso de seguridad*: No realices ninguna acción por este medio. Contacta a {comercio} al 📞 {comercio_telefono} 🛑",
+	"*Para tu protección*: Este canal es solo informativo. Comunícate directamente con {comercio} al 📞 {comercio_telefono} 🔰",
+	"*Recuerda siempre*: No envíes información sensible por este medio. Contacta a {comercio}: 📞 {comercio_telefono} 🚫"
 ];
 
 const frasesRecoger = [
@@ -73,7 +110,16 @@ const frasesRecoger = [
 	"¡Tu pedido está preparado y esperando por ti! 🍽️",
 	"Ven por tu pedido, te esperamos con gusto 🤗",
 	"Puedes pasar a la tienda para recoger tu pedido 🛍️",
-	"¡No olvides tu pedido, ya está listo! 📦"
+	"¡No olvides tu pedido, ya está listo! 📦",
+	"Tu orden está lista y esperando por ti 🎯",
+	"Hemos terminado de preparar tu pedido, ¡ven a buscarlo! 🏁",
+	"Todo listo para que recojas tu pedido 👌",
+	"Tu compra está preparada para ser recogida 📩",
+	"¡Misión cumplida! Tu pedido está listo para recoger 🚩",
+	"Pedido completado y listo para entrega en tienda 🏬",
+	"¡Buenas noticias! Tu pedido ya se puede recoger 🎊",
+	"Hemos terminado tu pedido, pasa cuando quieras 🚶‍♀️",
+	"Tu pedido ha sido empacado y está listo para ti 📦"	
 ];
 
 // --- Funciones utilitarias ---
@@ -90,6 +136,7 @@ function obtenerFechaHora() {
 	const minuto = String(ahora.getMinutes()).padStart(2, '0');
 	return `${dia}/${mes}/${anio} ${hora}:${minuto}`;
 }
+
 
 const sendMsjSocketWsp = function (dataMsj, io) {
 	// 0: nuevo pedido notifica comercio

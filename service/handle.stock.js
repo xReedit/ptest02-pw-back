@@ -4,6 +4,19 @@ let ItemService = require('./item.service');
 let errorManager = require('./error.manager');
 const { ChallengeContext } = require('twilio/lib/rest/verify/v2/service/entity/challenge');
 
+/**
+ * Verifica si existen subitems con cantidad en el item
+ * @param {Object} item - El item a verificar
+ * @returns {Boolean} - true si existen subitems con cantidad, false en caso contrario
+ */
+const checkExistSubItemsWithCantidad = (item) => {        
+    return !item.subitems ? false :
+        Array.isArray(item.subitems) ?
+            item.subitems.some(subitem => 
+                Array.isArray(subitem.opciones) && subitem.opciones.some(opcion => opcion.cantidad !== 'ND')
+            ) : false;
+};
+
 const updateStock = async (op, item, idsede) => {    
     if (item.isalmacen === 1) {
         console.log('es de almacen');
@@ -15,15 +28,8 @@ const updateStock = async (op, item, idsede) => {
         const query = `CALL porcedure_pwa_update_cantidad_only_producto(${op}, '${JSON.stringify(_item)}')`;
         return await ResponseService.emitirRespuestaSP(query);
     } else {
-        // const _existSubItemsWithCantidad = !item.subitems ? false :
-        //     typeof item.subitems === 'object' ?
-        //         item.subitems.some(subitem => subitem.opciones.some(opcion => opcion.cantidad !== 'ND')) : false; 
-        
-        const _existSubItemsWithCantidad = !item.subitems ? false :
-            Array.isArray(item.subitems) ?
-                item.subitems.some(subitem => 
-                    Array.isArray(subitem.opciones) && subitem.opciones.some(opcion => opcion.cantidad !== 'ND')
-                ) : false;
+        // Verificar si existen subitems con cantidad
+        const _existSubItemsWithCantidad = checkExistSubItemsWithCantidad(item);
 
         // let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
 
@@ -90,10 +96,21 @@ const updateStock = async (op, item, idsede) => {
             console.log('ingresa processItemPorcion');
             return await ItemService.processItemPorcion(item);
         } else {
-            console.log('ingresa processItem');
-            return await ItemService.processItem(item, idsede);
+            console.log('ingresa processItem');            
+            if (item.isporcion !== 'ND') {             
+                return await ItemService.processItem(item, idsede);
+            } else {
+                return [{
+                    cantidad: item.cantidad,
+                    listItemsPorcion: null,
+                    listSubItems: null
+                }]                
+            }
         }
     }
 }
 
-module.exports.updateStock = updateStock;
+module.exports = {
+    updateStock,
+    checkExistSubItemsWithCantidad
+};

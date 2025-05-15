@@ -62,6 +62,9 @@ routerV3.post('/bot/send-bot-pedido', pedidoBot.setPedidoBot);
 routerV3.post('/bot/send-bot-solicitud-permiso', pedidoBot.setAceptaSolicitudRemotoBot);
 
 
+// version app
+// routerV3.post('/version-app', apiPwaAppPedidos.getVersionApp);
+
 // PWA-APP PEDIDO //
 // PWA-APP PEDIDO //
 

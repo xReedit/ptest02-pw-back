@@ -319,7 +319,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
 			item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;
 			if (item.cantidad != 'ND') {	
-				console.log('item.sumar', item);	
+				// console.log('item.sumar', item);	
 				// var _cantItem = parseFloat(item.cantidad);
 
 				// item.venta_x_peso solo para productos
@@ -331,7 +331,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// console.log('json item ', JSON.stringify(item));
 
 				const rptCantidad = await apiPwa.setItemCartaAfter(0, item);
-				console.log('cantidad update mysql ', rptCantidad);
+				// console.log('cantidad update mysql ', rptCantidad);
 
 				// if ( item.isporcion != 'SP' ) {
 				item.cantidad = rptCantidad[0].cantidad;
@@ -368,7 +368,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					listSubItems: rptCantidad[0].listSubItems				
 				}
 
-				console.log('itemModificado', item);		
+				// console.log('itemModificado', item);		
 
 				io.to(chanelConect).emit('itemModificado', item); 
 				io.to(chanelConect).emit('itemModificado-pwa', rpt); // para no modificar en web
@@ -396,7 +396,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// nuevo item agregado a la carta - from monitoreo stock
 		socket.on('nuevoItemAddInCarta', (item) => {
-			console.log('nuevoItemAddInCarta', item);
+			// console.log('nuevoItemAddInCarta', item);
 			socket.broadcast.to(chanelConect).emit('nuevoItemAddInCarta', item);
 		});
 
@@ -418,7 +418,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				if (item.cantidad != 'ND') {
 					item.cantidad_reset = item.cantidad_seleccionada;					
 					item.cantidad_seleccionada = 0;
-					console.log('items recuperar ', item);
+					// console.log('items recuperar ', item);
 										
 					const rptCantidad = await apiPwa.setItemCarta(1, item, dataCliente.idsede);
 					item.cantidad = rptCantidad[0].cantidad;
@@ -499,8 +499,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				return;	
 			}
 
-			// console.log('dataCliente === ', dataCliente);
+			// console.log('dataSend === ', dataSend);
 			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
+
+			// console.log('rpt === ', rpt);
 									
 			io.to(socket.id).emit('nuevoPedidoRes', rpt)
 
@@ -602,7 +604,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			//apiPwa.setPrintComanda(dataCliente, dataSend.dataPrint);
 			// emitimos para print server
 			// socket.broadcast.to(chanelConect).emit('printerComanda', rpt);
-			xMandarImprimirComanda (rpt[0].data, socket, chanelConect);
+			xMandarImprimirComanda(rpt[0].data, socket, chanelConect);
 		});
 
 
@@ -693,7 +695,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// para imprmir solo la comanda desde control pedidos, venta rapida, zona despacho
 		socket.on('printerOnly', (dataSend) => {			
 			dataSend.hora = n;
-			console.log('printerOnly', dataSend);
+			// console.log('printerOnly', dataSend);
 
 			socket.broadcast.to(chanelConect).emit('printerOnly', dataSend);
 			socket.broadcast.to(chanelConect).emit('nuevoPedido-for-list-mesas', dataSend); // app mozo
@@ -708,7 +710,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			    isNotificaMonitor = false;
 			}
 
-			console.log('nuevoPedidoUpdateVista', isNotificaMonitor)
+			// console.log('nuevoPedidoUpdateVista', isNotificaMonitor)
 
 			if ( isNotificaMonitor ) {
 				console.log('nuevoPedidoUpdateVista', chanelConect)
@@ -981,6 +983,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 	
 	function xMandarImprimirComanda(dataPrint, socket, chanelConect) {
 		// data print
+		console.log('dataPrint xMandarImprimirComanda ===>', dataPrint);
 			const _dataPrint = dataPrint;
 			if ( _dataPrint == null ) { return }
 			_dataPrint.map(x => {
@@ -994,7 +997,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 						idprint_server_detalle: x.print.idprint_server_detalle
 					}
 
-					// console.log(' ====== printerComanda ===== xMandarImprimirComanda', dataPrintSend);
+					console.log(' ====== printerComanda ===== xMandarImprimirComanda', dataPrintSend);
 					socket.broadcast.to(chanelConect).emit('printerComanda', dataPrintSend);
 				}				
 			});	

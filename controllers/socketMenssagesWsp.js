@@ -159,7 +159,7 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			const cuerpo = elegirAleatorio(frasesNuevoPedido);
 			_dataUrl = `{"s": "${dataMsj.s}", "p": ${dataMsj.p}, "h": "${dataMsj.h}"}`;
 			url = `https://comercio.papaya.com.pe/order-last?p=${btoa(_dataUrl)}`;
-			msj = `🤖 ${saludo} ${cuerpo} por Papaya Express. Puedes revisarlo aquí: ${url}\n\nEnviado el: ${obtenerFechaHora()}`;
+			msj = `${saludo} ${cuerpo} por Papaya Express. Puedes revisarlo aquí: ${url}\n\nEnviado el: ${obtenerFechaHora()}`;
 			_sendServerMsj.tipo = 0;
 			_sendServerMsj.telefono = dataMsj.t;
 			_sendServerMsj.msj = msj;
@@ -188,7 +188,7 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			// Notifica al cliente el repartidor que aceptó el pedido, cordial y variado
 			const saludo = elegirAleatorio(saludos);
 			const cuerpo = elegirAleatorio(frasesRepartidor);
-			msj = `🤖 ${saludo} ${dataMsj.nombre}, ${cuerpo}: ${dataMsj.repartidor_nom} 📞 ${dataMsj.repartidor_telefono} 🙋‍♂️\n\nTe llamará cuando esté cerca o para informarte sobre tu pedido.\n\nEnviado el: ${obtenerFechaHora()}`;
+			msj = `${saludo} ${dataMsj.nombre}, ${cuerpo}: ${dataMsj.repartidor_nom} 📞 ${dataMsj.repartidor_telefono} 🙋\n\nTe llamará cuando esté cerca o para informarte sobre tu pedido.\n\nEnviado el: ${obtenerFechaHora()}`;
 			_sendServerMsj.tipo = 2;
 			_sendServerMsj.telefono = dataMsj.telefono;
 			_sendServerMsj.msj = msj;
@@ -203,7 +203,7 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			const _concat_external_id = dataMsj.external_id + _user_id;
 			const _ulrComprobante = `https://apifac.papaya.com.pe/downloads/document/pdf/${_concat_external_id}`;
 			const _adjuntaTelefonoComercio = dataMsj.comercio_telefono ? `\n\n${elegirAleatorio(advertenciasComercio).replace('{comercio}', dataMsj.comercio).replace('{comercio_telefono}', dataMsj.comercio_telefono)}` : '';
-			msj = `🤖 ${saludo} por encargo de ${dataMsj.comercio}, ${cuerpo} número ${dataMsj.numero_comprobante}. También puedes consultarlo en: papaya.com.pe ${_adjuntaTelefonoComercio}\n\nEnviado el: ${obtenerFechaHora()}`;
+			msj = `${saludo} por encargo de ${dataMsj.comercio}, ${cuerpo} número ${dataMsj.numero_comprobante}. También puedes consultarlo en: papaya.com.pe ${_adjuntaTelefonoComercio}\n\nEnviado el: ${obtenerFechaHora()}`;
 			_sendServerMsj.tipo = 3;
 			_sendServerMsj.telefono = dataMsj.telefono;
 			_sendServerMsj.msj = msj;
@@ -232,7 +232,7 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			// Notifica al cliente que pase a recoger el pedido
 			const saludo = elegirAleatorio(saludos);
 			const cuerpo = elegirAleatorio(frasesRecoger);
-			msj = `🤖 ${saludo} ${dataMsj.nombre}, ${cuerpo} de ${dataMsj.establecimiento}. Puedes pasar a recogerlo en ${dataMsj.tiempo_entrega} aproximadamente.\n\nEnviado el: ${obtenerFechaHora()}`;
+			msj = `${saludo} ${dataMsj.nombre}, ${cuerpo} de ${dataMsj.establecimiento}. Puedes pasar a recogerlo en ${dataMsj.tiempo_entrega} aproximadamente.\n\nEnviado el: ${obtenerFechaHora()}`;
 			_sendServerMsj.tipo = 4;
 			_sendServerMsj.telefono = dataMsj.telefono;
 			_sendServerMsj.msj = msj;

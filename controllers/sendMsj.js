@@ -253,10 +253,10 @@ const sendEmailSendAWSSES = async function (req, res) {
             to: _msj.to, // list of receivers
             subject: _msj.asunto, // Subject line
             text: _msj.titulo, // plain text body
-            html: _msj.htmlContent, // html body
+            html: _msj.htmlContent // html body			
         });
 
-        console.log("Message sent: %s", info.messageId);
+        console.log("Message sent: %s", info);
 
         res.status(200).json({
             ok: true,

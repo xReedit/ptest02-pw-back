@@ -20,7 +20,7 @@ class ItemService {
             iditem2: item.iditem2        
         }
         
-        // console.log('_item', _item);
+        console.log('_item', _item);
 
         let updatedItem;    
         try {     

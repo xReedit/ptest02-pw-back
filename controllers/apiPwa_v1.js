@@ -476,7 +476,7 @@ const setNuevoPedido = async (dataCliente, dataPedido) => {
 
 
     const query = `CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
-    // console.log(`CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPedido)}')`);
+    console.log(`CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`);
     // return await emitirRespuestaSP(query);
 
     try {
@@ -1104,17 +1104,17 @@ const calculateQuantity = (item) => {
 module.exports.calculateQuantity = calculateQuantity;
 
 const updateSubItems = (item, listSubItems) => {
-    if (listSubItems) {
+    if (listSubItems && item.subitems) {
         try {
             listSubItems.map(subitem => {
-                if (!item.subitems) {
-                    item.subitems.map(s => {
+                item.subitems.map(s => {
+                    if (s.opciones && Array.isArray(s.opciones)) {
                         let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
                         if (itemFind) {
                             itemFind.cantidad = subitem.cantidad;
                         }
-                    });
-                }
+                    }
+                });
             });
         } catch (error) {
             console.log(error);
@@ -1486,16 +1486,30 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
     let rpt;
     try {
         item = calculateQuantity(item);
+
+        // vemos si tiene subitems con cantidad distinta de ND
+        // si los tiene entonces no se modifica el stock
+        let _existSubItemsWithCantidadInND = false;
+        console.log('_existSubItemsWithCantidadInND', _existSubItemsWithCantidadInND);
+        if (item.cantidad == 'ND') {
+            _existSubItemsWithCantidadInND = handleStock.checkExistSubItemsWithCantidad(item);
+            if (_existSubItemsWithCantidadInND) {
+                item.cantidad = 'SUBITEM-CANTIDAD'; // para manejar solo los subitems
+            }
+        }
         
         if (item.cantidad !== 'ND') {
             const rptCantidad = await setItemCarta(0, item, idsede);            
-            item.cantidad = rptCantidad[0].cantidad;
+            console.log('rptCantidad', rptCantidad);
+            item.cantidad = _existSubItemsWithCantidadInND ? 'ND' : rptCantidad[0].cantidad;
 
-            item = updateSubItems(item, rptCantidad[0].listSubItems);
+            // Check if rptCantidad[0] and listSubItems exist before using them
+            const listSubItems = rptCantidad[0] && rptCantidad[0].listSubItems ? rptCantidad[0].listSubItems : null;
+            item = updateSubItems(item, listSubItems);
             rpt = {
                 item : item,
-                listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,    
-                listSubItems: rptCantidad[0].listSubItems                
+                listItemPorcion: item.isporcion === 'SP' && rptCantidad[0] && rptCantidad[0].listItemsPorcion ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,    
+                listSubItems: listSubItems                
             }
 
             console.log('rpt', rpt);

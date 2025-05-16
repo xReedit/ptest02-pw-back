@@ -318,7 +318,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// la cantidad viene 999 cuando es nd y la porcion si viene nd
 			// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
 			item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;
-			if (item.cantidad != 'ND') {	
+			if (item.cantidad != 'ND') {
 				// console.log('item.sumar', item);	
 				// var _cantItem = parseFloat(item.cantidad);
 
@@ -367,8 +367,6 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,	
 					listSubItems: rptCantidad[0].listSubItems				
 				}
-
-				// console.log('itemModificado', item);		
 
 				io.to(chanelConect).emit('itemModificado', item); 
 				io.to(chanelConect).emit('itemModificado-pwa', rpt); // para no modificar en web

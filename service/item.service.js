@@ -114,7 +114,7 @@ class ItemService {
     static async processAllItemSubitemSeleted(allItems) {
         let updatedItem;
         try {        
-            // console.log(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
+            console.log(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
             updatedItem = await ResponseService.emitirRespuestaSP_RAW('call procedure_stock_all_subitems(?)', [
                 JSON.stringify(allItems)
             ]);

@@ -10,11 +10,14 @@ const { ChallengeContext } = require('twilio/lib/rest/verify/v2/service/entity/c
  * @returns {Boolean} - true si existen subitems con cantidad, false en caso contrario
  */
 const checkExistSubItemsWithCantidad = (item) => {        
-    return !item.subitems ? false :
+    const isCheck = !item.subitems ? false :
         Array.isArray(item.subitems) ?
             item.subitems.some(subitem => 
                 Array.isArray(subitem.opciones) && subitem.opciones.some(opcion => opcion.cantidad !== 'ND')
             ) : false;
+
+        item.isExistSubItemsWithCantidad = isCheck;
+        return isCheck;
 };
 
 const updateStock = async (op, item, idsede) => {    
@@ -35,7 +38,7 @@ const updateStock = async (op, item, idsede) => {
 
         if (_existSubItemsWithCantidad && item.subitems_selected) {
             try {
-                console.log('tiene subitems con cantidad');
+                console.log('tiene subitems con cantidad', item);
                 // let _idporcion = '';
                 // let _idproducto = '';
                 // let _iditem_subitem = '';
@@ -72,6 +75,8 @@ const updateStock = async (op, item, idsede) => {
                             iditem2: item.iditem2,
                             cantidad: item.cantidad,  
                         };
+
+                        console.log('allItems', allItems);
     
                         ItemService.processAllItemSubitemSeleted(allItems);
                     // }

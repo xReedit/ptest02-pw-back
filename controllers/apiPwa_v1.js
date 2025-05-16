@@ -1094,11 +1094,20 @@ const calculateQuantity = (item) => {
 
 
     item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND' : item.cantidad;
-    item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;
+    item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;    
+
+    handleStock.checkExistSubItemsWithCantidad(item);
+    console.log('item.isExistSubItemsWithCantidad', item.isExistSubItemsWithCantidad);
+    
+    let _cantSumar = item.venta_x_peso === 1 ? -item.cantidad : item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;
     if (item.cantidad != 'ND') {
-        var _cantSumar = item.venta_x_peso === 1 ? -item.cantidad : item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;
         item.cantidadSumar = _cantSumar;
+    } else {
+        if (item.isExistSubItemsWithCantidad) {
+            item.cantidadSumar = _cantSumar;
+        }
     }
+
     return item;
 }
 module.exports.calculateQuantity = calculateQuantity;
@@ -1489,14 +1498,14 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
 
         // vemos si tiene subitems con cantidad distinta de ND
         // si los tiene entonces no se modifica el stock
-        let _existSubItemsWithCantidadInND = false;
-        console.log('_existSubItemsWithCantidadInND', _existSubItemsWithCantidadInND);
+        let _existSubItemsWithCantidadInND = false;        
         if (item.cantidad == 'ND') {
             _existSubItemsWithCantidadInND = handleStock.checkExistSubItemsWithCantidad(item);
             if (_existSubItemsWithCantidadInND) {
                 item.cantidad = 'SUBITEM-CANTIDAD'; // para manejar solo los subitems
             }
         }
+        console.log('_existSubItemsWithCantidadInND', _existSubItemsWithCantidadInND);
         
         if (item.cantidad !== 'ND') {
             const rptCantidad = await setItemCarta(0, item, idsede);            
@@ -1512,13 +1521,13 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
                 listSubItems: listSubItems                
             }
 
-            console.log('rpt', rpt);
+            // console.log('rpt =>>>>', rpt);
             if ( notificar ) {
                 io.to(chanelConect).emit('itemModificado-pwa', rpt);
                 io.to(chanelConect).emit('itemModificado', item); 
             }
         } else {
-            if ( notificar ) {
+            if ( notificar ) {                	
                 io.to(chanelConect).emit('itemModificado', item);
                 io.to(chanelConect).emit('itemModificado-pwa', item);
             }

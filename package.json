@@ -22,7 +22,7 @@
     "form-data": "^3.0.0",
     "jsonwebtoken": "^8.5.1",
     "mysql": "^2.18.1",
-    "mysql2": "^3.9.7",
+    "mysql2": "^3.9.8",
     "node-fetch": "^2.6.0",
     "node-gcm": "^1.0.5",
     "nodemailer": "^6.4.17",

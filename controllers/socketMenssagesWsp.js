@@ -1,6 +1,12 @@
 
 // evniar mensajes al whatsapp 112023
+
+let config = require('../_config');
+
 // --- Arrays de saludos y frases cordiales ---
+
+
+
 const saludos = [
 	"¡Hola! 👋",
 	"¡Saludos! 😊",
@@ -86,17 +92,15 @@ const advertenciasComercio = [
 	"*Importante*: No transfieras dinero ni respondas a este número. Si tienes dudas, comunícate con {comercio} al 📞 {comercio_telefono} ❗",
 	"*Aviso*: Este número solo envía mensajes automáticos. Cualquier consulta, hazla directamente con {comercio} al teléfono 📞 {comercio_telefono} 🤖",
 	"*Recuerda*: No respondas ni realices pagos a este número. Contacta a {comercio} para atención personalizada: 📞 {comercio_telefono} 🙏",
-	"*Por tu seguridad*: Comunícate solo con {comercio} al 📞 {comercio_telefono} para cualquier duda. No respondas a este mensaje. 🔒",
+	"*Lea atentamente*: Comunícate solo con {comercio} al 📞 {comercio_telefono} para cualquier duda. No respondas a este mensaje. 🔒",
 	"*Mensaje automático*: No realices transferencias ni respondas aquí. {comercio} te atenderá en el 📞 {comercio_telefono} 🛡️",
 	"*Cuidado*: Este canal no recibe respuestas. Contacta a {comercio} directamente: 📞 {comercio_telefono} 💬",
 	"*Nota*: Si necesitas ayuda, llama a {comercio} al 📞 {comercio_telefono}. No respondas a este mensaje. ☎️",
 	"*Advertencia de seguridad*: Este es un canal automatizado. Para atención personalizada, contacta a {comercio}: 📞 {comercio_telefono} 🚨",
 	"*Precaución*: No compartas datos personales ni bancarios por este medio. Contacta directamente a {comercio}: 📞 {comercio_telefono} 🔐",
 	"*Información importante*: Este número es solo para envío de notificaciones. Para consultas: {comercio} 📞 {comercio_telefono} ℹ️",
-	"*Alerta*: No respondas a este mensaje. Para cualquier gestión, comunícate con {comercio} al 📞 {comercio_telefono} 📢",
 	"*Ten en cuenta*: Este es un servicio de mensajería automática. Contacta a {comercio} al 📞 {comercio_telefono} para asistencia 📌",
-	"*Aviso de seguridad*: No realices ninguna acción por este medio. Contacta a {comercio} al 📞 {comercio_telefono} 🛑",
-	"*Para tu protección*: Este canal es solo informativo. Comunícate directamente con {comercio} al 📞 {comercio_telefono} 🔰",
+	"*Aviso de seguridad*: No realices ninguna acción por este medio. Contacta a {comercio} al 📞 {comercio_telefono} 🛑",	
 	"*Recuerda siempre*: No envíes información sensible por este medio. Contacta a {comercio}: 📞 {comercio_telefono} 🚫"
 ];
 
@@ -158,11 +162,27 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			const saludo = elegirAleatorio(saludos);
 			const cuerpo = elegirAleatorio(frasesNuevoPedido);
 			_dataUrl = `{"s": "${dataMsj.s}", "p": ${dataMsj.p}, "h": "${dataMsj.h}"}`;
-			url = `https://comercio.papaya.com.pe/order-last?p=${btoa(_dataUrl)}`;
+			const dataUrl = btoa(_dataUrl);
+			url = `https://comercio.papaya.com.pe/order-last?p=${dataUrl}`;
 			msj = `${saludo} ${cuerpo} por Papaya Express. Puedes revisarlo aquí: ${url}\n\nEnviado el: ${obtenerFechaHora()}`;
 			_sendServerMsj.tipo = 0;
 			_sendServerMsj.telefono = dataMsj.t;
 			_sendServerMsj.msj = msj;
+			_sendServerMsj.nombre_plantilla = 'nuevo_pedido_papaya_express';
+			_sendServerMsj.components = [
+				{
+					"type": "button",
+					"sub_type": "url",
+					"index": "0",  // primer botón
+					"parameters": [
+						{
+							"type": "text",
+							"text": dataUrl   // Este será el {{1}} del botón (el valor de ?key=...)
+						}
+					]
+				}
+			];
+			_sendServerMsj.bodyParameters = [];
 		}
 		// 	_dataUrl = `{"s": "${dataMsj.s}", "p": ${dataMsj.p}, "h": "${dataMsj.h}"}`;
 		// 	// url = `https://comercio.papaya.com.pe/#/order-last?p=${btoa(_dataUrl)}`; // 2322 quitamos el hashtag #
@@ -180,6 +200,19 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			_sendServerMsj.msj = '📞🔐 Papaya Express, su código de verificación es: ' + dataMsj.cod;
 			_sendServerMsj.idcliente = dataMsj.idcliente;
 			_sendServerMsj.idsocket = dataMsj.idsocket;
+			_sendServerMsj.nombre_plantilla = 'verificar_telefono';
+			_sendServerMsj.components = [
+				{
+					"type": "body",
+					"parameters": [
+						{
+							"type": "text",
+							"text": dataMsj.cod  // el código de verificación real
+						}
+					]
+				}
+			];
+			_sendServerMsj.bodyParameters = [];
 		}
 
 
@@ -192,6 +225,18 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			_sendServerMsj.tipo = 2;
 			_sendServerMsj.telefono = dataMsj.telefono;
 			_sendServerMsj.msj = msj;
+			_sendServerMsj.nombre_plantilla = 'repartidor_asignado';
+			_sendServerMsj.components = [
+				{
+					"type": "body",
+					"parameters": [
+						{ "type": "text", "text": dataMsj.nombre },     // {{1}} nombre del cliente
+						{ "type": "text", "text": dataMsj.repartidor_nom },      // {{2}} nombre del repartidor
+						{ "type": "text", "text": dataMsj.repartidor_telefono }   // {{3}} teléfono del repartidor
+					]
+				}
+			];
+			_sendServerMsj.bodyParameters = [];
 		}
 
 		// notifica url descarga pdf comprobante
@@ -210,6 +255,31 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			_sendServerMsj.url_comprobante = _ulrComprobante;
 			_sendServerMsj.url_comprobante_xml = _ulrComprobante.replace('/pdf/','/xml/');
 			_sendServerMsj.nombre_file = dataMsj.numero_comprobante;
+			_sendServerMsj.nombre_plantilla = 'envio_comprobante';
+			_sendServerMsj.components = [
+				{
+					"type": "header",
+					"parameters": [
+						{
+							"type": "document",
+							"document": {
+								"link": _ulrComprobante,
+								"filename": dataMsj.numero_comprobante
+							}
+						}
+					]
+				},
+				{
+					"type": "body",
+					"parameters": [
+						{ "type": "text", "text": dataMsj.comercio },       // {{1}} nombre del comercio
+						{ "type": "text", "text": dataMsj.numero_comprobante },   // {{2}} número del comprobante
+						{ "type": "text", "text": dataMsj.comercio },   // {{3}} nombre del comercio
+						{ "type": "text", "text": dataMsj.comercio_telefono } // {{4}} telefono del comercio
+					]
+				}
+			];
+			_sendServerMsj.bodyParameters = [];
 		}
 
 		// 	const _user_id = dataMsj.user_id ? `/${dataMsj.user_id}` : '';
@@ -236,6 +306,17 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			_sendServerMsj.tipo = 4;
 			_sendServerMsj.telefono = dataMsj.telefono;
 			_sendServerMsj.msj = msj;
+			_sendServerMsj.nombre_plantilla = 'pedido_listo_recojo_1';
+			_sendServerMsj.components = [
+				{
+					"type": "body",
+					"parameters": [
+						{ "type": "text", "text": dataMsj.nombre },       // {{1}} nombre del repartidor
+						{ "type": "text", "text": dataMsj.establecimiento },   // {{2}} nombre del local
+						{ "type": "text", "text": dataMsj.comercio_telefono }   // {{3}} telefono del comercio
+					]
+				}
+			];
 		}
 
 		// notifica al cliente el repartidor time line del pedido
@@ -244,6 +325,22 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			_sendServerMsj.telefono = dataMsj.telefono;
 			// _sendServerMsj.msj = `🤖 Hola ${dataMsj.nombre}, el repartidor que está a cargo de su pedido de ${dataMsj.establecimiento} es: ${dataMsj.repartidor_nom} 📞 ${dataMsj.repartidor_telefono} 🙋‍♂️\n\nLe llamará cuando este cerca ó para informarle de su pedido.`			
 			_sendServerMsj.msj = dataMsj.msj
+
+			if (_sendServerMsj.msj.includes('llego')) {
+				_sendServerMsj.nombre_plantilla = 'repartidor_llego_local';			
+			} else {
+				_sendServerMsj.nombre_plantilla = 'repartidor_en_camino';
+			}
+			_sendServerMsj.components = [
+				{
+					"type": "body",
+					"parameters": [
+						{ "type": "text", "text": dataMsj.nombre },       // {{1}} nombre del repartidor
+						{ "type": "text", "text": dataMsj.establecimiento }   // {{2}} nombre del local
+					]
+				}
+			];
+			_sendServerMsj.bodyParameters = [];
 		}
 
 		// notifica solicitud de permiso al administrador para borrar productos, eliminar cuentas, o cierre de caja
@@ -260,6 +357,30 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			_sendServerMsj.tipo = 6;
 			_sendServerMsj.telefono = dataMsj.telefono_admin;			
 			_sendServerMsj.msj = mjsPermiso
+			_sendServerMsj.nombre_plantilla = 'solicitud_autorizacion_remota';
+			_sendServerMsj.components = [
+				{
+					"type": "body",
+					"parameters": [
+						{ "type": "text", "text": dataMsj.nomusuario_admin },      // {{1}}
+						{ "type": "text", "text": dataMsj.nomusuario_solicita },               // {{2}}
+						{ "type": "text", "text": dataMsj.nomsede },    // {{3}}
+						{ "type": "text", "text": dataMsj.solicitud },     // {{4}}
+						{ "type": "text", "text": dataMsj.motivo }     // {{5}}
+					]
+				},
+				{
+					"type": "button",
+					"sub_type": "url",
+					"index": "0",
+					"parameters": [
+						{
+							"type": "text",
+							"text": dataMsj.link  // valor que reemplaza {{6}} en el botón (por ejemplo el ID de la solicitud)
+						}
+					]
+				}
+			];
 		}
 
 		// cupones de descuento

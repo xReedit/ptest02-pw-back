@@ -62,5 +62,7 @@ config.SEED_EMAIL = process.env.SEED_EMAIL || _config.SEED_EMAIL;
 config.SEED_SES_USER = process.env.SEED_SES_USER || _config.SEED_SES_USER;
 config.SEED_SES_PASS = process.env.SEED_SES_PASS || _config.SEED_SES_PASS;
 
+config.URL_BOT_GPT = '';
+
 
 module.exports = config;

@@ -327,7 +327,7 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 			_sendServerMsj.msj = dataMsj.msj
 
 			if (_sendServerMsj.msj.includes('llego')) {
-				_sendServerMsj.nombre_plantilla = 'repartidor_llego_local';			
+				_sendServerMsj.nombre_plantilla = 'repartidor_llego_local_1';			
 			} else {
 				_sendServerMsj.nombre_plantilla = 'repartidor_en_camino';
 			}

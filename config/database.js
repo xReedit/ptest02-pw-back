@@ -5,13 +5,32 @@
 
 const { Sequelize } = require('sequelize');
 
+let _config;
+try {
+  _config = require('../_config');
+} catch (e) {
+  _config = {
+    port: '',
+    portSocket: '',
+    database: '',
+    username: '',
+    password: '',
+    db_host: '',
+    port: '',
+    db_port: '',
+    publicKeyVapid: '',
+    privateKeyVapid: '',
+    firebaseApikey: ''
+  };
+}
+
 // Obtener credenciales desde variables de entorno o usar valores por defecto
 const dbConfig = {
-  host: process.env.DB_HOST || '192.168.1.65',
-  port: process.env.DB_PORT || 3306,
-  username: process.env.DB_USER || 'resto',
-  password: process.env.DB_PASSWORD || '182182',
-  database: process.env.DB_NAME || 'restobar',
+  host: process.env.DB_HOST || _config?.db_host,
+  port: process.env.DB_PORT || _config?.db_port,
+  username: process.env.DB_USER || _config?.username,
+  password: process.env.DB_PASSWORD || _config?.password,
+  database: process.env.DB_NAME || _config?.database,
   dialect: 'mysql',
   // Opciones de pool optimizadas para alta demanda
   pool: {

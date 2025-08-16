@@ -52,6 +52,9 @@ class QueryService {
             if (results.length === 0) {
                 return [{}];
             }
+
+            // Retornar los resultados
+            return results;
         } catch (error) {
             console.error('Error en emitirRespuestaSP_RAW:', error);
             throw error;

@@ -11,7 +11,7 @@ let mysql_clean = function (string) {
 };
 
 const emitirRespuesta = async (xquery) => {
-    console.log(xquery);
+    // console.log(xquery);
     try {
         return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
     } catch (err) {
@@ -21,7 +21,7 @@ const emitirRespuesta = async (xquery) => {
 };
 
 const emitirRespuesta_RES = async (xquery, res) => {
-    console.log(xquery);
+    // console.log(xquery);
 
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
@@ -36,7 +36,7 @@ const emitirRespuesta_RES = async (xquery, res) => {
 module.exports.emitirRespuesta_RES = emitirRespuesta_RES;
 
 const emitirRespuestaSP = async (xquery) => {
-    console.log(xquery);
+    // console.log(xquery);
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.RAW });
         const arr = Object.values(rows[0]);
@@ -48,7 +48,7 @@ const emitirRespuestaSP = async (xquery) => {
 };
 
 const emitirRespuestaSP_RES = async (xquery, res) => {
-    console.log(xquery);
+    // console.log(xquery);
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
 

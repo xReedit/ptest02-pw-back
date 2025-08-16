@@ -1,7 +1,11 @@
 // services/item.service.js
 
-const ResponseService = require('../service/query.service');
+const QueryService = require('../service/query.service');
 const errorManager = require('../service/error.manager');
+let Sequelize = require('sequelize');
+const config = require('../_config');
+const sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+
 
 class ItemService {
     static async processItem(item, idsede) {
@@ -23,16 +27,33 @@ class ItemService {
         console.log('_item', _item);
 
         let updatedItem;    
-        try {     
+        let transaction;
+        
+        try {  
+            // Iniciar una transacción
+            transaction = await sequelize.transaction({
+                isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE
+            });   
+            // transaction = await sequelize.transaction();
+
             // updatedItem = await ResponseService.emitirRespuestaSP(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);
             // console.log(`call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`);
-            updatedItem = await ResponseService.emitirRespuestaSP_RAW('call procedure_stock_item(?, ?)', [
+            updatedItem = await QueryService.emitirRespuestaSP_RAW('call procedure_stock_item(?, ?)', [
                 JSON.stringify(_item),
                 idsede
-            ]);
+            ], transaction);
+
+            // Confirmar la transacción
+            await transaction.commit();
+
             result[0].cantidad = parseFloat(updatedItem[0].cantidad);
+            
             return result;
+
         } catch (error) {
+            // Revertir la transacción en caso de error
+            if (transaction) await transaction.rollback();
+
             const sqlQuery = `call procedure_stock_item('${JSON.stringify(_item)}', ${idsede})`;
             const dataError = {
                 incidencia: {
@@ -76,10 +97,18 @@ class ItemService {
             }      
                         
             // console.log(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);
-            // updatedItem = await ResponseService.emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);
-            updatedItem = await ResponseService.emitirRespuestaSP_RAW('call procedure_stock_item_porcion(?)', [
-                JSON.stringify(_itemProcessPorcion)
+            // updatedItem = await QueryService.emitirRespuestaSP(`call procedure_stock_item_porcion('${JSON.stringify(_itemProcessPorcion)}')`);
+        
+            // Verificar que _itemProcessPorcion no sea null antes de convertirlo a JSON
+            if (!_itemProcessPorcion) {
+                throw new Error('_itemProcessPorcion es null o undefined');
+            }
+            
+            const jsonParam = JSON.stringify(_itemProcessPorcion);
+            updatedItem = await QueryService.emitirRespuestaSP_RAW('call procedure_stock_item_porcion(?)', [
+                jsonParam
             ]);
+
             // console.log('updatedItem', updatedItem);
             result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
             const listItemsJson = typeof updatedItem[0].listItemsPorcion === 'string' ? JSON.parse(updatedItem[0].listItemsPorcion) : updatedItem[0].listItemsPorcion;
@@ -115,7 +144,7 @@ class ItemService {
         let updatedItem;
         try {        
             console.log(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
-            updatedItem = await ResponseService.emitirRespuestaSP_RAW('call procedure_stock_all_subitems(?)', [
+            updatedItem = await QueryService.emitirRespuestaSP_RAW('call procedure_stock_all_subitems(?)', [
                 JSON.stringify(allItems)
             ]);
 

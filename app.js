@@ -6,6 +6,33 @@ var app = express();
 var bodyParser = require('body-parser');
 var cors=require('cors');
 
+// // IMPORTANTE: Hacer que toda la aplicación use directamente la versión refactorizada
+// const originalHandler = require('./service/handle.stock');
+// const v1Handler = require('./service/handle.stock.v1');
+// // const v1Handler = require('./service/stock.hybrid.js');
+
+// // Reemplazar todas las exportaciones de handle.stock.js con handle.stock.v1.js
+// Object.keys(v1Handler).forEach(key => {
+//     originalHandler[key] = v1Handler[key];
+// });
+
+// console.log('🔔 Sistema actualizado para usar directamente handle.stock.v1.js en toda la aplicación');
+
+// // Opcional: Activar además la implementación híbrida con Sequelize
+// const stockHybridService = require('./service/stock.hybrid');
+
+// // Modificar la implementación de v1 para usar híbrido primero
+// const originalUpdateStock = v1Handler.updateStock;
+// v1Handler.updateStock = async (op, item, idsede) => {
+//     try {
+//         console.log('🌟 Usando implementación híbrida con Sequelize');
+//         return await stockHybridService.updateStock(op, item, idsede);
+//     } catch (error) {
+//         console.error('Error en implementación híbrida, usando v1:', error);
+//         console.log('🔄 Usando implementación v1');
+//         return await originalUpdateStock(op, item, idsede);
+//     }
+// };
 
 app.use(cors());
 
@@ -13,10 +40,12 @@ app.use(cors());
 // "socket.io-client": "^2.4.0",
 
 // var config = require('./config');
-var config = require('./_config');
+var config = require('./_config'); 
+
 var socketsController = require('./controllers/sockets');
 // const apiServiceSendCPE = require('./controllers/serviceSendCPE');
 const apiServiceTimerChangeCosto = require('./controllers/timerChangeCosto.js');
+
 
 
 

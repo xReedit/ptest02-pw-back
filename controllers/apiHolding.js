@@ -74,7 +74,7 @@ const getListItemsPedidoDetalle = async function (v_idpedido) {
 const saveRegistroPagoPedido = async function (pedido, itemsPedidoDetalle) {    
     const _pedido = JSON.stringify(pedido);  
     const _itemsPedidoDetalle = JSON.stringify(itemsPedidoDetalle);   
-    // console.log(`call procedure_save_pedido_holding( '${_pedido}', '${_itemsPedidoDetalle}');`); 
+    console.log(`call procedure_save_pedido_holding( '${_pedido}', '${_itemsPedidoDetalle}');`); 
     const xquery = `call procedure_save_pedido_holding(?,?);`;
     // console.log(`call procedure_save_pedido_holding( '${_pedido}', '${_itemsPedidoDetalle}');`);
 

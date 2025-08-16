@@ -54,7 +54,7 @@ module.exports.setRegistrarPago = setRegistrarPago;
 
 
 function emitirRespuesta(xquery, res) {
-	console.log(xquery);
+	// console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		

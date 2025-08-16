@@ -220,7 +220,7 @@ function getLogoLocal(idsedeSocket) {
 
 
 const emitirRespuesta = async (xquery) => {
-    console.log(xquery);		
+    // console.log(xquery);		
     try {
 		// evaluea si es update o inser
         // return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });

@@ -92,7 +92,7 @@ function comandListChangeCosto() {
 
 
 function emitirRespuesta(xquery) {
-	console.log(xquery);
+	// console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		

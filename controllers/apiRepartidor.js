@@ -15,7 +15,7 @@ let mysql_clean = function (string) {
 };
 
 const emitirRespuesta = async (xquery) => {
-    console.log(xquery);		
+    // console.log(xquery);		
     try {
 		// evaluea si es update o inser
         // return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
@@ -28,7 +28,7 @@ const emitirRespuesta = async (xquery) => {
 };
 
 const emitirRespuesta_RES = async (xquery, res) => {
-    console.log(xquery);
+    // console.log(xquery);
 
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
@@ -43,7 +43,7 @@ const emitirRespuesta_RES = async (xquery, res) => {
 module.exports.emitirRespuesta_RES = emitirRespuesta_RES;
 
 const emitirRespuestaSP = async (xquery) => {
-    console.log(xquery);
+    // console.log(xquery);
     try {
 		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
         const rows = await sequelize.query(xquery, { type: queryType });		
@@ -77,7 +77,7 @@ const emitirRespuestaSP = async (xquery) => {
 
 
 const emitirRespuestaSP_RES = async (xquery, res) => {
-    console.log(xquery);
+    // console.log(xquery);
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
 
@@ -93,7 +93,7 @@ const emitirRespuestaSP_RES = async (xquery, res) => {
 };
 
 const execSqlQueryNoReturn = async (xquery, res) => {
-	console.log(xquery);
+	// console.log(xquery);
 	try {
 		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
 		const results = await sequelize.query(xquery, { type: queryType });
@@ -108,7 +108,7 @@ const execSqlQueryNoReturn = async (xquery, res) => {
 
 
 const onlyUpdateQuery = async (xquery, res) => {
-	console.log(xquery);
+	// console.log(xquery);a
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (result) {
 		
@@ -1173,7 +1173,7 @@ module.exports.setAsignarRepartoAtencionCliente = setAsignarRepartoAtencionClien
 // }
 
 function emitirRespuestaData(xquery) {
-	console.log(xquery);
+	// console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		

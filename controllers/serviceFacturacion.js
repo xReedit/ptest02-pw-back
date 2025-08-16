@@ -623,7 +623,7 @@ function xSendDataPrintServer(_data, _idprint_server_estructura, _tipo){
 
 
 function emitirRespuestaSP(xquery) {
-    console.log(xquery);
+    // console.log(xquery);
     return sequelize.query(xquery, {        
         type: sequelize.QueryTypes.SELECT
     })

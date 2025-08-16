@@ -22,7 +22,7 @@ async function sendNumberTableClienteHolding(rooms, numberTable, orderCode, idpe
             idpedidos
         };
 
-        console.log('dataSend rooms', dataSend);
+        // console.log('dataSend rooms', dataSend);
 
         // mandamos al servidor
         socketHolding.emit('restobar-send-number-table-client', dataSend);            
@@ -39,7 +39,7 @@ async function sendNumberTableClienteHolding(rooms, numberTable, orderCode, idpe
 function connectSocket(infoUser) {
     return new Promise((resolve, reject) => {
         const urlSocket = `http://127.0.0.1:${config.portSocket}`;
-        console.log('conectando === ', urlSocket);
+        // console.log('conectando === ', urlSocket);
         const socketHolding = io(urlSocket, {
             query: infoUser,
             transports: ['websocket']

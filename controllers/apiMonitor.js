@@ -452,7 +452,7 @@ module.exports.getPedidoById = getPedidoById;
 
 
 function execSqlQueryNoReturn(xquery, res) {
-	console.log(xquery);
+	// console.log(xquery);
 	sequelize.query(xquery, {type: sequelize.QueryTypes.UPDATE}).spread(function(results, metadata) {
 	  	return ReS(res, {
 			data: results
@@ -466,7 +466,7 @@ function execSqlQueryNoReturn(xquery, res) {
 
 
 async function emitirRespuesta(xquery, res) {
-     console.log(xquery);		
+    // console.log(xquery);		
     try {		
 		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
         const results = await sequelize.query(xquery, { type: queryType });
@@ -496,7 +496,7 @@ async function emitirRespuesta(xquery, res) {
 
 
 function emitirRespuesta_RES(xquery, res) {
-	console.log(xquery);    
+	// console.log(xquery);    
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		
@@ -513,7 +513,7 @@ function emitirRespuesta_RES(xquery, res) {
 
 
 function emitirRespuestaSP_RES(xquery, res) {
-	console.log(xquery);
+	// console.log(xquery);
 	sequelize.query(xquery, {		
 		type: sequelize.QueryTypes.SELECT
 	})

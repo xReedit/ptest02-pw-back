@@ -191,7 +191,8 @@ async function handlePedidoPrinting(io, chanelMarca, dataRpt, impresora) {
         
 
         if (!impresora || !impresora[0]) {
-            throw new Error('Printer configuration not found');
+            console.log('Printer configuration not found');
+            return;
         }
 
         if (impresora[0].ip !== '0' && impresora[0].ip !== '') {
@@ -205,7 +206,8 @@ async function handlePedidoPrinting(io, chanelMarca, dataRpt, impresora) {
     }
 }
 
-async function savePedidosAgrupados(pedidosAgrupados, arrSubtotales, io) {
+// onlyMozoCobra = true puede que no sea holding solo que el mozo este permitido a cobrar
+async function savePedidosAgrupados(pedidosAgrupados, arrSubtotales, io, onlyMozoCobra = false) {
     // Validate inputs
     if (!Array.isArray(pedidosAgrupados) || !io) {
         throw new Error('Invalid input parameters');
@@ -217,17 +219,22 @@ async function savePedidosAgrupados(pedidosAgrupados, arrSubtotales, io) {
     // Process each pedido sequentially
     for (const pedido of pedidosAgrupados) {
         // try {
-            // Validate pedido data            
-            if (!pedido.dataPedido.p_sede?.idsede || !pedido.dataPedido.p_sede?.idorg) {
+            // Validate pedido data      
+            // console.log('pedido === ', JSON.stringify(pedido));     
+            // console.log('onlyMozoCobra === ', onlyMozoCobra);
+            
+            const idsedePedido = onlyMozoCobra ? pedido.dataUsuario.idsede : pedido.dataPedido.p_sede.idsede;
+            const idorgPedido = onlyMozoCobra ? pedido.dataUsuario.idorg : pedido.dataPedido.p_sede.idorg;
+
+            if (!idsedePedido || !idorgPedido) {
                 results.push({ success: false, error: 'Missing required pedido data', pedido });
                 continue;
             }
 
-            const idsedePedido = pedido.dataPedido.p_sede.idsede;
-            const idorgPedido = pedido.dataPedido.p_sede.idorg;
-
-            const idsedeHolding = pedido.dataPedido.p_header.holding.idsede;
-            const idorgHolding = pedido.dataPedido.p_header.holding.idorg;
+            
+            // onlyMozoCobra no es holding
+            const idsedeHolding = onlyMozoCobra ? '' : pedido.dataPedido.p_header.holding.idsede;
+            const idorgHolding = onlyMozoCobra ? '' : pedido.dataPedido.p_header.holding.idorg;
 
             const dataUsuario = {
                 idsede: idsedePedido,
@@ -237,6 +244,8 @@ async function savePedidosAgrupados(pedidosAgrupados, arrSubtotales, io) {
 
             pedido.dataUsuario.idsede = idsedePedido;
             pedido.dataUsuario.idorg = idorgPedido
+
+            // console.log('dataUsuario === ', dataUsuario);
 
             // Save pedido
             let rptSave = await apiPwa.setNuevoPedido(dataUsuario, pedido);            
@@ -259,7 +268,7 @@ async function savePedidosAgrupados(pedidosAgrupados, arrSubtotales, io) {
 
             // Setup channels
             const chanelMarca = `room${dataUsuario.idorg}${dataUsuario.idsede}`;
-            const chanelHolding = `room${idorgHolding}${idsedeHolding}`;
+            const chanelHolding = onlyMozoCobra ? '' : `room${idorgHolding}${idsedeHolding}`;
 
             // Emit events
             pedido.dataPedido.idpedido = pedido.idpedido;
@@ -269,8 +278,11 @@ async function savePedidosAgrupados(pedidosAgrupados, arrSubtotales, io) {
             
             emitPedidoEvents(io, pedido.dataPedido, chanelMarca, chanelHolding);
 
-            const impresora = pedido.dataPrint[0].Array_print;
-            handlePedidoPrinting(io, chanelMarca, rptSave[0].data[0], impresora);
+            const impresora = onlyMozoCobra ? pedido.listPrinters : pedido.dataPrint[0].Array_print;
+
+            if (impresora.length > 0) {
+                handlePedidoPrinting(io, chanelMarca, rptSave[0].data[0], impresora);
+            }
             
 
             results.push({ success: true, pedido, idpedido: pedido.idpedido });
@@ -294,15 +306,22 @@ async function savePedidosAgrupados(pedidosAgrupados, arrSubtotales, io) {
                 )
             );
 
+            // console.log('allPedidoDetails === ', JSON.stringify(allPedidoDetails));
+
             // Combine all pedido details
             const consolidatedPedidoDetails = allPedidoDetails.flat();
+            // console.log('consolidatedPedidoDetails === ', JSON.stringify(consolidatedPedidoDetails));
 
+            pedidosParaPago[0].dataPedido.idsede = pedidosParaPago[0].dataUsuario.idsede;
+            pedidosParaPago[0].dataPedido.idorg = pedidosParaPago[0].dataUsuario.idorg;
+            
             // Create single payment record
             pedidosParaPago[0].dataPedido.p_subtotales = arrSubtotales;            
             const rptPago = await apiHolding.saveRegistroPagoPedido(
                 pedidosParaPago[0].dataPedido,
                 consolidatedPedidoDetails                
             );
+            console.log('rptPago === ', JSON.stringify(rptPago));
             
         } catch (error) {
             console.error('Error saving consolidated payment:', error);
@@ -340,4 +359,5 @@ function xMandarImprimirComanda(dataPrint, io, chanelConect) {
 module.exports = {    
     agruparPedidosHolding,
     proccessSavePedidoHolding,
+    savePedidosAgrupados
 };

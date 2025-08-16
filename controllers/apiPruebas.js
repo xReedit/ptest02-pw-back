@@ -39,7 +39,7 @@ module.exports.getProcedure = getProcedure;
 
 
 function emitirRespuesta_RES(xquery, res) {
-	console.log(xquery);
+	// console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		
@@ -55,7 +55,7 @@ function emitirRespuesta_RES(xquery, res) {
 
 
 function emitirRespuestaSP_RES(xquery, res) {
-	console.log(xquery);
+	// console.log(xquery);
 	sequelize.query(xquery, {		
 		type: sequelize.QueryTypes.SELECT
 	})

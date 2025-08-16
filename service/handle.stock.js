@@ -2,7 +2,6 @@
 const ResponseService = require('./query.service');
 let ItemService = require('./item.service');
 let errorManager = require('./error.manager');
-const { ChallengeContext } = require('twilio/lib/rest/verify/v2/service/entity/challenge');
 
 /**
  * Verifica si existen subitems con cantidad en el item
@@ -10,6 +9,7 @@ const { ChallengeContext } = require('twilio/lib/rest/verify/v2/service/entity/c
  * @returns {Boolean} - true si existen subitems con cantidad, false en caso contrario
  */
 const checkExistSubItemsWithCantidad = (item) => {        
+    console.log('checkExistSubItemsWithCantidad original ===');
     const isCheck = !item.subitems ? false :
         Array.isArray(item.subitems) ?
             item.subitems.some(subitem => 
@@ -36,17 +36,17 @@ const updateStock = async (op, item, idsede) => {
 
         // let cantidadUpdate = item.cantidad_reset ? item.cantidad_reset : item.cantidadSumar;
 
-        if (_existSubItemsWithCantidad && item.subitems_selected) {
+        if (_existSubItemsWithCantidad && item.subitems_view) {
             try {
-                console.log('tiene subitems con cantidad', item);
+                // console.log('tiene subitems con cantidad', item);
                 // let _idporcion = '';
                 // let _idproducto = '';
                 // let _iditem_subitem = '';
 
                 // console.log('el item ==> ', item);
 
-                item.subitems_selected.forEach(subitem => {      
-                    // console.log('subitem ==> ', subitem);    
+                item.subitems_view.forEach(subitem => {      
+                    console.log('subitem ==> ', subitem);    
                     // if (subitem.idporcion !== 0) { _idporcion.push(subitem.idporcion) }
                     // if (subitem.idproducto !== 0) { _idproducto.push(subitem.idproducto); }                
                     // _iditem_subitem.push(subitem.iditem_subitem);

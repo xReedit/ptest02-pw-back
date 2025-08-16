@@ -7,7 +7,8 @@ let apiPrintServer = require('./apiPrintServer');
 let socketPinPad = require('./socketPinPad.js');
 const async = require('async');
 var btoa = require('btoa');
-
+const { collectionGroup } = require('firebase/firestore');
+const handleStock = require('../service/handle.stock.v1');
 
 
 
@@ -30,8 +31,8 @@ const nameRoomMozo = 'MOZO';
 // var socketMaster; 
 
 
-module.exports.socketsOn = function(io){ // Success Web Response
 
+module.exports.socketsOn = function(io){ // Success Web Response
 	// middleware
 	// io.use((socket, next) => {
 	//   let token = socket.handshake.query.token;
@@ -266,28 +267,42 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			apiPwa.processAndEmitItem(item, chanelConect, io, dataCliente.idsede)
 				.then(() => callback())
 				.catch(callback);
-		}, 15);
+		}, 4);
 
+		
 		socket.on('itemAllModificado', async (items) => {
 			 try {
 				// Procesa todos los items en paralelo
-				await Promise.all(items.map(item => apiPwa.processAndEmitItem(item, chanelConect, io, dataCliente.idsede)));
+				// await Promise.all(items.map(item => apiPwa.processAndEmitItem(item, chanelConect, io, dataCliente.idsede)));
+
+				// Agregar todos los items a la cola en lugar de procesarlos en paralelo
+				const processPromises = items.map(item => {
+					return new Promise((resolve, reject) => {
+						queue.push(item, (err) => {
+							if (err) reject(err);
+							else resolve();
+						});
+					});
+				});
+				
+				// Esperar a que todos los items sean procesados por la cola
+				await Promise.all(processPromises);
+				
 
 				// // Emite un solo evento con todos los items procesados
 				// io.to(chanelConect).emit('itemsModificados', processedItems);
 			} catch (error) {
 				console.error(error);
-				io.to(chanelConect).emit('error', { message: 'Error al modificar los items', error });
 			}
+
+			// registrar como cliente usuario desconectado
+			apiPwa.setClienteDesconectado(dataCliente);
 		});
 
 		socket.on('itemModificado', async function(item) {
-			// vamos a probar con cola de procesamiento
-
-			// si viene del monitor de pedidos
-			// console.log('item', item);
-			console.log('itemModificado');
-			if (item?.from_monitor === true){
+			console.log('itemModificado', item);			
+			// Verificar si es del monitor
+			if (item?.from_monitor === true) {
 				socketItemModificadoAfter(item);
 				return;
 			}
@@ -295,13 +310,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// console.log('queue.push', item);
 
 			queue.push(item);
-		
-			
 		});
-
-
-		// item modificado
-		// socket.on('itemModificado', async function(item) {
+		
+        // console.log('item.sumar', item);	
+        // var _cantItem = parseFloat(item.cantidad);
 
 		// 10124 para monitor de pedidos
 		async function socketItemModificadoAfter(item) {
@@ -400,7 +412,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// restablecer pedido despues de que se termino el tiempo de espera
 		socket.on('resetPedido', (listPedido) => {
-			// console.log('resetPedido ', listPedido);
+			console.log('resetPedido ', listPedido);
 			// recibe items
 			listPedido.map(async (item) => {				
 				// si la cantidad seleccionada es 0 entonces continua al siguiente
@@ -409,11 +421,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				}
 
 				item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
+				const isCheckExistSubItemsWithCantidad = handleStock.checkExistSubItemsWithCantidad(item);
+				console.log('isCheckExistSubItemsWithCantidad', isCheckExistSubItemsWithCantidad);
 				// item.cantidad = parseInt(item.cantidad) === 999 ? item.isporcion : item.cantidad; // la cantidad viene 999 cuando es nd y la porcion si viene nd
 				// la cantidad viene 999 cuando es nd y la porcion si viene nd
 				// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
 				item.cantidad = parseInt(item.cantidad) >= 9999 || parseInt(item.stock_actual) >= 999 ? item.isporcion || 'ND' : item.cantidad;
-				if (item.cantidad != 'ND') {
+				if (item.cantidad != 'ND' || isCheckExistSubItemsWithCantidad) {
 					item.cantidad_reset = item.cantidad_seleccionada;					
 					item.cantidad_seleccionada = 0;
 					// console.log('items recuperar ', item);
@@ -485,18 +499,35 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			if ( typeof dataSend === 'string' ) {
 				dataSend = JSON.parse(dataSend);
 			}
+			
 
 			/// <<<<< 250124 >>>> //
-			// si es holding ///			
-			if ( dataSend.dataPedido.p_header.is_holding == 1 ) {				
+			// si es holding ///	
+			console.log('dataSend.dataPedido.p_header === ', dataSend.dataPedido.p_header);		
+
+			// chequeamos si el header tiene paymentMozo.success
+			const _savePedidoAndPago = dataSend.dataPedido.p_header.paymentMozo ? dataSend.dataPedido.p_header.paymentMozo.isPaymentSuccess : false;
+
+			
+			if (dataSend.dataPedido.p_header.is_holding == 1) {				
 				const rptPedidoHolding = await apiHoldingServices.proccessSavePedidoHolding(dataSend, io);				
 				io.to(socket.id).emit('nuevoPedidoRes', rptPedidoHolding)
 				if ( callback ) {
 					callback(rptPedidoHolding);	
 				}
 				return;	
-			}
+			} 
+			else if (_savePedidoAndPago) {
+				console.log('_savePedidoAndPago === ', _savePedidoAndPago);
 
+				// si el mesero confirmo el pago // no holding
+				const rptPedidoSave = await apiHoldingServices.savePedidosAgrupados([dataSend], dataSend.dataPedido.p_subtotales, io, _savePedidoAndPago);
+				io.to(socket.id).emit('nuevoPedidoRes', rptPedidoSave)
+				if ( callback ) {
+					callback(rptPedidoSave);	
+				}
+				return;	
+			}
 			// console.log('dataSend === ', dataSend);
 			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
 
@@ -649,6 +680,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			}
 
+			
 
 			io.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
 
@@ -763,21 +795,18 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 		
 
-		socket.on('disconnect', (reason) => {
-			console.log('disconnect');
-			// socket.broadcast.to(socket.id).emit('disconnect');
-			if (reason === 'io server disconnect') {
-			  // the disconnection was initiated by the server, you need to reconnect manually
-			  console.log('disconnect ok');
-			  socket.connect();			  
-			}
+		socket.on('disconnect', async (reason) => {
+			console.log('cliente desconectado', socket.id);
+						
 
 			// registrar como cliente usuario desconectado
 			apiPwa.setClienteDesconectado(dataCliente);
 			
-			 // else the socket will automatically try to reconnect
+			// else the socket will automatically try to reconnect
 		});
 
+
+		
 
 		// verifica si hay conexion con el servidor
 		socket.on('verificar-conexion', (socketId) => {
@@ -897,6 +926,75 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			const _res = `se proceso un pago >  ${chanelConect}`;
 			console.log('=>>>>>>>>>>>>>>>>> ', _res);
 			socket.to(chanelConect).emit('restobar-venta-registrada-res', _res);
+
+
+		});
+
+		// Cancelar pedido y restaurar stock
+		socket.on('cancelar-pedido', async () => {
+			try {
+				// Notificar al cliente que el pedido fue cancelado
+				socket.emit('pedido-cancelado', {
+					success: true,
+					message: 'Pedido cancelado correctamente',
+					items: []
+				});
+			} catch (error) {
+				console.error('Error al cancelar pedido:', error);
+				socket.emit('pedido-cancelado', {
+					success: false,
+					message: 'Error al cancelar pedido: ' + error.message
+				});
+			}
+		});
+		
+		// Confirmar pedido para evitar restauración de stock
+		socket.on('confirmar-pedido', async () => {
+			try {
+				console.log(`Pedido confirmado para socket ${socket.id}`);
+				socket.emit('pedido-confirmado', {
+					success: true,
+					message: 'Pedido confirmado correctamente'
+				});
+			} catch (error) {
+				console.error('Error al confirmar pedido:', error);
+				socket.emit('pedido-confirmado', {
+					success: false,
+					message: 'Error al confirmar pedido: ' + error.message
+				});
+			}
+		});
+
+		// Extender tiempo de reserva
+		socket.on('extender-tiempo-pedido', async () => {
+			try {
+				console.log(`Tiempo extendido para socket ${socket.id}`);
+				socket.emit('tiempo-pedido-extendido', {
+					success: true,
+					message: 'Tiempo extendido correctamente',
+					nuevoTiempo: 60 // Default value in seconds
+				});
+			} catch (error) {
+				console.error('Error al extender tiempo de pedido:', error);
+				socket.emit('tiempo-pedido-extendido', {
+					success: false,
+					message: 'Error al extender tiempo: ' + error.message
+				});
+			}
+		});
+
+		// solicitud anular registro de pagos
+		socket.on('restobar-permiso-remove-registro-pago', async (payload) => {				
+			apiPwa.updatePermissionRemoveRegistroPago(payload.data.data.idregistro_pago);
+			socket.to(chanelConect).emit('restobar-permiso-remove-registro-pago', payload);
+		});
+
+		// llamar a mozo indicando que pedido esta listo en marca
+		socket.on('restobar-call-mozo-holding', async (payload) => {
+			const roomMozo = `${nameRoomMozo}${payload.idusuario}`;
+			console.log('restobar-call-mozo-holding', roomMozo);
+			apiPwa.saveCallMozoHolding(payload);
+			socket.to(roomMozo).emit('restobar-call-mozo-holding', payload);
 		});
 
 
@@ -1011,6 +1109,23 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// 	socket.id = dataCliente.firts_socketid;
 
 		console.log ('repartidor conectado ==========');
+		// Confirmar pedido para evitar restauración de stock
+		socket.on('confirmar-pedido', async (pedidoId) => {
+			try {
+				console.log(`Pedido confirmado para socket ${socket.id}`);
+				socket.emit('pedido-confirmado', {
+					success: true,
+					message: 'Pedido confirmado correctamente'
+				});
+			} catch (error) {
+				console.error('Error al confirmar pedido:', error);
+				socket.emit('pedido-confirmado', {
+					success: false,
+					message: 'Error al confirmar pedido: ' + error.message
+				});
+			}
+		});
+
 		// verifica si hay conexion con el servidor
 		socket.on('verificar-conexion', (socketId) => {
 			// responde solo al que solicita la verificacion
@@ -1420,7 +1535,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to(val.idsocket).emit('mensaje-verificacion-telefono-rpt', val);
 		});
 
-		io.to('SERVERMSJ').emit('connect', true);
+		// io.to('SERVERMSJ').emit('connect', true);
+
+
 
 		// setTimeout(function(){ 
 		// 	console.log('enviado-send-msj')

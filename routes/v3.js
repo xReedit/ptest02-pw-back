@@ -319,4 +319,8 @@ routerV3.post('/delivery/test-hora', apiPwaAppDelivery.testHora);
 // errores
 routerV3.post('/error/set-error', apiPwaAppPedidos.setHistoryError);
 
+
+// consultar version app
+routerV3.post('/version-app/get-version-app', apiPwaAppPedidos.getVersionApp);
+
 module.exports = routerV3;

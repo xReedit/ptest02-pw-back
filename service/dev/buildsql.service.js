@@ -1,7 +1,7 @@
-let managerFilter = require('../utilitarios/filters')
+let managerFilter = require('../../utilitarios/filters')
 let Sequelize = require('sequelize');
 // let config = require('../config');
-let config = require('../_config');
+let config = require('../../_config');
 
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 let mysql_clean = function (string) {
@@ -102,7 +102,8 @@ let buildSql = {
                         })
                 });
                 
-                return data.filter(x => x!==[]).map(x => x);
+                // Filtrar elementos vacíos o inválidos correctamente
+                return data.filter(x => x && typeof x === 'object' && Object.keys(x).length > 0);
         }
 }
 

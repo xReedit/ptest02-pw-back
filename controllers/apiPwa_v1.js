@@ -6,7 +6,8 @@ let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 // let utilitarios = require('../utilitarios/fecha.js');
 
-let handleStock = require('../service/handle.stock');
+let handleStock = require('../service/handle.stock.v1');
+// let handleStock = require('../service/handle.stock');
 
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
@@ -16,7 +17,7 @@ let mysql_clean = function (string) {
 
 
 const emitirRespuesta = async (xquery) => {
-    console.log(xquery);
+    // console.log(xquery);
     try {
         // return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
         const trimmedQuery = xquery.trim().toLowerCase();
@@ -37,7 +38,7 @@ const emitirRespuesta = async (xquery) => {
 };
 
 const emitirRespuesta_RES = async (xquery, res) => {
-    console.log(xquery);
+    // console.log(xquery);
 
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
@@ -64,7 +65,7 @@ const emitirRespuestaSP = async (xquery) => {
 };
 
 const emitirRespuestaSP_RES = async (xquery, res) => {
-    console.log(xquery);
+    // console.log(xquery);
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
 
@@ -1097,7 +1098,7 @@ const calculateQuantity = (item) => {
     item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;    
 
     handleStock.checkExistSubItemsWithCantidad(item);
-    console.log('item.isExistSubItemsWithCantidad', item.isExistSubItemsWithCantidad);
+    console.log('item.isExistSubItemsWithCantidad calculateQuantity', item.isExistSubItemsWithCantidad);
     
     let _cantSumar = item.venta_x_peso === 1 ? -item.cantidad : item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;
     if (item.cantidad != 'ND') {
@@ -1498,19 +1499,25 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
 
         // vemos si tiene subitems con cantidad distinta de ND
         // si los tiene entonces no se modifica el stock
-        let _existSubItemsWithCantidadInND = false;        
-        if (item.cantidad == 'ND') {
-            _existSubItemsWithCantidadInND = handleStock.checkExistSubItemsWithCantidad(item);
-            if (_existSubItemsWithCantidadInND) {
-                item.cantidad = 'SUBITEM-CANTIDAD'; // para manejar solo los subitems
-            }
-        }
-        console.log('_existSubItemsWithCantidadInND', _existSubItemsWithCantidadInND);
+        console.log('item apiPwa processAndEmitItem', item);
+        // let _existSubItemsWithCantidadInND = false; 
+
+        // _existSubItemsWithCantidadInND = handleStock.checkExistSubItemsWithCantidad(item);
+        // if (_existSubItemsWithCantidadInND) {
+        //     item.cantidad = 'SUBITEM-CANTIDAD'; // para manejar solo los subitems
+        // }
+
+        // if (item.isExistSubItemsWithCantidad) {
+        //     item.cantidad = 'SUBITEM-CANTIDAD'; // para manejar solo los subitems
+        // }
         
-        if (item.cantidad !== 'ND') {
+        // console.log('_existSubItemsWithCantidadInND apiPwa', _existSubItemsWithCantidadInND);
+        
+        if (item.cantidad !== 'ND' || item.isExistSubItemsWithCantidad) {
             const rptCantidad = await setItemCarta(0, item, idsede);            
             console.log('rptCantidad', rptCantidad);
-            item.cantidad = _existSubItemsWithCantidadInND ? 'ND' : rptCantidad[0].cantidad;
+            item.cantidad = rptCantidad[0].cantidad;
+            // item.cantidad = _existSubItemsWithCantidadInND ? 'ND' : rptCantidad[0].cantidad;
 
             // Check if rptCantidad[0] and listSubItems exist before using them
             const listSubItems = rptCantidad[0] && rptCantidad[0].listSubItems ? rptCantidad[0].listSubItems : null;
@@ -1551,6 +1558,18 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
     }
 }
 module.exports.processAndEmitItem = processAndEmitItem;
+
+// consultar version app
+const getVersionApp = async function (req, res) {
+    const {name_app} = req.body;
+    const version = await sequelize.query(`SELECT version,properties FROM app_version WHERE name_app = :name_app`, {
+        replacements: { name_app: name_app },
+        type: sequelize.QueryTypes.SELECT
+    });
+
+    res.json({ data: version });
+}
+module.exports.getVersionApp = getVersionApp;
 
 // const setModificaStockTest = async function (req, res) { 
 //     const id = req.body;      

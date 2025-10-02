@@ -3,6 +3,7 @@ let Sequelize = require('sequelize');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
+let logger = require('../utilitarios/logger');
 
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
@@ -10,45 +11,41 @@ let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
 };
 
-const emitirRespuesta = async (xquery) => {
-    // console.log(xquery);
+const emitirRespuesta = async (xquery) => {    
     try {
         return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
-    } catch (err) {
-        console.error(err);
+    } catch (err) {        
+        logger.error(err);
         return false;
     }
 };
 
-const emitirRespuesta_RES = async (xquery, res) => {
-    // console.log(xquery);
+const emitirRespuesta_RES = async (xquery, res) => {    
 
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
         return ReS(res, {
             data: rows
         });
-    } catch (error) {
-        console.error(error);
+    } catch (error) {        
+        logger.error(error);
         return false;
     }
 };
 module.exports.emitirRespuesta_RES = emitirRespuesta_RES;
 
-const emitirRespuestaSP = async (xquery) => {
-    // console.log(xquery);
+const emitirRespuestaSP = async (xquery) => {    
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.RAW });
         const arr = Object.values(rows[0]);
         return arr;
-    } catch (err) {
-        console.error(err);
+    } catch (err) {        
+        logger.error(err);
         return false;
     }
 };
 
-const emitirRespuestaSP_RES = async (xquery, res) => {
-    // console.log(xquery);
+const emitirRespuestaSP_RES = async (xquery, res) => {    
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
 
@@ -97,8 +94,7 @@ const getEstablecimientosPromociones = async function (req, res) {
 module.exports.getEstablecimientosPromociones = getEstablecimientosPromociones;
 
 
-const getDireccionCliente = async function (req, res) {
-	// console.log ('idcliente', req.body);
+const getDireccionCliente = async function (req, res) {	
 	const idcliente = req.body.idcliente;
     // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
     const read_query = `SELECT cpd.*, sc.options from cliente_pwa_direccion cpd	left join sede_config_service_delivery sc on UPPER(sc.ciudad) = UPPER(cpd.ciudad) where cpd.idcliente = ${idcliente} and cpd.estado = 0`
@@ -115,8 +111,7 @@ const getMisPedido = async function (req, res) {
 module.exports.getMisPedido = getMisPedido;
 
 
-const verificarCodigoSMS = async function (req, res) {
-	// console.log ('idcliente', req.body);
+const verificarCodigoSMS = async function (req, res) {	
 	const codigo = req.body.codigo;
 	const idcliente = req.body.idcliente;
 	const numberPhone = req.body.numberphone;
@@ -145,8 +140,7 @@ const getCategorias = async function (req, res) {
 module.exports.getCategorias = getCategorias;
 
 
-const getComercioXCalificar = async function (req, res) {
-	// console.log ('idcliente', req.body);
+const getComercioXCalificar = async function (req, res) {	
 	const idcliente = req.body.idcliente;
     // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
     const read_query = `SELECT p.idpedido, p.idsede, s.nombre nomestablecimiento
@@ -188,7 +182,7 @@ const setCashAtm = async function (req, res) {
 module.exports.setCashAtm = setCashAtm;
 
 const setPedidoMandado = async function (req, res) {
-	console.log('pedido_mandado === ', req.body.dataInfo);
+	logger.debug('pedido_mandado === ', req.body.dataInfo);
 
 	const obj = req.body.dataInfo;
 	var _json = JSON.stringify(obj).replace(/\\n/g, ' ')
@@ -262,7 +256,6 @@ module.exports.getTelefonoClienteChatBot = getTelefonoClienteChatBot;
 
 
 // function emitirRespuesta(xquery, res) {
-// 	console.log(xquery);
 // 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 // 	.then(function (rows) {
 		
@@ -278,7 +271,6 @@ module.exports.getTelefonoClienteChatBot = getTelefonoClienteChatBot;
 
 
 // function emitirRespuestaSP(xquery) {
-// 	console.log(xquery);
 // 	return sequelize.query(xquery, {		
 // 		type: sequelize.QueryTypes.SELECT
 // 	})
@@ -297,7 +289,6 @@ module.exports.getTelefonoClienteChatBot = getTelefonoClienteChatBot;
 
 
 // function emitirRespuesta_RES(xquery, res) {
-// 	console.log(xquery);
 // 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 // 	.then(function (rows) {
 		
@@ -313,7 +304,6 @@ module.exports.getTelefonoClienteChatBot = getTelefonoClienteChatBot;
 
 
 // function emitirRespuestaSP_RES(xquery, res) {
-// 	console.log(xquery);
 // 	sequelize.query(xquery, {		
 // 		type: sequelize.QueryTypes.SELECT
 // 	})

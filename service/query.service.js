@@ -3,6 +3,8 @@ let Sequelize = require('sequelize');
 let config = require('../_config');
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
+const logger = require('../utilitarios/logger');
+
 class QueryService {
     
     static emitirRespuesta = async (xquery) => {
@@ -10,7 +12,7 @@ class QueryService {
         try {
             return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
         } catch (err) {
-            console.error(err);
+            logger.error(err);
             return false;
         }
     };
@@ -21,7 +23,7 @@ class QueryService {
         try {
             return await sequelize.query(xquery);
         } catch (err) {
-            console.error(err);
+            logger.error(err);
             return false;
         }
     };
@@ -32,7 +34,7 @@ class QueryService {
             const rows = await sequelize.query(query, { type: sequelize.QueryTypes.SELECT });
             return Object.values(rows[0]);
         } catch (err) {
-            console.error(err);
+            logger.error(err);
             throw err;
         }
     }
@@ -56,7 +58,7 @@ class QueryService {
             // Retornar los resultados
             return results;
         } catch (error) {
-            console.error('Error en emitirRespuestaSP_RAW:', error);
+            logger.error('Error en emitirRespuestaSP_RAW:', error);
             throw error;
         }
     }

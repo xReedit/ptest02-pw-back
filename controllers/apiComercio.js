@@ -4,6 +4,7 @@ let Sequelize = require('sequelize');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
+let logger = require('../utilitarios/logger');
 
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
@@ -107,7 +108,7 @@ module.exports.getSocketIdComercio = getSocketIdComercio;
 
 
 const pushSuscripcion = async function (req, res) {	
-	console.log('============================ pushSuscripcion ========');
+	logger.debug('============================ pushSuscripcion ========');
 	const idsede = managerFilter.getInfoToken(req,'idsede');
 	const suscripcion = req.body.suscripcion;	
 
@@ -134,7 +135,7 @@ const getTipoComprobante = function (req, res) {
 						inner join tipo_comprobante_serie tps on tp.idtipo_comprobante = tps.idtipo_comprobante
 						where tps.idsede = ${idsede} and tps.estado=0`;
 
-	console.log(read_query);
+	logger.debug(read_query);
     emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getTipoComprobante = getTipoComprobante;
@@ -150,7 +151,7 @@ const getDatosImpresion = async function (req, res) {
             	LEFT join impresora i on i.idimpresora = cpo.idimpresora
 			WHERE (cp.idsede=${idsede});`;
 
-	console.log(read_query);
+	logger.debug(read_query);
     emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getDatosImpresion = getDatosImpresion;			
@@ -293,7 +294,7 @@ module.exports.setFlagSolicitaRepartidorPapaya = setFlagSolicitaRepartidorPapaya
 
 
 function emitirRespuesta(xquery, res) {
-	console.log(xquery);
+	logger.debug(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		
@@ -309,7 +310,7 @@ function emitirRespuesta(xquery, res) {
 
 
 function emitirRespuestaSP(xquery) {
-	console.log(xquery);
+	logger.debug(xquery);
 	return sequelize.query(xquery, {		
 		type: sequelize.QueryTypes.SELECT
 	})
@@ -328,7 +329,7 @@ function emitirRespuestaSP(xquery) {
 
 
 function emitirRespuesta_RES(xquery, res) {
-	console.log(xquery);
+	logger.debug(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		
@@ -344,7 +345,7 @@ function emitirRespuesta_RES(xquery, res) {
 
 
 function emitirRespuestaSP_RES(xquery, res) {
-	console.log(xquery);
+	logger.debug(xquery);
 	sequelize.query(xquery, {		
 		type: sequelize.QueryTypes.SELECT
 	})

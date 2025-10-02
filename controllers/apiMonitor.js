@@ -4,6 +4,7 @@ let Sequelize = require('sequelize');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 let apiFireBase = require('../controllers/apiFireBase');
+let logger = require('../utilitarios/logger');
 
 const serviceTimerChangeCosto = require('./timerChangeCosto.js');
 
@@ -256,8 +257,7 @@ module.exports.setImporteComisionLluvia = setImporteComisionLluvia;
 
 // datos al inicio despues de escanear codigo
 const getDataSedeInfoFacById = async function (req, res) {  
-    const idsede = req.body.idsede;
-    // console.log('cuenta de mesa: ', mesa);
+    const idsede = req.body.idsede;    
     const read_query = `SELECT s.idsede, s.idorg, o.nombre, o.ruc, o.direccion, s.ciudad, o.tipo_contribuyente 
                 from sede s
                     inner join org o on o.idorg = s.idorg
@@ -434,8 +434,7 @@ const getShowPedidosAsignadosRepartidor = function (req, res) {
                             ,p1.pwa_estado, p1.pwa_delivery_tiempo_atendido,p1.flag_is_cliente
                         from pedido p1
                         left join pedido_time_line_entrega ptle on ptle.idpedido = p1.idpedido 
-                        where p1.idpedido in (${arrPedidos})`;
-    // console.log('getShowPedidosAsignadosRepartidor', read_query)
+                        where p1.idpedido in (${arrPedidos})`;    
     emitirRespuesta_RES(read_query, res);        
 }
 module.exports.getShowPedidosAsignadosRepartidor = getShowPedidosAsignadosRepartidor;
@@ -452,7 +451,6 @@ module.exports.getPedidoById = getPedidoById;
 
 
 function execSqlQueryNoReturn(xquery, res) {
-	// console.log(xquery);
 	sequelize.query(xquery, {type: sequelize.QueryTypes.UPDATE}).spread(function(results, metadata) {
 	  	return ReS(res, {
 			data: results
@@ -466,7 +464,6 @@ function execSqlQueryNoReturn(xquery, res) {
 
 
 async function emitirRespuesta(xquery, res) {
-    // console.log(xquery);		
     try {		
 		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
         const results = await sequelize.query(xquery, { type: queryType });
@@ -481,10 +478,9 @@ async function emitirRespuesta(xquery, res) {
             });
         }
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         return ReE(res, err);
     }    
-	// console.log(xquery);
 	// return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	// .then(function (rows) {		
 	// 	return rows;
@@ -496,7 +492,6 @@ async function emitirRespuesta(xquery, res) {
 
 
 function emitirRespuesta_RES(xquery, res) {
-	// console.log(xquery);    
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		
@@ -513,7 +508,6 @@ function emitirRespuesta_RES(xquery, res) {
 
 
 function emitirRespuestaSP_RES(xquery, res) {
-	// console.log(xquery);
 	sequelize.query(xquery, {		
 		type: sequelize.QueryTypes.SELECT
 	})

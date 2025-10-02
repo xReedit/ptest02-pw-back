@@ -24,6 +24,8 @@ const pedidoBot = require('../controllers/pedidoBot');
 
 const apiFireBase = require('../controllers/apiFireBase');
 
+const apiWebhook = require('../controllers/webhook');
+const apiMensajeria = require('../controllers/apiMensajeria');
 // var cors = require('cors')
 
 // var whitelist = ['http://example1.com', 'http://example2.com', 'http://localhost/*']
@@ -322,5 +324,12 @@ routerV3.post('/error/set-error', apiPwaAppPedidos.setHistoryError);
 
 // consultar version app
 routerV3.post('/version-app/get-version-app', apiPwaAppPedidos.getVersionApp);
+
+
+// webhook Cobranza
+routerV3.post('/webhook/cobranza', apiWebhook.setWebhookCobranza);
+
+// mensajeria
+routerV3.get('/mensajeria/get-list-url', apiMensajeria.getLitsUrlMensajeria);
 
 module.exports = routerV3;

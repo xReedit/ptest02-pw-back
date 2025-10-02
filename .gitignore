@@ -1,2 +1,16 @@
 node_modules
 config.js
+mcp-mysql-simple/
+
+# Variables de entorno (contienen información sensible)
+.env
+.env.production
+.env.local
+.env.*.local
+
+# Build de producción
+dist/
+dist-prod/
+
+# Logs
+logs/*.log

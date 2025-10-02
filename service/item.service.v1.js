@@ -7,7 +7,10 @@
 // Importar servicios refactorizados
 const QueryServiceV1 = require('./query.service.v1');
 const errorManager = require('./error.manager');
+const porcionMovementsService = require('./porcion.movements.service');
+const StockPorcionService = require('./stock.porcion.service');
 const { sequelize, Sequelize } = require('../config/database');
+const logger = require('../utilitarios/logger');
 
 // console.log('🟣 item.service.v1.js cargado - Versión refactorizada activa');
 
@@ -32,23 +35,24 @@ class ItemService {
         }];
 
         // Sanitizar el objeto item para evitar errores de referencia
+        logger.debug({ item }, '🟣 [item.v1] Item recibido');
         const _item = {
             iditem: item.iditem || null,
             idcarta_lista: item.idcarta_lista || null,
             cantidad_reset: item.cantidad_reset || 0,
             cantidadSumar: item.cantidadSumar || 0,
-            isporcion: item.isporcion || 'N',
+            isporcion: item.isporcion || null,
             iditem2: item.iditem2 || item.iditem || null
         };
 
-        console.log('🟡 [item.v1] Item procesado:', _item);
+        logger.debug({ item: _item }, '🟡 [item.v1] Item procesado');
         
         let updatedItem;
         
         try {  
             // Validar campos obligatorios
             if (!_item.iditem || !_item.idcarta_lista) {
-                console.error('❌ [item.v1] Campos obligatorios faltantes');
+                logger.error({ item: _item }, '❌ [item.v1] Campos obligatorios faltantes');
                 errorManager.logError({
                     incidencia: { 
                         message: 'Campos obligatorios faltantes en processItem', 
@@ -67,6 +71,32 @@ class ItemService {
                 JSON.stringify(_item),
                 idsede
             ]);
+
+            // registrar movimiento
+            logger.info({
+                tipo_movimiento: 'resta',
+                cantidad: item.cantidadSumar,
+                idusuario: item.idusuario,
+                idporcion: item.idporcion,
+                idsede: item.idsede,
+                estado: item.estado,
+                stock_total: item.stock_total,
+                idtipo_movimiento_stock: item.idtipo_movimiento_stock,
+                idpedido: item.idpedido,
+                iditem: item.iditem
+            }, 'Registrando movimiento de stock');
+            porcionMovementsService.guardarMovimientoPorcion({
+                tipo_movimiento: 'resta',
+                cantidad: item.cantidadSumar,
+                idusuario: item.idusuario,
+                idporcion: item.idporcion,
+                idsede: item.idsede,
+                estado: item.estado,
+                stock_total: item.stock_total,
+                idtipo_movimiento_stock: item.idtipo_movimiento_stock,
+                idpedido: item.idpedido,
+                iditem: item.iditem
+            });
             
             // console.log('✅ [item.v1] procedure_stock_item completado exitosamente');
             
@@ -151,7 +181,7 @@ class ItemService {
             return result;
             
         } catch (error) {
-            console.error('❌ [item.v1] Error en processItem:', error.message);
+            logger.error({ error, item }, '❌ [item.v1] Error en processItem');
             
             errorManager.logError({
                 incidencia: { 
@@ -176,7 +206,7 @@ class ItemService {
         try {
             // Validar parámetros obligatorios
             if (!params.iditem) {
-                console.error('❌ [item.v1] ID de item no proporcionado');
+                logger.error({ params }, '❌ [item.v1] ID de item no proporcionado');
                 return [];
             }
             
@@ -203,7 +233,7 @@ class ItemService {
             return result;
             
         } catch (error) {
-            console.error('❌ [item.v1] Error en getItemInfo:', error.message);
+            logger.error({ error, params }, '❌ [item.v1] Error en getItemInfo');
             
             errorManager.logError({
                 incidencia: { 
@@ -259,12 +289,30 @@ class ItemService {
                 cantidad_reset: item.cantidad_reset || 0,
                 cantidadSumar: item.cantidadSumar || 0,
                 isporcion: item.isporcion,
-                iditem2: item.iditem2
+                iditem2: item.iditem2,
+                idsede: item.idsede,
+                idusuario: item.idusuario
             };
             
             // Validar que el objeto no sea null
             if (!_itemProcessPorcion) {
-                throw new Error('_itemProcessPorcion es null o undefined');
+                logger.error({ item }, '❌ [item.v1] _itemProcessPorcion es null o undefined');
+                errorManager.logError({
+                    incidencia: {
+                        message: '_itemProcessPorcion es null o undefined',
+                        data: { item }
+                    },
+                    origen: 'ItemService.v1.processItemPorcion.validation'
+                });
+                
+                // Retornar fallback
+                const cantidadFallback = Math.max(0, (item.cantidad || 0) - (item.cantidadSumar || 0));
+                result[0] = {
+                    cantidad: cantidadFallback,
+                    listItemsPorcion: [],
+                    listSubItems: []
+                };
+                return result;
             }
             
             // console.log('📦 [item.v1] Llamando a procedure_stock_item_porcion');
@@ -274,6 +322,86 @@ class ItemService {
             updatedItem = await QueryServiceV1.emitirRespuestaSP('call procedure_stock_item_porcion(?)', [jsonParam]);
             
             // console.log('✅ [item.v1] procedure_stock_item_porcion exitoso');
+            
+            // 🆕 NUEVO: Registrar movimiento de porciones en historial (stock.porcion.service.js)
+            // El procedimiento actualiza el stock, ahora registramos el historial atómicamente
+            try {
+                // Determinar tipo de movimiento:
+                // - Si cantidadSumar < 0: VENTA (disminuye stock desde venta)
+                // - Si cantidad_reset > 0 o cantidadSumar > 0: VENTA_DEVOLUCION (devuelve/cancela venta, aumenta stock)
+                // Todo es movimiento de venta (salida o devolución)
+                const esSalida = (item.cantidadSumar || 0) < 0;
+                const esReset = (item.cantidad_reset || 0) > 0;
+                
+                let tipoMovimiento;
+                if (esSalida) {
+                    tipoMovimiento = 'VENTA'; // Venta normal (disminuye)
+                } else {
+                    tipoMovimiento = 'VENTA_DEVOLUCION'; // Cancelación/devolución (aumenta)
+                }
+                
+                const resultadoPorciones = await StockPorcionService.actualizarStockConHistorial({
+                    iditem: item.iditem,
+                    cantidadProducto: Math.abs(item.cantidadSumar || item.cantidad_reset || 1),
+                    idsede: item.idsede || 1,
+                    idusuario: item.idusuario || 1,
+                    idpedido: item.idpedido || null,
+                    tipoMovimiento: tipoMovimiento,
+                    esReset: esReset
+                });
+                
+                if (!resultadoPorciones.success) {
+                    logger.warn({ error: resultadoPorciones.error }, '⚠️ [item.v1] No se pudo registrar movimiento de porciones');
+                    // No lanzamos error para no romper el flujo, pero logueamos
+                }
+            } catch (porcionError) {
+                logger.error({ error: porcionError, item }, '❌ [item.v1] Error al registrar movimiento de porciones');
+                // No lanzamos error para mantener compatibilidad
+            }
+
+            // Validación defensiva: verificar que updatedItem tenga la estructura esperada
+            if (!updatedItem || !Array.isArray(updatedItem) || !updatedItem[0]) {
+                logger.error({ updatedItem, item: _itemProcessPorcion }, '❌ [item.v1] procedure_stock_item_porcion retornó resultado inválido');
+                
+                errorManager.logError({
+                    incidencia: {
+                        message: 'Procedimiento retornó resultado inválido',
+                        data: { item_process: _itemProcessPorcion, res_query: updatedItem }
+                    },
+                    origen: 'ItemService.v1.processItemPorcion.validation'
+                });
+                
+                // Retornar fallback en lugar de throw
+                const cantidadFallback = Math.max(0, (item.cantidad || 0) - (item.cantidadSumar || 0));
+                result[0] = {
+                    cantidad: cantidadFallback,
+                    listItemsPorcion: [],
+                    listSubItems: []
+                };
+                return result;
+            }
+
+            // Verificar que listItemsPorcion exista en el resultado
+            if (updatedItem[0].listItemsPorcion === undefined) {
+                logger.error({ updatedItem, item: _itemProcessPorcion }, '❌ [item.v1] listItemsPorcion no encontrado en resultado del procedimiento');
+                
+                errorManager.logError({
+                    incidencia: {
+                        message: 'El procedimiento no retornó listItemsPorcion',
+                        data: { item_process: _itemProcessPorcion, res_query: updatedItem }
+                    },
+                    origen: 'ItemService.v1.processItemPorcion.validation'
+                });
+                
+                // Retornar fallback en lugar de throw
+                const cantidadFallback = Math.max(0, (item.cantidad || 0) - (item.cantidadSumar || 0));
+                result[0] = {
+                    cantidad: cantidadFallback,
+                    listItemsPorcion: [],
+                    listSubItems: []
+                };
+                return result;
+            }
 
             // Procesar resultado
             result[0].listItemsPorcion = updatedItem[0].listItemsPorcion;
@@ -291,14 +419,14 @@ class ItemService {
                 }
             } else {
                 // Fallback en caso de no encontrar el item
-                result[0].cantidad = item.cantidad - item.cantidadSumar;
+                result[0].cantidad = Math.max(0, (item.cantidad || 0) - (item.cantidadSumar || 0));
                 // console.log('🟡 [item.v1] Usando cantidad fallback:', result[0].cantidad);
             }
             
             return result;
             
         } catch (error) {
-            console.error('❌ [item.v1] Error en processItemPorcion:', error.message);
+            logger.error({ error, item: _itemProcessPorcion }, '❌ [item.v1] Error en processItemPorcion');
             
             errorManager.logError({
                 incidencia: {
@@ -312,7 +440,19 @@ class ItemService {
                 origen: 'ItemService.v1.processItemPorcion'
             });
             
-            throw error;
+            // En lugar de throw error, retornar fallback seguro
+            logger.warn({ item: _itemProcessPorcion }, '🟡 [item.v1] Usando fallback por error en procedimiento');
+            
+            // Calcular cantidad usando lógica de fallback
+            const cantidadFallback = Math.max(0, (item.cantidad || 0) - (item.cantidadSumar || 0));
+            
+            result[0] = {
+                cantidad: cantidadFallback,
+                listItemsPorcion: [],
+                listSubItems: []
+            };
+            
+            return result;
         }
     }
     
@@ -342,12 +482,44 @@ class ItemService {
             updatedItem = await QueryServiceV1.emitirRespuestaSP('call procedure_stock_all_subitems(?)', [
                 JSON.stringify(allItems)
             ]);
+
+            // 🆕 NUEVO: Registrar movimiento SOLO si el subitem tiene idporcion directo
+            // Esto cubre el caso de subitems con porciones que NO están en la receta del item principal
+            if (allItems.idporcion && allItems.idporcion > 0) {
+                try {
+                    // Determinar tipo de movimiento:
+                    // - Si cantidadSumar < 0: VENTA (disminuye stock desde venta)
+                    // - Si cantidad_reset > 0 o cantidadSumar > 0: VENTA_DEVOLUCION (devuelve/cancela venta, aumenta stock)
+                    // Todo es movimiento de venta (salida o devolución)
+                    const esSalida = (allItems.cantidadSumar || 0) < 0;
+                    
+                    let tipoMovimiento;
+                    if (esSalida) {
+                        tipoMovimiento = 'VENTA'; // Venta normal (disminuye)
+                    } else {
+                        tipoMovimiento = 'VENTA_DEVOLUCION'; // Cancelación/devolución (aumenta)
+                    }
+                    
+                    // Registrar directamente esta porción específica
+                    await StockPorcionService.registrarMovimientoPorcionDirecta({
+                        idporcion: allItems.idporcion,
+                        iditem: allItems.iditem || 0,
+                        cantidad: Math.abs(allItems.cantidadSumar || allItems.cantidad_reset || 1),
+                        idsede: allItems.idsede || 1,
+                        idusuario: allItems.idusuario || 1,
+                        idpedido: allItems.idpedido || null,
+                        tipoMovimiento: tipoMovimiento
+                    });
+                } catch (porcionError) {
+                    logger.error({ error: porcionError, allItems }, '❌ [item.v1] Error al registrar movimiento de porción directa');
+                }
+            }
             
             // console.log('✅ [item.v1] procedure_stock_all_subitems exitoso', updatedItem);
             return updatedItem;
             
         } catch (error) {
-            console.error('❌ [item.v1] Error en processAllItemSubitemSeleted:', error.message);
+            logger.error({ error, allItems }, '❌ [item.v1] Error en processAllItemSubitemSeleted');
             
             errorManager.logError({
                 incidencia: {

@@ -2,6 +2,7 @@
 
 const QueryService = require('../service/query.service');
 const errorManager = require('../service/error.manager');
+const porcionMovementsService = require('./porcion.movements.service');
 let Sequelize = require('sequelize');
 const config = require('../_config');
 const sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
@@ -47,6 +48,32 @@ class ItemService {
             await transaction.commit();
 
             result[0].cantidad = parseFloat(updatedItem[0].cantidad);
+
+            // registrar movimiento
+            console.log('registrando movimiento', {
+                tipo_movimiento: 'resta',
+                cantidad: item.cantidadSumar,
+                idusuario: item.idusuario,
+                idporcion: item.idporcion,
+                idsede: item.idsede,
+                estado: item.estado,
+                stock_total: item.stock_total,
+                idtipo_movimiento_stock: item.idtipo_movimiento_stock,
+                idpedido: item.idpedido,
+                iditem: item.iditem
+            });
+            porcionMovementsService.guardarMovimientoPorcion({
+                tipo_movimiento: 'resta',
+                cantidad: item.cantidadSumar,
+                idusuario: item.idusuario,
+                idporcion: item.idporcion,
+                idsede: item.idsede,
+                estado: item.estado,
+                stock_total: item.stock_total,
+                idtipo_movimiento_stock: item.idtipo_movimiento_stock,
+                idpedido: item.idpedido,
+                iditem: item.iditem
+            });
             
             return result;
 

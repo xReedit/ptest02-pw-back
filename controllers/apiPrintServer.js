@@ -3,6 +3,7 @@ let {Sequelize, QueryTypes} = require('sequelize');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
+let logger = require('../utilitarios/logger');
 
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
@@ -14,19 +15,19 @@ const socketPrintServerClient = async function (data, socket) {
 
 	// para loguearse version para android
 	socket.on('get-user-print-server-session', async (payload, callback) => {
-		console.log('get-user-print-server-session', payload);
+		logger.debug({ payload }, 'get-user-print-server-session');
 		const rptUser = await loginUserPrintServer(payload)
-		console.log('rptUser', rptUser);
+		logger.debug({ rptUser }, 'rptUser');
 		callback({ data: rptUser });
 	});
 	
 	const idsedeSocket = data.idsede;
 	if ( idsedeSocket == '0' ) {
-		console.log('API print server USER APP', data);
+		logger.debug({ data }, 'API print server USER APP');
 		return;
 	}
 	
-	console.log('LLego al API print server ====================================== ', data);
+	logger.debug({ data }, 'LLego al API print server ======================================');
 
 	// url local
 	const urlLocal = await getIpUrlLocal(idsedeSocket);
@@ -51,15 +52,12 @@ const socketPrintServerClient = async function (data, socket) {
 		}
 
 		socket.emit('get-ps-estructuras', _payload);
-
-		// console.log('urlLocal ============ ', urlLocal);
-		// console.log('_payload ============ ', _payload);		
+		
 	} catch(e) {
-		console.log('error print-server', urlLocal);
+		logger.error({ e }, 'error print-server');
 		return;
 	}
 
-	// console.log('_payload ============ ', _payload);	
 
 	// solicita cada 10segundos
 	socket.on('get-ps-max-print', async (payload) => {
@@ -69,7 +67,7 @@ const socketPrintServerClient = async function (data, socket) {
 
 	// cambiar status impreso o error
 	socket.on('set-ps-status-item', async (item) => {		
-		console.log('set-ps-status-item', item);		
+		logger.debug({ item }, 'set-ps-status-item');		
 		setStatusItem(item);
 	});
 
@@ -79,8 +77,8 @@ const socketPrintServerClient = async function (data, socket) {
 		// const list = Array.from(new Set(data.map(item => item.id))).map(id => {
 		//     return data.find(item => item.id === id);
 		// });
-
-		console.log('set-ps-status-list-item', list);		
+			
+		logger.debug({ list }, 'set-ps-status-list-item');		
 		setStatusListItem(list);
 	});
 
@@ -149,11 +147,7 @@ function setStatusListItem(list) {
 	}
 
 	const _sql = sqlPrint+' '+ sqlVisto;
-	console.log('_sql === > ', _sql);
-	emitirRespuesta(_sql);
-
-	console.log('idsPrint ==== ', idsPrint);
-	console.log('idsPedidos ==== ', idsPedidos);
+	emitirRespuesta(_sql);	
 }
 
 function getMaxIdPrint(data) {
@@ -171,7 +165,7 @@ function getRegisterNoPrint(data) {
     const lastTime = debounceTimes[key];
 
 	if (lastTime && now - lastTime < 3000) {
-		console.log('getRegisterNoPrint menos de 3seg');
+		logger.debug({ }, 'getRegisterNoPrint menos de 3seg');
         // Si la última solicitud fue hace menos de 5 segundos, no procesar la solicitud
         // return Promise.reject(new Error('Too Many Requests'));
 		return Promise.resolve({ success: false, error: 'Too Many Requests' });
@@ -220,21 +214,19 @@ function getLogoLocal(idsedeSocket) {
 
 
 const emitirRespuesta = async (xquery) => {
-    // console.log(xquery);		
     try {
 		// evaluea si es update o inser
         // return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
 		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
         return await sequelize.query(xquery, { type: queryType });
     } catch (err) {
-        console.error(err);
+        logger.error({ err }, 'error emitirRespuesta');
         return false;
     }
 };
 
 
 // async function emitirRespuesta(xquery) {
-// 	// console.log(xquery);
 // 	return await sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 // 	.then(function (rows) {
 // 		return rows;
@@ -246,8 +238,7 @@ const emitirRespuesta = async (xquery) => {
 
 
 
-function emitirRespuesta_RES(xquery, res) {
-	// console.log(xquery);
+function emitirRespuesta_RES(xquery, res) {	
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		

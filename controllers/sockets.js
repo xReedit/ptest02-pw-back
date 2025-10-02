@@ -9,6 +9,8 @@ const async = require('async');
 var btoa = require('btoa');
 const { collectionGroup } = require('firebase/firestore');
 const handleStock = require('../service/handle.stock.v1');
+const logger = require('../utilitarios/logger');
+
 
 
 
@@ -35,8 +37,7 @@ const nameRoomMozo = 'MOZO';
 module.exports.socketsOn = function(io){ // Success Web Response
 	// middleware
 	// io.use((socket, next) => {
-	//   let token = socket.handshake.query.token;
-	//   console.log('token', token);
+	//   let token = socket.handshake.query.token;	
 	//   // if (isValid(token)) {
 	//     return next();
 	//   // }
@@ -47,11 +48,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 	io.on('connection', async function(socket) {
-		module.exports.elSocket = socket;
-		console.log('datos socket', socket.id);		
-		// console.log('datos socket', socket.handshake.headers.query);		
-		let dataSocket = socket.handshake.query;
-		// console.log('dataSocket ==== ', dataSocket.idorg)
+		module.exports.elSocket = socket;		
+		logger.debug({ socketId: socket.id }, 'Socket conectado');				
+		let dataSocket = socket.handshake.query;		
 		
 		// si viene de un websocket isFromBot // socket.handshake.headers.query
 		dataSocket = dataSocket.isFromBot === 1 ? JSON.parse(socket.handshake.headers.query) : dataSocket
@@ -59,31 +58,36 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// const rptDate = new Date().toLocaleString().split(' ');
 		// var aaa = '2020-05-28'.replace(',', '');
-		// aaa = aaa.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');
-		// console.log('===== rptDate ========', aaa);		
-		// console.log('===== rptDate ========', rptDate[1]);		
+		// aaa = aaa.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');		
 
-		console.log('datos socket JSON', dataSocket);
+		logger.info({ dataSocket }, 'Datos socket recibidos');
 
 		const dataCliente = dataSocket;
+
+		if (dataCliente.isMensajeria === '1') {
+			const roomMensajeria = `mensajeria_${dataCliente.roomId}`;
+			logger.debug({ roomMensajeria }, 'Conectado a mensajeria');
+			socket.join(roomMensajeria);
+			return;
+		}
 
 		if (dataCliente.isClienteHolding === '1') {			
 			
 			socket.on('restobar-send-number-table-client', (data) => {
-				console.log('restobar-send-number-table-client', data);
+				logger.debug({ data }, 'Restobar-send-number-table-client');
 				io.to(data.rooms).emit('restobar-send-number-table-client', data);				
 			});
 		}		
 
 		if (dataCliente.isHolding === '1') {
 			const chanelHoldingMozo = `${nameRoomMozo}${dataCliente.idusuario}`;
-			console.log('chanelHoldingMozo', chanelHoldingMozo);
+			logger.debug({ chanelHoldingMozo }, 'Conectado a holding');
 			socket.join(chanelHoldingMozo);
 		}
 
 		// mensaje de confirmacion de telefono
 		socket.on('msj-confirma-telefono', async (data) => {
-			console.log('msj-confirma-telefono', data);
+			logger.debug({ data }, 'Msj-confirma-telefono');
 			const codigoVerificacion = Math.round(Math.random()* (9000 - 1)+parseInt(1000));
 			const _sendServerMsj = `{"tipo": 1, "cod": ${codigoVerificacion}, "t": "${data.numberphone}", "idcliente": ${data.idcliente}, "idsocket": "${data.idsocket}"}`;
 
@@ -91,12 +95,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// guardamos codigo en bd
 			apiPwa.setCodigoVerificacionTelefonoCliente(data);
 
-			sendMsjSocketWsp(_sendServerMsj);
+			sendMsjSocketWsp(_sendServerMsj, dataSocket);
 		});
 
 		// escucha respuesta del servidor de mensajeria
 		socket.on('mensaje-verificacion-telefono-rpt', async (val) => {
-			console.log('mensaje-verificacion-telefono-rpt', val);			
+			logger.debug({ val }, 'Mensaje verificacion telefono rpt');			
 			io.to(val.idsocket).emit('mensaje-verificacion-telefono-rpt', val);
 		});
 
@@ -109,8 +113,23 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// nuevo pedido mandado
 		socket.on('nuevo-pedido-mandado', async () => {
 			// notifica al monitor
-			console.log('nuevo-pedido-mandado');
+			logger.debug({ }, 'Nuevo pedido mandado');
 			io.to('MONITOR').emit('monitor-nuevo-pedido-mandado', true);
+		});
+
+		// ping al servicio de mensajeria
+		socket.on('ping-mensajeria', async (data) => {
+			const roomMensajeria = `mensajeria_${data.roomId}`;
+			const pingId = `${roomMensajeria}_${Date.now()}`;
+
+			logger.debug({ roomMensajeria }, 'Connectando ping a roomMensajeria');
+			
+			socket.to(roomMensajeria).timeout(5000).emit('ping', { pingId }, (err, responses) => {
+				logger.debug({ responses }, 'Respuesta recibida de mensajeria');
+				if (responses && responses.length > 0 && responses[0].success){
+					socket.emit('pong-mensajeria', { pingId, success: true });
+				}
+			});
 		});
 
 
@@ -154,7 +173,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// socketLocalPinpad(dataCliente,socket);
 			const chanelConectPinPad = `pinpad-${dataCliente.pinPadSN}`;
 			dataCliente.room = chanelConectPinPad;
-			console.log('isLocalPinpad conectado al room ', chanelConectPinPad);
+			logger.debug({ chanelConectPinPad }, 'IsLocalPinpad conectado al room');
 
 			socket.join(chanelConectPinPad);
 
@@ -175,11 +194,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// si viene desde app pedidos
 		// 1 is from pwa 0 is web // si es 0 web no da carta
 		const isFromPwa = dataSocket.isFromApp ? parseInt(dataSocket.isFromApp) : 1;
-		console.log('isFromPwa', isFromPwa);
+		logger.debug({ isFromPwa }, 'IsFromPwa');
 
 		// nos conectamos al canal idorg+idsede
 		const chanelConect = 'room'+dataSocket.idorg + dataSocket.idsede;
-		console.log('conectado al room ', chanelConect);
+		logger.debug({ chanelConect }, 'Conectado al room');
 
 		socket.join(chanelConect);
 
@@ -187,7 +206,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// Servidor de Impresion 070222
 		if (dataCliente.isServerPrint === '1') {
 			// socketMaster = socket; 
-			console.log('es print server');
+			logger.debug({ dataCliente }, 'Es print server');
 			apiPrintServer.socketPrintServerClient(dataCliente,socket);
 			return;
 		}
@@ -231,15 +250,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				const objDescuentos = await apiPwa.listCallClientMesa(dataCliente);
 				socket.emit('load-list-cliente-llamado', objDescuentos);				
 			}
-
-			// console.log('tipo consumo', objTipoConsumo);
-			// console.log('reglas carta y subtotales', objReglasCarta);
-			// console.log('a user connected sokecontroller - servimos la carta', objCarta );		
-			// console.log('a user connected sokecontroller - servimos datos de la sede', objDataSede );
-
-			console.log('emitido a ', chanelConect);
+	
+			logger.debug({ chanelConect }, 'Emitido a');
 			// socket.emit('getLaCarta', objCarta);
-			console.log('=========emitido carta=====', chanelConect);
+			logger.debug({ chanelConect }, '=========emitido carta========');
 			// socket.emit('getTipoConsumo', objTipoConsumo);
 			// socket.emit('getReglasCarta', objReglasCarta);
 			// socket.emit('getDataSede', objDataSede);
@@ -249,17 +263,17 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		}
 
-		console.log('=== limite comprobaciones')		
+		logger.debug('=== limite comprobaciones');		
 
 		socket.on('hola-test', async function(item) {
-			console.log('==========> llego HOLA TEST')
+			logger.debug({ item }, '==========> llego HOLA TEST');
 		})
 
 		// para sacar el loader
 		socket.emit('finishLoadDataInitial');
 
 		socket.on('itemModificado-test', async function(item) {
-			console.log('==========> llego', item)
+			logger.debug({ item }, '==========> llego');
 		})
 
 		// cola de procesamiento
@@ -292,7 +306,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// // Emite un solo evento con todos los items procesados
 				// io.to(chanelConect).emit('itemsModificados', processedItems);
 			} catch (error) {
-				console.error(error);
+				logger.error(error);
 			}
 
 			// registrar como cliente usuario desconectado
@@ -300,59 +314,54 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 		socket.on('itemModificado', async function(item) {
-			console.log('itemModificado', item);			
+			item.idsede = dataCliente.idsede;
+			item.idusuario = dataCliente.idusuario;
+			logger.debug({ item }, 'Item modificado');			
 			// Verificar si es del monitor
 			if (item?.from_monitor === true) {
 				socketItemModificadoAfter(item);
 				return;
 			}
-
-			// console.log('queue.push', item);
+			
 
 			queue.push(item);
 		});
-		
-        // console.log('item.sumar', item);	
+		        
         // var _cantItem = parseFloat(item.cantidad);
 
 		// 10124 para monitor de pedidos
 		async function socketItemModificadoAfter(item) {
-			// console.log('itemModificado', item);
+			
 
 			// manejar cantidad/
 
 			
-
-			// console.log('item', item);
+			
 			// actualizamos en bd - si un cliente nuevo solicita la carta tendra la carta actualizado
 			item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
 			
 			// la cantidad viene 999 cuando es nd y la porcion si viene nd
 			// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
 			item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;
-			if (item.cantidad != 'ND') {
-				// console.log('item.sumar', item);	
+			if (item.cantidad != 'ND') {				
 				// var _cantItem = parseFloat(item.cantidad);
 
 				// item.venta_x_peso solo para productos
 				var _cantSumar = item.venta_x_peso === 1 ? -item.cantidad : item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;
 				item.cantidadSumar = _cantSumar;
-				console.log('item.cantidadSumar', item.cantidadSumar);
+				logger.debug({ item }, 'Item cantidad sumar');
 				// item.cantidad = _cantItem;		
 
-				// console.log('json item ', JSON.stringify(item));
 
 				const rptCantidad = await apiPwa.setItemCartaAfter(0, item);
-				// console.log('cantidad update mysql ', rptCantidad);
 
 				// if ( item.isporcion != 'SP' ) {
 				item.cantidad = rptCantidad[0].cantidad;
 				//}				
 
 				// subitems
-				console.log('rptCantidad[0].listSubItems ', rptCantidad[0].listSubItems );
-
-				// console.log('item subitems', item.subitems);
+				logger.debug({ rptCantidad }, 'Rpt cantidad');
+				
 
 				if ( rptCantidad[0].listSubItems ) {
 					try {
@@ -370,7 +379,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 						});
 					}
 					catch (error) {
-						console.log(error);
+						logger.error({ error }, 'Error al actualizar subitems');
 					}
 				}			
 
@@ -405,14 +414,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 		// nuevo item agregado a la carta - from monitoreo stock
-		socket.on('nuevoItemAddInCarta', (item) => {
-			// console.log('nuevoItemAddInCarta', item);
+		socket.on('nuevoItemAddInCarta', (item) => {			
 			socket.broadcast.to(chanelConect).emit('nuevoItemAddInCarta', item);
 		});
 
 		// restablecer pedido despues de que se termino el tiempo de espera
 		socket.on('resetPedido', (listPedido) => {
-			console.log('resetPedido ', listPedido);
+			logger.debug({ listPedido }, 'Reset pedido');
 			// recibe items
 			listPedido.map(async (item) => {				
 				// si la cantidad seleccionada es 0 entonces continua al siguiente
@@ -422,7 +430,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 				item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
 				const isCheckExistSubItemsWithCantidad = handleStock.checkExistSubItemsWithCantidad(item);
-				console.log('isCheckExistSubItemsWithCantidad', isCheckExistSubItemsWithCantidad);
+				logger.debug({ isCheckExistSubItemsWithCantidad }, 'Is check exist subitems with cantidad');
 				// item.cantidad = parseInt(item.cantidad) === 999 ? item.isporcion : item.cantidad; // la cantidad viene 999 cuando es nd y la porcion si viene nd
 				// la cantidad viene 999 cuando es nd y la porcion si viene nd
 				// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
@@ -430,17 +438,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				if (item.cantidad != 'ND' || isCheckExistSubItemsWithCantidad) {
 					item.cantidad_reset = item.cantidad_seleccionada;					
 					item.cantidad_seleccionada = 0;
-					// console.log('items recuperar ', item);
+					
 										
 					const rptCantidad = await apiPwa.setItemCarta(1, item, dataCliente.idsede);
 					item.cantidad = rptCantidad[0].cantidad;
-					// console.log('subitems_view ', item.subitems_view);
-					// console.log('respuesta reset ', rptCantidad);
 
 					// subitems
-					// console.log('rptCantidad[0].listSubItems ', rptCantidad[0].listSubItems);
-
-					// console.log('item.subitems', item.subitems);
 
 					if ( rptCantidad[0].listSubItems ) {
 						rptCantidad[0].listSubItems.map(subitem => {
@@ -458,16 +461,14 @@ module.exports.socketsOn = function(io){ // Success Web Response
 											}
 										});
 									} catch(error) {										
-										console.log(error);
-										console.log('item.subitems', item.subitems);
+										logger.error({ error }, 'Error al actualizar subitems');
 									}	
 
 								}								
 							}							
 						});
 					}
-
-					// console.log('item reseteado', item);
+					
 					const rpt = {
 						item : item,
 						listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,
@@ -483,8 +484,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// buscar subitems del item seleccionado
 		socket.on('search-subitems-del-item', async (iditem, callback) => {
-			const rpt = await apiPwa.getSearchSubitemsItem(iditem);
-			// console.log('respuesta del socket ', rpt);
+			const rpt = await apiPwa.getSearchSubitemsItem(iditem);			
 			callback(rpt);
 		});
 
@@ -495,15 +495,14 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('nuevoPedido', async (dataSend, callback) => {
 			var telefonoComercio = '';
 
-			// console.log('nuevoPedido ', dataSend);			
+
 			if ( typeof dataSend === 'string' ) {
 				dataSend = JSON.parse(dataSend);
 			}
 			
 
 			/// <<<<< 250124 >>>> //
-			// si es holding ///	
-			console.log('dataSend.dataPedido.p_header === ', dataSend.dataPedido.p_header);		
+			// si es holding ///					
 
 			// chequeamos si el header tiene paymentMozo.success
 			const _savePedidoAndPago = dataSend.dataPedido.p_header.paymentMozo ? dataSend.dataPedido.p_header.paymentMozo.isPaymentSuccess : false;
@@ -518,7 +517,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				return;	
 			} 
 			else if (_savePedidoAndPago) {
-				console.log('_savePedidoAndPago === ', _savePedidoAndPago);
+				logger.debug({ _savePedidoAndPago }, '_savePedidoAndPago');
 
 				// si el mesero confirmo el pago // no holding
 				const rptPedidoSave = await apiHoldingServices.savePedidosAgrupados([dataSend], dataSend.dataPedido.p_subtotales, io, _savePedidoAndPago);
@@ -528,10 +527,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				}
 				return;	
 			}
-			// console.log('dataSend === ', dataSend);
+			
 			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
-
-			// console.log('rpt === ', rpt);
+			logger.debug({ rpt }, 'Rpt');
 									
 			io.to(socket.id).emit('nuevoPedidoRes', rpt)
 
@@ -543,9 +541,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// error
 			if ( rpt === false ) {
 				return;
-			}
-			// console.log('respuesta guardar pedido ', JSON.stringify(rpt[0].idpedido));
-
+			}			
 
 			dataSend.dataPedido.idpedido = rpt[0].idpedido; // para buscar el pedido en comercio
 
@@ -571,7 +567,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// 	if ( telefonoComercio !== '' ) {
 				// 		apiPwaComercio.sendNotificacionNewPedidoSMS(telefonoComercio);
 				// 	}
-				// 	// console.log(' ==== notifica sms comercio =====', socketIdComercio[0].telefono_notifica);					
+				
 				// } 
 
 				// notificacion push
@@ -586,14 +582,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// 		dataDelivery: dataSend.dataPedido.p_header.arrDatosDelivery,
 			// 		idpedido: rpt[0].idpedido
 			// 	}				
-
-			// 	console.log ('datos para enviar repartidor ', JSON.stringify(_dataPedido));
+			
 				
 			// 	// obtener lista de repartidores
 			// 	const listRepartidores = await apiPwaRepartidor.getRepartidoreForPedido(_dataPedido);
 
-			// 	// pasamos a funcion que maneja las notificaciones
-			// 	console.log('lista de repartidores', listRepartidores);
+			// 	// pasamos a funcion que maneja las notificaciones			
 			// 	apiPwaRepartidor.sendPedidoRepartidor(listRepartidores, _dataPedido, io);
 
 
@@ -610,9 +604,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			// notifica al monitor nuevo pedido para emitir alerta
 			if ( dataSend.dataPedido.p_header.delivery === 1 ) {
-				io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
-
-				console.log(' ====== notifica al servidor de mensajes ===== telefono notifica ====> ', telefonoComercio);
+				io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);				
 
 				try {
 					if ( telefonoComercio !== '' ) {
@@ -621,15 +613,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 						sendMsjSocketWsp(_sendServerMsj);
 					}	
 				} catch(error){
-					console.log('error', error)
+					logger.error({ error }, 'Error al enviar msj socket wsp');
 				}
 			}
 			// io.to('MONITOR').emit('nuevoPedido', dataCliente);
 
 
-			// registrar comanda en print_server_detalle
-			// console.log('printer comanda', JSON.stringify(rpt[0]));
-			// console.log('printerComanda', JSON.stringify(rpt[0].data));
+			// registrar comanda en print_server_detalle			
 			//apiPwa.setPrintComanda(dataCliente, dataSend.dataPrint);
 			// emitimos para print server
 			// socket.broadcast.to(chanelConect).emit('printerComanda', rpt);
@@ -642,12 +632,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// solo envia el data pedido con el id del pedido registrado por http		
 		// para evitar pedidos perdidos cuando el socket pierde conexion
 		socket.on('nuevoPedido2', async (dataSend) => {
-			console.log('nuevoPedido2 ', dataSend);	
+			logger.debug({ dataSend }, 'nuevoPedido2');	
 
 			var telefonoComercio = '';		
 			// const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
-
-			// console.log('respuesta guardar pedido ', JSON.stringify(rpt[0].idpedido));
 
 
 			// dataSend.dataPedido.idpedido = rpt[0].idpedido; // para buscar el pedido en comercio
@@ -669,8 +657,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// if ( telefonoComercio !== undefined ) {
 				// 	if ( telefonoComercio !== '' ) {
 				// 		apiPwaComercio.sendNotificacionNewPedidoSMS(telefonoComercio);
-				// 	}
-				// 	// console.log(' ==== notifica sms comercio =====', socketIdComercio[0].telefono_notifica);					
+				// 	}				
 				// } 
 
 				// notificacion push
@@ -685,12 +672,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to(chanelConect).emit('nuevoPedido', dataSend.dataPedido);
 
 			// notifica al monitor nuevo pedido para emitir alerta
-			console.log(' ====== notifica al monitor =====');
+			logger.debug('notifica al monitor');
 			if ( dataSend.dataPedido.p_header.delivery === 1 ) {
 				io.to('MONITOR').emit('nuevoPedido', dataSend.dataPedido);
 
 
-				console.log(' ====== notifica al servidor de mensajes ===== telefono notifica ====> ', telefonoComercio);
+				logger.debug('notifica al servidor de mensajes');
 				if ( telefonoComercio !== '' ) {
 					const _sendServerMsj = `{"tipo":0, "s": "${dataCliente.idorg}.${dataCliente.idsede}", "p": ${dataSend.dataPedido.idpedido}, "h": "${new Date().toISOString()}", "t":"${telefonoComercio}"}`;
 					// io.to('SERVERMSJ').emit('nuevoPedido', _sendServerMsj); // para enviar el url del pedido
@@ -703,7 +690,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			
 			const _dataPrint = dataSend.dataPrint;			
 			if ( _dataPrint == null ) { return }
-			console.log('!!!! ====== notifica al dataSend del mandar imprimir =====', JSON.stringify(dataSend));
+			logger.debug('notifica al dataSend del mandar imprimir');
 			dataSend.dataPrint.map(x => {
 				if ( x.print ) {
 					var dataPrintSend = {
@@ -714,8 +701,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 						nom_documento: 'comanda',
 						idprint_server_detalle: x.print.idprint_server_detalle
 					}
-
-					console.log(' ====== printerComanda =====', dataPrintSend);
+					
 					socket.broadcast.to(chanelConect).emit('printerComanda', dataPrintSend);
 				}				
 			});			
@@ -724,8 +710,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// no guarda lo que envia el cliente solo notifica que hay un nuevo pedido, para imprimir en patalla o ticketera
 		// para imprmir solo la comanda desde control pedidos, venta rapida, zona despacho
 		socket.on('printerOnly', (dataSend) => {			
-			dataSend.hora = n;
-			// console.log('printerOnly', dataSend);
+			dataSend.hora = n;			
 
 			socket.broadcast.to(chanelConect).emit('printerOnly', dataSend);
 			socket.broadcast.to(chanelConect).emit('nuevoPedido-for-list-mesas', dataSend); // app mozo
@@ -739,11 +724,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			} catch (error) {
 			    isNotificaMonitor = false;
 			}
-
-			// console.log('nuevoPedidoUpdateVista', isNotificaMonitor)
+			
 
 			if ( isNotificaMonitor ) {
-				console.log('nuevoPedidoUpdateVista', chanelConect)
+				logger.debug('nuevoPedidoUpdateVista', chanelConect)
+				
 				io.to(chanelConect).emit('nuevoPedidoUpdateVista', true);				
 			}
 
@@ -752,7 +737,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// marca el pedido como impresor // enviado desde servidor de impresion		
 		socket.on('printer-flag-impreso', (dataPedido) => {				
-			console.log('==== notifica-impresion-comanda ', dataPedido);
+			logger.debug('notifica-impresion-comanda', dataPedido);
 			socket.broadcast.to(chanelConect).emit('notifica-impresion-comanda', dataPedido);
 			// apiPwa.setFlagPrinter(dataPedido);
 
@@ -764,7 +749,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// update impreso print_detalle
 		socket.on('printer-flag-impreso-update', (id) => {				
-			console.log('printer-flag-impreso-update ',id);			
+			logger.debug('printer-flag-impreso-update ',id);			
 			apiPwa.setFlagPrinter(id);			
 
 			// socket.broadcast.to(chanelConect).emit('notifica-impresion-comanda', JSON.stringify(objP));
@@ -772,7 +757,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notifica que se mando a imprimir precuenta para refrescar en el control de pedidos del comercio
 		socket.on('notificar-impresion-precuenta', (dataSend) => {						
-			console.log('notificar-impresion-precuenta ', chanelConect);
+			logger.debug('notificar-impresion-precuenta ', chanelConect);
 			socket.broadcast.to(chanelConect).emit('notifica-impresion-precuenta', 1);
 		});
 
@@ -782,10 +767,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// verificar si el pedido ha sido realizado por un usuario cliente - front-end
 		socket.on('pedido-pagado-cliente', async (listIdCliente) => {
 			const listIdsClie = listIdCliente.join(',');
-			console.log('pedido-pagado-cliente', listIdsClie);
+			logger.debug('pedido-pagado-cliente', listIdsClie);
 
 			const socketIdCliente = await apiPwa.getSocketIdCliente(listIdsClie);
-			console.log('res list socket id', socketIdCliente);
+			logger.debug('res list socket id', socketIdCliente);
 			// buscar socketid por idcliente	
 
 			// emite evento al cliente especifico
@@ -796,7 +781,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		
 
 		socket.on('disconnect', async (reason) => {
-			console.log('cliente desconectado', socket.id);
+			logger.debug('cliente desconectado', socket.id);
 						
 
 			// registrar como cliente usuario desconectado
@@ -816,7 +801,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notificar pago del cliente para ser visto en control de pedidos
 		socket.on('notificar-pago-pwa', (data) => {
-			console.log('emit notificar-pago-pwa');
+			logger.debug('emit notificar-pago-pwa');
 			socket.broadcast.to(chanelConect).emit('notificar-pago-pwa', data);
 		});
 
@@ -828,7 +813,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				num_mesa: numMesa
 			}
 
-			console.log('notificar-cliente-llamado', _dataSend)
+			logger.debug('notificar-cliente-llamado', _dataSend)
 
 			// guardamos en bd
 			apiPwa.saveCallClientMesa(_dataSend,0);
@@ -842,7 +827,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				idsede: dataCliente.idsede,
 				num_mesa: numMesa
 			}
-			console.log('notificar-cliente-llamado-voy', _dataSend)
+			logger.debug('notificar-cliente-llamado-voy', _dataSend)
 			
 			apiPwa.saveCallClientMesa(_dataSend,1);
 
@@ -854,7 +839,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// restobar
 		// notifica al pedido que tiene un pedido asignado desde el comercio control de pedidos
 		socket.on('set-repartidor-pedido-asigna-comercio', async (dataPedido) => {
-			console.log('set-repartidor-pedido-asigna-comercio', dataPedido);
+			logger.debug('set-repartidor-pedido-asigna-comercio', dataPedido);
 			const socketIdRepartidor = await apiPwaRepartidor.getSocketIdRepartidor(dataPedido.idrepartidor);
 			io.to(socketIdRepartidor[0].socketid).emit('set-repartidor-pedido-asigna-comercio', dataPedido);				
 
@@ -872,10 +857,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// notifica cambio de estado del pedido
 		socket.on('delivery-pedido-estado', async (idcliente) => {
 			// const listIdsClie = listIdCliente.join(',');
-			console.log('delivery-pedido-estado', idcliente);
+			logger.debug('delivery-pedido-estado', idcliente);
 
 			const socketIdCliente = await apiPwa.getSocketIdCliente(idcliente);
-			console.log('delivery-pedido-estado', socketIdCliente);
+			logger.debug('delivery-pedido-estado', socketIdCliente);
 			// buscar socketid por idcliente	
 
 			// emite evento al cliente especifico
@@ -890,41 +875,41 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// restobar envia notificacion de pago de servcio
 		socket.on('restobar-pago-servicio-on', async (payload) => {
-			console.log('restobar-pago-servicio-on', payload);
+			logger.debug('restobar-pago-servicio-on', payload);
 			io.to('MONITOR').emit('restobar-pago-servicio-on', true);
 		});
 
 		// restobar envia url pdf comprobante para enviar a whastapp		
 		socket.on('restobar-send-comprobante-url-ws', async (payload) => {
 			payload.tipo = 3;			
-			console.log('restobar-send-comprobante-url-ws', payload);			
-			sendMsjSocketWsp(payload);
+			logger.debug('restobar-send-comprobante-url-ws', payload);			
+			sendMsjSocketWsp(payload, dataSocket);
 			
 		});
 
 		// restobar envia cupones al whastapp cliente
 		socket.on('restobar-send-cupones-ws', async (payload) => {
 			payload.tipo = 7;			
-			console.log('restobar-send-cupones-ws', payload);
+			logger.debug('restobar-send-cupones-ws', payload);
 			sendMsjSocketWsp(payload);
 			
 		});
 
 		socket.on('restobar-notifica-pay-pedido', async (payload) => {			
-			console.log('restobar-notifica-pay-pedido-res', payload);	
+			logger.debug('restobar-notifica-pay-pedido-res', payload);	
 			socket.broadcast.to(chanelConect).emit('restobar-notifica-pay-pedido-res', payload);					
 		});
 
 
 		// respuesta solicitud de cierre
 		socket.on('restobar-permiso-cierre-remoto-respuesta', async (payload) => {			
-			console.log('restobar-permiso-cierre-remoto-respuesta', payload);	
+			logger.debug('restobar-permiso-cierre-remoto-respuesta', payload);	
 			socket.broadcast.to(chanelConect).emit('restobar-permiso-cierre-remoto-respuesta', payload);					
 		});
 
 		socket.on('restobar-venta-registrada', () => {			
 			const _res = `se proceso un pago >  ${chanelConect}`;
-			console.log('=>>>>>>>>>>>>>>>>> ', _res);
+			logger.debug('restobar-venta-registrada', _res);
 			socket.to(chanelConect).emit('restobar-venta-registrada-res', _res);
 
 
@@ -940,7 +925,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					items: []
 				});
 			} catch (error) {
-				console.error('Error al cancelar pedido:', error);
+				logger.error('Error al cancelar pedido:', error);
 				socket.emit('pedido-cancelado', {
 					success: false,
 					message: 'Error al cancelar pedido: ' + error.message
@@ -951,13 +936,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// Confirmar pedido para evitar restauración de stock
 		socket.on('confirmar-pedido', async () => {
 			try {
-				console.log(`Pedido confirmado para socket ${socket.id}`);
+				logger.debug(`Pedido confirmado para socket ${socket.id}`);
 				socket.emit('pedido-confirmado', {
 					success: true,
 					message: 'Pedido confirmado correctamente'
 				});
 			} catch (error) {
-				console.error('Error al confirmar pedido:', error);
+				logger.error('Error al confirmar pedido:', error);
 				socket.emit('pedido-confirmado', {
 					success: false,
 					message: 'Error al confirmar pedido: ' + error.message
@@ -968,14 +953,14 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// Extender tiempo de reserva
 		socket.on('extender-tiempo-pedido', async () => {
 			try {
-				console.log(`Tiempo extendido para socket ${socket.id}`);
+				logger.debug(`Tiempo extendido para socket ${socket.id}`);
 				socket.emit('tiempo-pedido-extendido', {
 					success: true,
 					message: 'Tiempo extendido correctamente',
 					nuevoTiempo: 60 // Default value in seconds
 				});
 			} catch (error) {
-				console.error('Error al extender tiempo de pedido:', error);
+				logger.error('Error al extender tiempo de pedido:', error);
 				socket.emit('tiempo-pedido-extendido', {
 					success: false,
 					message: 'Error al extender tiempo: ' + error.message
@@ -992,7 +977,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// llamar a mozo indicando que pedido esta listo en marca
 		socket.on('restobar-call-mozo-holding', async (payload) => {
 			const roomMozo = `${nameRoomMozo}${payload.idusuario}`;
-			console.log('restobar-call-mozo-holding', roomMozo);
+			logger.debug('restobar-call-mozo-holding', roomMozo);
 			apiPwa.saveCallMozoHolding(payload);
 			socket.to(roomMozo).emit('restobar-call-mozo-holding', payload);
 		});
@@ -1000,7 +985,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notifica al cliente que repartidor tomo su pedido
 		socket.on('repartidor-notifica-cliente-acepto-pedido', async (listClienteNotifica) => {
-			console.log('repartidor-notifica-cliente-acepto-pedido===========', listClienteNotifica)			
+			logger.debug('repartidor-notifica-cliente-acepto-pedido===========', listClienteNotifica)			
 			listClienteNotifica.map(c => {
 				c.tipo = 2;
 
@@ -1014,7 +999,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// restobar notifica solicitud de permiso al administrador para borrar productos, eliminar cuentas, o cierre de caja
 		socket.on('restobar-send-msj-ws-solicitud-permiso', async (payload) => {
 			payload.tipo = 6;			
-			console.log('restobar-send-msj-ws-solicitud-permiso', payload);
+			logger.debug('restobar-send-msj-ws-solicitud-permiso', payload);
 			sendMsjSocketWsp(payload);
 			
 		});
@@ -1057,16 +1042,16 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// llamar a mozo indicando que pedido esta listo en marca
 		socket.on('restobar-call-mozo-holding', async (payload) => {
 			const roomMozo = `${nameRoomMozo}${payload.idusuario}`;
-			console.log('restobar-call-mozo-holding', roomMozo);
+			logger.debug('restobar-call-mozo-holding', roomMozo);
 			apiPwa.saveCallMozoHolding(payload);
 			socket.to(roomMozo).emit('restobar-call-mozo-holding', payload);
 		});
 
 		// holding - mozo notifica a marca que esta en camino
 		socket.on('notificar-marca-mozo-en-camino', async (data) => {
-			console.log('data', data);			
+			logger.debug('data', data);			
 			const roomMarcaHolding = `room${data.idorg_notificar}${data.idsede_notificar}`;
-			console.log('notificar-marca-mozo-en-camino', roomMarcaHolding);
+			logger.debug('notificar-marca-mozo-en-camino', roomMarcaHolding);
 			socket.broadcast.to(roomMarcaHolding).emit('notificar-marca-mozo-en-camino', data.idpedido);
 
 			apiPwa.saveCallMozoHoldingEstado(data.idpedido);
@@ -1079,7 +1064,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 	
 	function xMandarImprimirComanda(dataPrint, socket, chanelConect) {
 		// data print
-		console.log('dataPrint xMandarImprimirComanda ===>', dataPrint);
+		logger.debug('dataPrint xMandarImprimirComanda ===>', dataPrint);
 			const _dataPrint = dataPrint;
 			if ( _dataPrint == null ) { return }
 			_dataPrint.map(x => {
@@ -1093,7 +1078,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 						idprint_server_detalle: x.print.idprint_server_detalle
 					}
 
-					console.log(' ====== printerComanda ===== xMandarImprimirComanda', dataPrintSend);
+					logger.debug(' ====== printerComanda ===== xMandarImprimirComanda', dataPrintSend);
 					socket.broadcast.to(chanelConect).emit('printerComanda', dataPrintSend);
 				}				
 			});	
@@ -1101,24 +1086,24 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 	async function socketRepartidor(dataCliente, socket) {
-		console.log('desde func repartatidor', dataCliente);
+		logger.debug('desde func repartatidor', dataCliente);
 
 		// mantener el socket id del repartidor
 		// if (dataCliente.firts_socketid) {
 		// 	dataCliente.socketid = dataCliente.firts_socketid;
 		// 	socket.id = dataCliente.firts_socketid;
 
-		console.log ('repartidor conectado ==========');
+		logger.debug ('repartidor conectado ==========');
 		// Confirmar pedido para evitar restauración de stock
 		socket.on('confirmar-pedido', async (pedidoId) => {
 			try {
-				console.log(`Pedido confirmado para socket ${socket.id}`);
+				logger.debug(`Pedido confirmado para socket ${socket.id}`);
 				socket.emit('pedido-confirmado', {
 					success: true,
 					message: 'Pedido confirmado correctamente'
 				});
 			} catch (error) {
-				console.error('Error al confirmar pedido:', error);
+				logger.error('Error al confirmar pedido:', error);
 				socket.emit('pedido-confirmado', {
 					success: false,
 					message: 'Error al confirmar pedido: ' + error.message
@@ -1151,7 +1136,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				}	
 			}		
 		} catch(error) {
-			console.log('error', error)
+			logger.error('error', error)
 		}
 		
 
@@ -1160,12 +1145,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notificador online ofline
 		socket.on('notifica-repartidor-online', (socketId) => {
-			console.log('notifica-repartidor-online');
+			logger.debug('notifica-repartidor-online');
 			io.to('MONITOR').emit('notifica-repartidor-online', dataCliente);
 		});
 
 		socket.on('notifica-repartidor-ofline', (socketId) => {
-			console.log('notifica-repartidor-ofline');
+			logger.debug('notifica-repartidor-ofline');
 			io.to('MONITOR').emit('notifica-repartidor-online', dataCliente);
 		});
 
@@ -1178,7 +1163,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			apiPwaRepartidor.setUpdateEstadoPedido(dataCliente.idpedido, dataCliente.estado);
 
 			const socketIdCliente = await apiPwa.getSocketIdCliente(dataCliente.idcliente);
-			console.log('repartidor-notifica-estado-pedido', socketIdCliente[0].socketid +'  estado: '+dataCliente.estado);
+			logger.debug('repartidor-notifica-estado-pedido', socketIdCliente[0].socketid +'  estado: '+dataCliente.estado);
 
 			io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-estado-pedido', dataCliente.estado);	
 		});
@@ -1190,17 +1175,17 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				const socketIdCliente = await apiPwa.getSocketIdCliente(datosUbicacion.idcliente);
 				try {
 					if ( socketIdCliente[0].socketid ) { // puede ser un pedido que el comercio llamo repartidor
-						console.log('repartidor-notifica-ubicacion ==> al cliente', socketIdCliente[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
+						logger.debug('repartidor-notifica-ubicacion ==> al cliente', socketIdCliente[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
 						io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas);
 					}
 				}						
-				catch(err) {console.log('cliente sin socket id',err)}
+				catch(err) {logger.error('cliente sin socket id',err)}
 			}			
 
 			// notifica a comercio
 			if ( datosUbicacion.idsede ) {
 				const socketIdComercio = await apiPwaComercio.getSocketIdComercio(datosUbicacion.idsede);
-				console.log('repartidor-notifica-ubicacion ==> al comercio', socketIdComercio[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
+				logger.debug('repartidor-notifica-ubicacion ==> al comercio', socketIdComercio[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
 				io.to(socketIdComercio[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion);	
 			}		
 
@@ -1216,8 +1201,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// 	// obtener lista de repartidores
 		// 	const listRepartidores = await apiPwaRepartidor.getRepartidoreForPedido(_dataPedido);
 
-		// 	// pasamos a funcion que maneja las notificaciones
-		// 	console.log('repartidor-declina-pedido enviar a', listRepartidores[_dataPedido.num_reasignado]);
+		// 	// pasamos a funcion que maneja las notificaciones		
 		// 	apiPwaRepartidor.sendPedidoRepartidor(listRepartidores, _dataPedido, io);
 		// });		
 
@@ -1235,21 +1219,21 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			try {
 				// buscamos socketid de comercio para notificar
 				const socketidComercio = await apiPwaComercio.getSocketIdComercio(dataPedido.idsede);
-				console.log('repartidor-notifica-a-comercio-pedido-aceptado', socketidComercio +'  pedido: '+ dataPedido);
+				logger.debug('repartidor-notifica-a-comercio-pedido-aceptado', socketidComercio +'  pedido: '+ dataPedido);
 
 				io.to(socketidComercio[0].socketid).emit('repartidor-notifica-a-comercio-pedido-aceptado', dataPedido);	
 
 				// NOTIFICA a la central
 				io.to('MONITOR').emit('repartidor-notifica-a-comercio-pedido-aceptado', true);
-			} catch (err) {console.log(err)}
+			} catch (err) {logger.error(err)}
 
 		});
 
 
 		// notifica al cliente que repartidor tomo su pedido
 		socket.on('repartidor-notifica-cliente-acepto-pedido', async (listClienteNotifica) => {
-			console.log('repartidor-notifica-cliente-acepto-pedido =========== repartidor', listClienteNotifica)
-			console.log('typeof listClienteNotifica', typeof listClienteNotifica);
+			logger.debug('repartidor-notifica-cliente-acepto-pedido =========== repartidor', listClienteNotifica)
+			logger.debug('typeof listClienteNotifica', typeof listClienteNotifica);
 
 			// si listClienteNotifica no es formato json lo convertimos
 			if ( typeof listClienteNotifica === 'string' ) {
@@ -1258,7 +1242,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			
 			// si no existe la funcion map en listClienteNotifica.map entonces manejamos el error
 			if ( !listClienteNotifica.map ) {
-				console.log('error listClienteNotifica.map', listClienteNotifica);
+				logger.error('error listClienteNotifica.map', listClienteNotifica);
 				return;
 			}	
 
@@ -1273,13 +1257,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// notifica al control de pedidos del comercio
 				const _chanelNotifica = 'room' + c.idorg +''+ c.idsede;
 				socket.to(_chanelNotifica).emit('repartidor-notifica-cliente-acepto-pedido-res', c);
-				console.log('_chanelNotifica ===========', _chanelNotifica);
+				logger.debug('_chanelNotifica ===========', _chanelNotifica);
 			});
 		});
 
 		// notifica al cliente time line del pedido
 		socket.on('repartidor-notifica-cliente-time-line', async (listClienteNotifica) => {
-			console.log('repartidor-notifica-cliente-time-line =========== repartidor', listClienteNotifica)
+			logger.debug('repartidor-notifica-cliente-time-line =========== repartidor', listClienteNotifica)
 			listClienteNotifica.map(c => {
 				c.tipo = 5; 
 				switch (c.tipo_msj) {
@@ -1296,7 +1280,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 
-				console.log('mensaje === ', c)
+				logger.debug('mensaje === ', c)
 				sendMsjSocketWsp(c);
 
 				// NOTIFICA a la central
@@ -1311,7 +1295,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// repartidor propio
 		socket.on('repartidor-propio-notifica-fin-pedido', async (dataPedido) => {
-			console.log('repartidor-propio-notifica-fin-pedido', dataPedido);
+			logger.debug('repartidor-propio-notifica-fin-pedido', dataPedido);
 			// dataPedido viene vacio =verificar= 221022
 			try {
 				apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
@@ -1325,12 +1309,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 				io.to('MONITOR').emit('repartidor-notifica-fin-pedido', {idrepartidor: dataPedido.idrepartidor, idpedido: dataPedido.idpedido});
-			} catch (err) { console.log('error payload vacio', err) }
+			} catch (err) { logger.error('error payload vacio', err) }
 		});
 
 		// notifica fin de solo un pedido de grupo de pedidos
 		socket.on('repartidor-notifica-fin-one-pedido', async (dataPedido) => {
-			console.log('repartidor-notifica-fin-one-pedido', dataPedido);
+			logger.debug('repartidor-notifica-fin-one-pedido', dataPedido);
 
 			apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
 			// apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
@@ -1343,7 +1327,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			// notifica a control pedidos restobar
 			const _chanelConect = `room${dataPedido.idorg}${dataPedido.idsede}`;
-			console.log(_chanelConect);
+			logger.debug(_chanelConect);
 			io.to(_chanelConect).emit('repartidor-notifica-fin-pedido', dataPedido.idpedido);
 
 			io.to('MONITOR').emit('repartidor-notifica-fin-pedido', {idrepartidor: dataPedido.idrepartidor, idpedido: dataPedido.idpedido});
@@ -1353,7 +1337,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notifica el fin de todo el grupo de pedidos
 		socket.on('repartidor-grupo-pedido-finalizado', (idrepartidor) => {
-			console.log('repartidor-grupo-pedido-finalizado', idrepartidor);			
+			logger.debug('repartidor-grupo-pedido-finalizado', idrepartidor);			
 			apiPwaRepartidor.setUpdateRepartidorOcupado(idrepartidor, 0);
 
 			// notifica a monitor
@@ -1364,10 +1348,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 	}
 
 	function socketClienteDeliveryEstablecimientos(dataCliente, socket) {
-		console.log('desde func socketClienteDeliveryEstablecimientos', dataCliente);
+		logger.debug('desde func socketClienteDeliveryEstablecimientos', dataCliente);
 
 		const chanelConectPatioDelivery = 'roomPatioDelivery';
-		console.log('conectado al room ', chanelConectPatioDelivery);
+		logger.debug('conectado al room ', chanelConectPatioDelivery);
 		socket.join(chanelConectPatioDelivery);
 
 		// mantener el socket id
@@ -1375,7 +1359,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// 	dataCliente.socketid = dataCliente.firts_socketid;
 		// 	socket.id = dataCliente.firts_socketid;
 
-			console.log ('sin cambiar socket', dataCliente);
+			logger.debug ('sin cambiar socket', dataCliente);
 		// }
 		
 		// registrar como conectado en cliente_socketid
@@ -1384,7 +1368,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// escuhar fin del pedido cuando el cliente recibio el pedido y califico el servicio
 		socket.on('repartidor-notifica-fin-pedido', async (dataPedido) => {
 			const socketIdCliente = await apiPwaRepartidor.getSocketIdRepartidor(dataPedido.idrepartidor);
-			console.log('repartidor-notifica-fin-pedido', socketIdCliente[0].socketid);
+			logger.debug('repartidor-notifica-fin-pedido', socketIdCliente[0].socketid);
 
 			// cerrar pedido
 			apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
@@ -1398,8 +1382,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		
 		// nuevo pedido mandado - > arriba
 		// socket.on('nuevo-pedido-mandado', async () => {
-		// 	// notifica al monitor
-		// 	console.log('nuevo-pedido-mandado');
+		// 	// notifica al monitor		
 		// 	io.to('MONITOR').emit('monitor-nuevo-pedido-mandado', true);
 		// });
 
@@ -1408,12 +1391,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 	// retiros cash atm
 	function socketClienteCashAtm(dataCliente, socket) {
-		console.log('desde func socketClienteCashAtm', dataCliente);	
+		logger.debug('desde func socketClienteCashAtm', dataCliente);	
 
 		// retiro cash atm
 		socket.on('nuevo-retiro-cash-atm', async () => {
 			// notifica al monitor
-			console.log('nuevo-retiro-cash-atm notifica monitor');
+			logger.debug('nuevo-retiro-cash-atm notifica monitor');
 			io.to('MONITOR').emit('monitor-nuevo-retiro-cash-atm', true);
 		});
 	}
@@ -1421,7 +1404,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 	// comercio
 	async function socketComercioDelivery(dataCliente, socket) {
-		console.log('desde func socketComercio', dataCliente);
+		logger.debug('desde func socketComercio', dataCliente);
 		apiPwaComercio.setComercioConectado(dataCliente);
 
 		// data del la sede
@@ -1435,7 +1418,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// notifica al pedido que tiene un pedido asignado desde el comercio
 		socket.on('set-repartidor-pedido-asigna-comercio', async (dataPedido) => {
-			console.log('set-repartidor-pedido-asigna-comercio', dataPedido);
+			logger.debug('set-repartidor-pedido-asigna-comercio', dataPedido);
 
 			const socketIdRepartidor = await apiPwaRepartidor.getSocketIdRepartidor(dataPedido.idrepartidor);
 			io.to(socketIdRepartidor[0].socketid).emit('set-repartidor-pedido-asigna-comercio', dataPedido);				
@@ -1458,12 +1441,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 	}
 
 	async function socketMonitorPacman(dataCliente, socket) {
-		console.log('desde func monitor pacman', dataCliente);
+		logger.debug('desde func socketMonitorPacman', dataCliente);
 		socket.join('MONITOR');
 
 		// notifica al repartidor del pedido asinado manualmente
 		socket.on('set-asigna-pedido-repartidor-manual', async (dataPedido) => {				
-			console.log('====== set-asigna-pedido-repartidor-manual', dataPedido);
+			logger.debug('====== set-asigna-pedido-repartidor-manual', dataPedido);
 			const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataPedido.idrepartidor);
 			const socketIdRepartidor = pedioPendienteAceptar[0].socketid;
 			io.to(socketIdRepartidor).emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
@@ -1485,14 +1468,14 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		// cerarr comercio desde el pacman
 		socket.on('set-cerrar-comercio-from-pacman', async (comercioId) => {
-			console.log('set-cerrar-comercio-from-pacman', comercioId);
+			logger.debug('set-cerrar-comercio-from-pacman', comercioId);
 			socket.to('roomPatioDelivery').emit('set-comercio-open-change-from-monitor', comercioId);
 		});
 
 
 		// notifica al cliente que repartidor tomo su pedido
 		socket.on('repartidor-notifica-cliente-acepto-pedido', async (listClienteNotifica) => {
-			console.log('repartidor-notifica-cliente-acepto-pedido ===========', listClienteNotifica)
+			logger.debug('repartidor-notifica-cliente-acepto-pedido ===========', listClienteNotifica)
 			
 
 			// notifica wsp cliente
@@ -1506,13 +1489,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// notifica al control de pedidos
 				const _chanelNotifica = 'room' + c.idorg +''+ c.idsede;
 				socket.to(_chanelNotifica).emit('repartidor-notifica-cliente-acepto-pedido-res', c);
-				console.log('_chanelNotifica ===========', _chanelNotifica);
+				logger.debug('_chanelNotifica ===========', _chanelNotifica);
 			});
 		});
 
 		// notifica dede pacman al cliente de recoger su pedido
 		socket.on('set-monitor-pedido-recoger', async (_sendServerMsj) => {
-			console.log('mensaje recoger =============> ', _sendServerMsj);
+			logger.debug('mensaje recoger =============> ', _sendServerMsj);
 			apiPwaRepartidor.setAsignarRepartoAtencionCliente(_sendServerMsj.idpedido);
 			sendMsjSocketWsp(_sendServerMsj);
 		});		
@@ -1522,16 +1505,16 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 	function socketServerSendMsj(dataCliente, socket) {
 		socket.join('SERVERMSJ');
-		console.log('desde func server send msjs conectado a SERVERMSJ', dataCliente);
+		logger.debug('desde func server send msjs conectado a SERVERMSJ', dataCliente);
 
 		socket.on('mensaje-test-w', async (val) => {
-			console.log('mensaje-test-w', val);			
+			logger.debug('mensaje-test-w', val);			
 			io.to('SERVERMSJ').emit('mensaje-test-w', val);
 		});
 
 
 		socket.on('mensaje-verificacion-telefono-rpt', async (val) => {
-			console.log('mensaje-verificacion-telefono-rpt', val);			
+			logger.debug('mensaje-verificacion-telefono-rpt', val);			
 			io.to(val.idsocket).emit('mensaje-verificacion-telefono-rpt', val);
 		});
 
@@ -1540,8 +1523,6 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 		// setTimeout(function(){ 
-		// 	console.log('enviado-send-msj')
-
 		// 	const _sendServerMsj = `{"tipo": 0, "s": "16.13", "p": 20630, "h": "${new Date().toISOString()}", "t": "960518915"}`;
 		// 	sendMsjSocketWsp(_sendServerMsj);
 		// 	// io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
@@ -1551,15 +1532,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 	// evniar mensajes al whatsapp 130621
-	function sendMsjSocketWsp(dataMsj) {
+	function sendMsjSocketWsp(dataMsj, idorg, idsede) {
 		// 0: nuevo pedido notifica comercio
 		// 1: verificar telefono
 		// 2: notifica al cliente el repartidor que acepto pedido
-
-		console.log('aaaeee')
-		apiMessageWsp.sendMsjSocketWsp(dataMsj, io)
-
-		// console.log('dataMsj ===========> ', dataMsj);
+		
+		apiMessageWsp.sendMsjSocketWsp(dataMsj, io, idorg, idsede);
+		
 		// dataMsj = typeof dataMsj !== 'object' ? JSON.parse(dataMsj) : dataMsj;
 		// const tipo = dataMsj.tipo;
 

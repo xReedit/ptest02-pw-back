@@ -5,6 +5,7 @@
 
 const ResponseService = require('./query.service.v1');
 let ItemService = require('./item.service.v1');
+const logger = require('../utilitarios/logger');
 
 // Importar el gestor de errores o crearlo si no existe
 let errorManager;
@@ -14,7 +15,7 @@ try {
     // Si no existe, creamos un objeto básico para loggear errores
     errorManager = {
         logError: (data) => {
-            console.error('Error registrado:', JSON.stringify(data));
+            logger.error({ data }, 'Error registrado');
         }
     };
 }
@@ -152,6 +153,9 @@ const sanitizeObject = (obj) => {
     sanitized.iditem = sanitized.iditem || '';
     sanitized.cantidad = sanitized.cantidad || 0;
     sanitized.iditem2 = sanitized.iditem2 || sanitized.iditem; // Asegurar que iditem2 tenga un valor
+    sanitized.idsede = sanitized.idsede || '';
+    sanitized.idusuario = sanitized.idusuario || '';
+    sanitized.op = sanitized.op !== undefined ? sanitized.op : null; // Preservar op para detectar RECUPERA
     
     return sanitized;
 };
@@ -224,7 +228,11 @@ const buildAllItemsFromSubitemsView = (subitem, sanitizedItem, cantSelected) => 
         cantidadSumar: cantSumar,
         isporcion: sanitizedItem.isporcion,
         iditem2: sanitizedItem.iditem2,
-        cantidad: sanitizedItem.cantidad,  
+        cantidad: sanitizedItem.cantidad,
+        idsede: sanitizedItem.idsede,
+        idusuario: sanitizedItem.idusuario,
+        idpedido: sanitizedItem.idpedido || null,
+        op: sanitizedItem.op // Pasar op para detectar RECUPERA
     };
 };
 
@@ -250,7 +258,11 @@ const buildAllItemsFromSelectedArray = (subitemGroup, sanitizedItem) => {
         cantidadSumar: cantSumar,
         isporcion: sanitizedItem.isporcion,
         iditem2: sanitizedItem.iditem2,
-        cantidad: sanitizedItem.cantidad,  
+        cantidad: sanitizedItem.cantidad,
+        idsede: sanitizedItem.idsede,
+        idusuario: sanitizedItem.idusuario,
+        idpedido: sanitizedItem.idpedido || null,
+        op: sanitizedItem.op // Pasar op para detectar RECUPERA
     };
 };
 
@@ -259,7 +271,7 @@ const buildAllItemsFromSelectedArray = (subitemGroup, sanitizedItem) => {
  */
 const processSubitems = async (sanitizedItem, item) => {
     const _existSubItemsWithCantidad = sanitizedItem.isExistSubItemsWithCantidad || checkExistSubItemsWithCantidad(sanitizedItem);
-    // console.log('_existSubItemsWithCantidad ==', _existSubItemsWithCantidad);
+    logger.debug({ _existSubItemsWithCantidad }, '_existSubItemsWithCantidad');
 
     if (!_existSubItemsWithCantidad) {
         return;
@@ -335,8 +347,8 @@ const processSubitems = async (sanitizedItem, item) => {
 /**
  * Procesa items de tipo porción
  */
-const processItemPorcion = async (sanitizedItem) => {
-    // console.log('ingresa processItemPorcion');
+const processItemPorcion = async (sanitizedItem, op) => {
+    logger.debug({ iditem: sanitizedItem.iditem }, 'Ingresa processItemPorcion');
     
     try {
         const itemPorcion = {
@@ -345,7 +357,10 @@ const processItemPorcion = async (sanitizedItem) => {
             cantidadSumar: sanitizedItem.cantidadSumar,
             cantidad_reset: sanitizedItem.cantidad_reset,
             isporcion: sanitizedItem.isporcion,
-            iditem2: sanitizedItem.iditem2
+            iditem2: sanitizedItem.iditem2,
+            idsede: sanitizedItem.idsede,
+            idusuario: sanitizedItem.idusuario,
+            op: op // Pasar op para detectar si es RECUPERA
         };
         
         return await retryOperation(() => ItemService.processItemPorcion(itemPorcion));
@@ -360,9 +375,33 @@ const processItemPorcion = async (sanitizedItem) => {
                 origen: 'processItemPorcion'
             };
             errorManager.logError(dataError);
-            throw new Error("Error de sintaxis SQL en processItemPorcion: " + error.message);
+            
+            // En lugar de throw, retornar fallback con cantidad calculada
+            // console.log('🟡 [stock.v1] Usando fallback por error SQL en processItemPorcion');
+            return [{
+                cantidad: Math.max(0, (sanitizedItem.cantidad || 0) - (sanitizedItem.cantidadSumar || 0)),
+                listItemsPorcion: [],
+                listSubItems: []
+            }];
         }
-        throw error;
+        
+        // Para otros errores, también registrar y usar fallback
+        const dataError = {
+            incidencia: {
+                message: "Error general en processItemPorcion",
+                originalError: error.toString(),
+                data: { item_process: sanitizedItem }
+            },
+            origen: 'processItemPorcion'
+        };
+        errorManager.logError(dataError);
+        
+        // console.log('🟡 [stock.v1] Usando fallback por error general en processItemPorcion');
+        return [{
+            cantidad: Math.max(0, (sanitizedItem.cantidad || 0) - (sanitizedItem.cantidadSumar || 0)),
+            listItemsPorcion: [],
+            listSubItems: []
+        }];
     }
 };
 
@@ -372,7 +411,8 @@ const processItemPorcion = async (sanitizedItem) => {
 const processRegularItem = async (sanitizedItem, idsede) => {
     // console.log('ingresa processItem');
     
-    if (sanitizedItem.isporcion === 'ND') {
+    logger.debug({ isporcion: sanitizedItem.isporcion }, '🟢 [handle.stock.v1] processRegularItem');
+    if (sanitizedItem.isporcion === 'ND' || sanitizedItem.isporcion !== 'SP') {
         return [{
             cantidad: sanitizedItem.cantidad,
             listItemsPorcion: null,
@@ -380,6 +420,7 @@ const processRegularItem = async (sanitizedItem, idsede) => {
         }];
     }
     
+    logger.debug('Pasa al siguiente proceso processItem itemProcess');
     const itemProcess = {
         iditem: sanitizedItem.iditem,
         idcarta_lista: sanitizedItem.idcarta_lista,
@@ -402,6 +443,9 @@ const updateStock = async (op, item, idsede) => {
     // console.log('🟡 [handle.stock.v1] updateStock - INICIO', { op, idsede, itemId: item?.iditem, elItem: JSON.stringify(item) });
     
     // Sanitizar el objeto item para evitar errores de referencia nula
+    // console.log('🟣 [handle.stock.v1] item recibido', item);
+    // Agregar op al item para detectar RECUPERA
+    item.op = op;
     const sanitizedItem = sanitizeObject(item);
     // console.log('🔵 [handle.stock.v1] Item sanitizado:', { 
     //     iditem: sanitizedItem.iditem, 
@@ -420,10 +464,15 @@ const updateStock = async (op, item, idsede) => {
         // Procesar subitems si existen
         await processSubitems(sanitizedItem, item);
         
+
+        // console.log('🟢 [handle.stock.v1] item sanitizedItem', sanitizedItem);
+
         // Procesar item principal según su tipo
         if (sanitizedItem.isporcion === 'SP') {
-            return await processItemPorcion(sanitizedItem);
+            logger.debug({ iditem: sanitizedItem.iditem }, '🟢 [handle.stock.v1] item porcion');
+            return await processItemPorcion(sanitizedItem, op);
         } else {
+            logger.debug({ iditem: sanitizedItem.iditem }, '🟢 [handle.stock.v1] item regular');
             return await processRegularItem(sanitizedItem, idsede);
         }
         
@@ -438,8 +487,12 @@ const updateStock = async (op, item, idsede) => {
         };
         errorManager.logError(dataError);
         
-        // Relanzar el error para que sea manejado por el código que llama a esta función
-        throw error;
+        // Retornar resultado por defecto en caso de error
+        return [{
+            cantidad: Math.max(0, (sanitizedItem.cantidad || 0) - (sanitizedItem.cantidadSumar || 0)),
+            listItemsPorcion: [],
+            listSubItems: []
+        }];
     }
 };
 

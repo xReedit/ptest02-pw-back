@@ -4,6 +4,7 @@ let Sequelize = require('sequelize');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
+const logger = require('../utilitarios/logger');
 // let apiFireBase = require('../controllers/apiFireBase');
 
 let intervalBucaRepartidor = null;
@@ -14,21 +15,19 @@ let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
 };
 
-const emitirRespuesta = async (xquery) => {
-    // console.log(xquery);		
+const emitirRespuesta = async (xquery) => {    	
     try {
 		// evaluea si es update o inser
-        // return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
 		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
         return await sequelize.query(xquery, { type: queryType });
     } catch (err) {
-        console.error(err);
+        logger.error({ err }, 'error emitirRespuesta');
         return false;
     }
 };
 
 const emitirRespuesta_RES = async (xquery, res) => {
-    // console.log(xquery);
+    // logger.debug(xquery);
 
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
@@ -36,21 +35,21 @@ const emitirRespuesta_RES = async (xquery, res) => {
             data: rows
         });
     } catch (error) {
-        console.error(error);
+        logger.error({ error }, 'error emitirRespuesta_RES');
         return false;
     }
 };
 module.exports.emitirRespuesta_RES = emitirRespuesta_RES;
 
 const emitirRespuestaSP = async (xquery) => {
-    // console.log(xquery);
+    // logger.debug(xquery);
     try {
 		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
         const rows = await sequelize.query(xquery, { type: queryType });		
         const arr = Object.values(rows[0]);
         return arr;
     } catch (err) {
-        console.error(err);
+        logger.error({ err }, 'error emitirRespuestaSP');
         return false;
     } 
 };
@@ -58,7 +57,7 @@ const emitirRespuestaSP = async (xquery) => {
 
 
 // function emitirRespuestaSP(xquery) {
-// 	console.log(xquery);
+// 	logger.debug(xquery);
 // 	return sequelize.query(xquery, {		
 // 		type: sequelize.QueryTypes.SELECT
 // 	})
@@ -77,7 +76,7 @@ const emitirRespuestaSP = async (xquery) => {
 
 
 const emitirRespuestaSP_RES = async (xquery, res) => {
-    // console.log(xquery);
+    // logger.debug(xquery);
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
 
@@ -93,7 +92,7 @@ const emitirRespuestaSP_RES = async (xquery, res) => {
 };
 
 const execSqlQueryNoReturn = async (xquery, res) => {
-	// console.log(xquery);
+	// logger.debug(xquery);
 	try {
 		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
 		const results = await sequelize.query(xquery, { type: queryType });
@@ -108,7 +107,7 @@ const execSqlQueryNoReturn = async (xquery, res) => {
 
 
 const onlyUpdateQuery = async (xquery, res) => {
-	// console.log(xquery);a
+	// logger.debug(xquery);a
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (result) {
 		
@@ -133,15 +132,15 @@ const setRepartidorConectado = async function (dataCLiente) {
 module.exports.setRepartidorConectado = setRepartidorConectado;
 
 const setEfectivoMano = async function (req, res) {
-	// console.log('llego a funcion setEfectivoMano');
-	// console.log('llego a funcion setEfectivoMano req', req);
-	// console.log('llego a funcion setEfectivoMano req usuariotoken', req.usuariotoken);
+	// logger.debug('llego a funcion setEfectivoMano');
+	// logger.debug('llego a funcion setEfectivoMano req', req);
+	// logger.debug('llego a funcion setEfectivoMano req usuariotoken', req.usuariotoken);
 
 	const idrepartidor = req.body.idrepartidor;      
 	const efectivo = req.body.efectivo;      
 	const online = req.body.online;     
 
-	// console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
+	// logger.debug('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	
     const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
     await execSqlQueryNoReturn(read_query, res);
@@ -156,7 +155,7 @@ const pushSuscripcion = async function (req, res) {
 		suscripcion = JSON.stringify(suscripcion)
 	}
 
-	console.log('suscripcion ====>>', suscripcion)
+	logger.debug('suscripcion ====>>', suscripcion)
 
 	const read_query = `update repartidor set pwa_code_verification = '${suscripcion}' where idrepartidor = ${idrepartidor}`;
 	return await emitirRespuestaSP_RES(read_query, res);
@@ -223,8 +222,8 @@ const getPedidosEsperaRepartidor = async function (idsede) {
 	// return emitirRespuesta(read_query);  
 	const read_query = `call procedure_delivery_pedidos_pendientes()`;
  	const response = await emitirRespuestaSP(read_query);        
- 	// console.log('pedidos response', response);
- 	// console.log('pedidos pendiente', response.data);
+ 	// logger.debug('pedidos response', response);
+ 	// logger.debug('pedidos pendiente', response.data);
  	return response;
  	 	
 
@@ -248,7 +247,7 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 
 	// quitamos el pedido al repartidor anterior
 	if ( dataPedido.last_id_repartidor_reasigno ) {
-		console.log('repartidor-notifica-server-quita-pedido --b');
+		logger.debug('repartidor-notifica-server-quita-pedido --b');
 		const getSocketIdRepartidorReasigno = await getSocketIdRepartidor(dataPedido.last_id_repartidor_reasigno);
 		io.to(getSocketIdRepartidorReasigno[0].socketid).emit('repartidor-notifica-server-quita-pedido', dataPedido.idpedido);	
 	}
@@ -271,7 +270,7 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 
 
 	// envio mensaje
-	console.log("============== last_notification = ", firtsRepartidor.last_notification);
+	logger.debug("============== last_notification = ", firtsRepartidor.last_notification);
 	if ( firtsRepartidor.last_notification === 0 ||  firtsRepartidor.last_notification > 7) {	
 		//sendMsjsService.sendMsjSMSNewPedido(firtsRepartidor.telefono);
 		const read_query = `update repartidor set last_notification = time(now()) where idrepartidor=${firtsRepartidor.idrepartidor};`;
@@ -281,7 +280,7 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0);
 
 	// enviamos el socket
-	console.log('socket enviado a repartidor', firtsRepartidor);
+	logger.debug('socket enviado a repartidor', firtsRepartidor);
 
 	// busca el sockeid para asignar
 	const getSocketIdRepartidorAsignar = await getSocketIdRepartidor(firtsRepartidor.idrepartidor);
@@ -300,14 +299,14 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 	const idsPedidos = dataPedido.pedidos.join(',');
 	let firtsRepartidor = listRepartidores[numIndex];
 
-	console.log('lista de repartidor ============ listRepartidores', listRepartidores);
-	console.log('repartidor ============ firtsRepartidor', firtsRepartidor);
+	logger.debug('lista de repartidor ============ listRepartidores', listRepartidores);
+	logger.debug('repartidor ============ firtsRepartidor', firtsRepartidor);
 
 
 	// quitamos el pedido al repartidor anterior
-	console.log('asignar repartidor ============ ', dataPedido);
+	logger.debug('asignar repartidor ============ ', dataPedido);
 	if ( dataPedido.last_id_repartidor_reasigno ) {
-		// console.log('repartidor-notifica-server-quita-pedido --a');
+		// logger.debug('repartidor-notifica-server-quita-pedido --a');
 		const getSocketIdRepartidorReasigno = await getSocketIdRepartidor(dataPedido.last_id_repartidor_reasigno);
 		
 
@@ -317,7 +316,7 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 			io.to(getSocketIdRepartidorReasigno[0].socketid).emit('repartidor-notifica-server-quita-pedido', null);
 
 			// NOTIFICA MONITOR quita  pedido a repartidor
-			console.log('xxxxxxxxxxxxx === NOTIFICA MONITOR quita  pedido a repartidor')
+			logger.debug('xxxxxxxxxxxxx === NOTIFICA MONITOR quita  pedido a repartidor')
 			io.to('MONITOR').emit('notifica-server-quita-pedido-repartidor', dataPedido.last_id_repartidor_reasigno);
 
 			// quitamos el pedido de firebase
@@ -341,15 +340,15 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 		const res_call = await emitirRespuestaSP(read_query);
 
 		// NOTIFICA MONITOR repartidor nuevo pedido
-		// console.log('===== notifica-server-pedido-por-aceptar');	
-		console.log('xxxxxxxxxxxxx === NOTIFICA MONITOR notifica-server-pedido-por-acepta')
+		// logger.debug('===== notifica-server-pedido-por-aceptar');	
+		logger.debug('xxxxxxxxxxxxx === NOTIFICA MONITOR notifica-server-pedido-por-acepta')
 		io.to('MONITOR').emit('notifica-server-pedido-por-aceptar', [firtsRepartidor, dataPedido, listRepartidores]);
 
 		
-		console.log("============== last_notification = ", firtsRepartidor.last_notification);
+		logger.debug("============== last_notification = ", firtsRepartidor.last_notification);
 		sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0);
 		// enviamos el socket
-		console.log('socket enviado a repartidor', firtsRepartidor);
+		logger.debug('socket enviado a repartidor', firtsRepartidor);
 		
 		// busca el sockeid para asignar
 		const getSocketIdRepartidorAsignar = await getSocketIdRepartidor(firtsRepartidor.idrepartidor);
@@ -362,7 +361,7 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 
 
 	// envio mensaje
-	// console.log("============== last_notification = ", firtsRepartidor.last_notification);
+	// logger.debug("============== last_notification = ", firtsRepartidor.last_notification);
 	// if ( firtsRepartidor.last_notification === 0 ||  firtsRepartidor.last_notification > 7) {	
 		// sendMsjsService.sendMsjSMSNewPedido(firtsRepartidor.telefono);
 		// const read_query = `update repartidor set last_notification = time(now()) where idrepartidor=${firtsRepartidor.idrepartidor};`;
@@ -412,7 +411,7 @@ module.exports.sendOnlyNotificaPush = sendOnlyNotificaPush;
 // 	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, notification);
 
 // 	// enviamos el socket
-// 	console.log('socket enviado a repartidor', firtsRepartidor);
+// 	logger.debug('socket enviado a repartidor', firtsRepartidor);
 // 	io.to(firtsRepartidor.socketid).emit('repartidor-nuevo-pedido', [firtsRepartidor, dataPedido]);
 
 // }
@@ -525,7 +524,7 @@ module.exports.setUpdateEstadoPedido = setUpdateEstadoPedido;
 
 const setUpdateRepartidorOcupado = async function (idrepartidor, estado) {  
 	// si no esta ocupado libera pedido_por_aceptar;
-	// console.log('==== CAMBIAMOS DE ESTADO OCUPADO ===', estado);
+	// logger.debug('==== CAMBIAMOS DE ESTADO OCUPADO ===', estado);
 	const clearPedidoPorAceptar = estado === 0 ?  `, pedido_por_aceptar = null, pedido_paso_va = 0` : '';
     const read_query = `update repartidor set ocupado = ${estado} ${clearPedidoPorAceptar} where idrepartidor = ${idrepartidor};`;
     await emitirRespuesta(read_query);        
@@ -571,7 +570,7 @@ module.exports.getEstadoPedido = getEstadoPedido;
 
 const setFinPedidoEntregado = async function (req, res) {
 	const obj = req.body;
-	// console.log(JSON.stringify(obj));
+	// logger.debug(JSON.stringify(obj));
 
     const read_query = `call procedure_pwa_delivery_pedido_entregado('${JSON.stringify(obj)}')`;
     return await emitirRespuesta_RES(read_query, res);        
@@ -668,7 +667,7 @@ module.exports.getPedidosRecibidosGroup = getPedidosRecibidosGroup;
 
 async function colocarPedidoEnRepartidor(io, idsede) {
 
-	// console.log ( 'xxxxxxxxxxxxxxxxx------colocarPedidoEnRepartidor' );
+	// logger.debug ( 'xxxxxxxxxxxxxxxxx------colocarPedidoEnRepartidor' );
 
 	// traer lista de pedidos que estan sin repartidor
 	let listGroupPedidos = []; // lista agrupada
@@ -679,8 +678,8 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 	let listLastRepartidor = ''; 
 	listPedidos = JSON.parse(JSON.stringify(listPedidos));
 	
-	// console.log ( 'listPedidos listPedidos.lenght', listPedidos.length );
-	// console.log (' == listPedidos ==', listPedidos)
+	// logger.debug ( 'listPedidos listPedidos.lenght', listPedidos.length );
+	// logger.debug (' == listPedidos ==', listPedidos)
 
 
 	//isshow indica los pedidos que ya llegaron a la hora de notificacion
@@ -697,13 +696,13 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 		let _num_reasignaciones = null;
 		let _last_id_repartidor_reasigno = null;
 		listPedidos.map(p => {
-			console.log( 'p.paso', p.paso );
-			console.log( 'p.idpedido', p.idpedido );
+			logger.debug( 'p.paso', p.paso );
+			logger.debug( 'p.idpedido', p.idpedido );
 			if ( !p.paso && p.isshow == 1 ){
 				const _idsede = p.idsede;
 				let isImporteAcumuladoCompleto = false; // para continuar la agrupacion o no
 
-				console.log( '_idsede', _idsede );
+				logger.debug( '_idsede', _idsede );
 
 				// p.paso = true;
 				importeAcumula = 0;
@@ -722,17 +721,17 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 
 						if ( !isRecogeCliente ) { // si no recoge el cliente notifica al repartidor
 						
-							console.log('== el pedido', pp)
-							console.log('== isPagoTarjeta', isPagoTarjeta)
+							logger.debug('== el pedido', pp)
+							logger.debug('== isPagoTarjeta', isPagoTarjeta)
 							if (isPagoTarjeta) {
 								pp.paso=true;
 								listGroup.push(pp.idpedido);
 							} else {
 								const _ppTotal = parseFloat(pp.total);
-								console.log('== _ppTotal', _ppTotal)
+								logger.debug('== _ppTotal', _ppTotal)
 								importeAcumula += _ppTotal;
-								console.log('== importeAcumula', importeAcumula)
-								console.log('== isImporteAcumuladoCompleto antes', isImporteAcumuladoCompleto)
+								logger.debug('== importeAcumula', importeAcumula)
+								logger.debug('== isImporteAcumuladoCompleto antes', isImporteAcumuladoCompleto)
 								// if ( importeAcumula <= pp.monto_acumula) {
 								if ( isImporteAcumuladoCompleto === false ) {
 									pp.paso=true;
@@ -740,15 +739,15 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 
 									importePagar += _ppTotal;	
 									
-									// console.log('push ', pp.idpedido);
+									// logger.debug('push ', pp.idpedido);
 									_last_id_repartidor_reasigno = _last_id_repartidor_reasigno ? _last_id_repartidor_reasigno : pp.last_id_repartidor_reasigno;
 									_num_reasignaciones = _num_reasignaciones ? _num_reasignaciones : pp.num_reasignaciones;
 
 									listGroup.push(pp.idpedido);
-									console.log('== listGroup', listGroup)
+									logger.debug('== listGroup', listGroup)
 
 									isImporteAcumuladoCompleto = importeAcumula >= pp.monto_acumula ? true : false;
-									console.log('== isImporteAcumuladoCompleto fin', isImporteAcumuladoCompleto)
+									logger.debug('== isImporteAcumuladoCompleto fin', isImporteAcumuladoCompleto)
 								} 
 								// else {
 									// if (isPagoTarjeta) {
@@ -777,8 +776,8 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 				}
 				
 
-				console.log('listLastRepartidor', listLastRepartidor);			
-				console.log('listLastRepartidor pedido', _last_id_repartidor_reasigno);
+				logger.debug('listLastRepartidor', listLastRepartidor);			
+				logger.debug('listLastRepartidor pedido', _last_id_repartidor_reasigno);
 
 				const _rowPedidoAdd = {
 					pedidos: listGroup,	
@@ -795,10 +794,10 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 					}
 				}
 
-				console.log('idpedidos', _rowPedidoAdd.pedidos.join(','));
+				logger.debug('idpedidos', _rowPedidoAdd.pedidos.join(','));
 
 				listGruposPedidos.push(_rowPedidoAdd);
-				// console.log( 'ListGruposPedidos', listGruposPedidos );
+				// logger.debug( 'ListGruposPedidos', listGruposPedidos );
 
 			}
 		});
@@ -809,24 +808,24 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 		// listPedidos.map(async p => {
 		for (let index = 0; index < listGruposPedidos.length; index++) {
 			const _group = listGruposPedidos[index];
-			console.log('_group procesar', _group);
+			logger.debug('_group procesar', _group);
 			// p.json_datos_delivery = typeof p.json_datos_delivery === 'string' ? JSON.parse(p.json_datos_delivery) : p.json_datos_delivery;			
 
 			// cantidad en efectivo a  pagar (efectivo o yape)
 			// const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;	
 			// const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
 
-			console.log('_cantidadEfectivoPagar 1', _group.importe_pagar);				
+			logger.debug('_cantidadEfectivoPagar 1', _group.importe_pagar);				
 
 			// const _pJson = JSON.parse(JSON.stringify(p));		
-			// console.log('pedido procesar json', p);
+			// logger.debug('pedido procesar json', p);
 			// lista de repartidores			
 			const listRepartidores = await getRepartidoreForPedidoFromInterval(_group.sede_coordenadas.latitude, _group.sede_coordenadas.longitude, _group.importe_pagar);
-			console.log('listRepartidores', listRepartidores)
+			logger.debug('listRepartidores', listRepartidores)
 
 			// enviamos
 			const response_ok = await sendPedidoRepartidorOp2(listRepartidores, _group, io);
-			console.log('response_ok', response_ok);
+			logger.debug('response_ok', response_ok);
 		}
 
 		if ( listGruposPedidos.length > 0 ) {
@@ -839,7 +838,7 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 	// proceso no termina se queda activo esperando pedidos
 	// else {
 
-	// 	console.log('fin del proceso')
+	// 	logger.debug('fin del proceso')
 	// 	clearInterval(intervalBucaRepartidor);
 	// 	intervalBucaRepartidor=null;
 	// }	
@@ -857,11 +856,11 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 // 	let listPedidos =  await getPedidosEsperaRepartidor(idsede);	
 // 	listPedidos = JSON.parse(JSON.stringify(listPedidos));
 // 	// listPedidos = listPedidos.data;
-// 	// console.log ( 'listPedidos', listPedidos.data );
+// 	// logger.debug ( 'listPedidos', listPedidos.data );
 
 // 	// listPedidos = JSON.parse(JSON.stringify(listPedidos));
 
-// 	console.log ( 'listPedidos listPedidos.lenght', listPedidos.length );
+// 	logger.debug ( 'listPedidos listPedidos.lenght', listPedidos.length );
 
 // 	if (listPedidos.length > 0) {
 
@@ -869,25 +868,25 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 // 		// listPedidos.map(async p => {
 // 		for (let index = 0; index < listPedidos.length; index++) {
 // 			const p = listPedidos[index];
-// 			console.log('pedido procesar', p);
+// 			logger.debug('pedido procesar', p);
 // 			p.json_datos_delivery = typeof p.json_datos_delivery === 'string' ? JSON.parse(p.json_datos_delivery) : p.json_datos_delivery;			
 
 // 			// cantidad en efectivo a  pagar (efectivo o yape)
 // 			const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;	
 // 			const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
 
-// 			console.log('_cantidadEfectivoPagar', _cantidadEfectivoPagar);
+// 			logger.debug('_cantidadEfectivoPagar', _cantidadEfectivoPagar);
 			
 
 
 // 			// const _pJson = JSON.parse(JSON.stringify(p));		
-// 			// console.log('pedido procesar json', p);
+// 			// logger.debug('pedido procesar json', p);
 // 			// lista de repartidores			
 // 			const listRepartidores = await getRepartidoreForPedidoFromInterval(p.latitude, p.longitude, _cantidadEfectivoPagar);
 
 // 			// enviamos
 // 			const response_ok = await sendPedidoRepartidor(listRepartidores, p, io);
-// 			console.log('response_ok', response_ok);
+// 			logger.debug('response_ok', response_ok);
 // 		}
 // 		// });
 // 	} 
@@ -895,7 +894,7 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 // 	// proceso no termina se queda activo esperando pedidos
 // 	// else {
 
-// 	// 	console.log('fin del proceso')
+// 	// 	logger.debug('fin del proceso')
 // 	// 	clearInterval(intervalBucaRepartidor);
 // 	// 	intervalBucaRepartidor=null;
 // 	// }	
@@ -909,7 +908,7 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 // el proceso se activa al primer pedido que recibe y se mantiene activo eseprando
 // pedidos
 const runLoopSearchRepartidor = async function (io, idsede) {
-	console.log('xxxxxxxxxxx-----------runLoopSearchRepartidor', intervalBucaRepartidor)
+	logger.debug('xxxxxxxxxxx-----------runLoopSearchRepartidor', intervalBucaRepartidor)
 	if ( intervalBucaRepartidor === null ) {		
 		colocarPedidoEnRepartidor(io, idsede);
 		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
@@ -925,9 +924,9 @@ const runLoopPrueba = async function (req, res) {
 
 	// listPedidos = JSON.parse(JSON.stringify(listPedidos));
 
-	// // console.log ( 'listPedidos', listPedidos );
+	// // logger.debug ( 'listPedidos', listPedidos );
 
-	// // console.log ( 'listPedidos listPedidos.lenght', listPedidos.length );
+	// // logger.debug ( 'listPedidos listPedidos.lenght', listPedidos.length );
 
 
 	// if ( listPedidos.length > 0 ) {
@@ -938,12 +937,12 @@ const runLoopPrueba = async function (req, res) {
 	// 	let listGroupPedidos = [];
 	// 	let listGruposPedidos = [];
 	// 	listPedidos.map(p => {
-	// 		console.log( 'p.paso', p.paso );
-	// 		console.log( 'p.idpedido', p.idpedido );
+	// 		logger.debug( 'p.paso', p.paso );
+	// 		logger.debug( 'p.idpedido', p.idpedido );
 	// 		if ( !p.paso && p.isshow == 1 ){
 	// 			const _idsede = p.idsede;
 
-	// 			console.log( '_idsede', _idsede );
+	// 			logger.debug( '_idsede', _idsede );
 
 	// 			// p.paso = true;
 	// 			importeAcumula = 0;
@@ -962,7 +961,7 @@ const runLoopPrueba = async function (req, res) {
 	// 							importePagar += parseFloat(pp.total);
 	// 						}
 
-	// 						console.log('push ', pp.idpedido);
+	// 						logger.debug('push ', pp.idpedido);
 	// 						listGroup.push(pp.idpedido);
 	// 					} else {
 	// 						importeAcumula -= parseFloat(pp.total);
@@ -979,10 +978,10 @@ const runLoopPrueba = async function (req, res) {
 	// 				}
 	// 			}
 
-	// 			console.log('idpedidos', _rowPedidoAdd.pedidos.join(','));
+	// 			logger.debug('idpedidos', _rowPedidoAdd.pedidos.join(','));
 
 	// 			listGruposPedidos.push(_rowPedidoAdd);
-	// 			console.log( 'ListGruposPedidos', listGruposPedidos );
+	// 			logger.debug( 'ListGruposPedidos', listGruposPedidos );
 
 	// 		}
 	// 	});
@@ -993,25 +992,25 @@ const runLoopPrueba = async function (req, res) {
 	// 	// listPedidos.map(async p => {
 	// 	for (let index = 0; index < listGruposPedidos.length; index++) {
 	// 		const _group = listGruposPedidos[index];
-	// 		console.log('_group procesar', _group);
+	// 		logger.debug('_group procesar', _group);
 	// 		// p.json_datos_delivery = typeof p.json_datos_delivery === 'string' ? JSON.parse(p.json_datos_delivery) : p.json_datos_delivery;			
 
 	// 		// cantidad en efectivo a  pagar (efectivo o yape)
 	// 		// const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;	
 	// 		// const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
 
-	// 		console.log('_cantidadEfectivoPagar', _group.importe_pagar);
+	// 		logger.debug('_cantidadEfectivoPagar', _group.importe_pagar);
 			
 
 
 	// 		// const _pJson = JSON.parse(JSON.stringify(p));		
-	// 		// console.log('pedido procesar json', p);
+	// 		// logger.debug('pedido procesar json', p);
 	// 		// lista de repartidores			
 	// 		const listRepartidores = await getRepartidoreForPedidoFromInterval(_group.sede_coordenadas.latitude, _group.sede_coordenadas.longitude, _group.importe_pagar);
 
 	// 		// enviamos
 	// 		const response_ok = await sendPedidoRepartidorOp2(listRepartidores, _group, io);
-	// 		console.log('response_ok', response_ok);
+	// 		logger.debug('response_ok', response_ok);
 	// 	}
 
 
@@ -1026,7 +1025,7 @@ const runLoopPrueba = async function (req, res) {
 		//     return acc;
 		//   }, {});
 
-		// console.log('listGroupSede ==== ', listGroupSede);
+		// logger.debug('listGroupSede ==== ', listGroupSede);
 
 		// res.json(listGruposPedidos);
 	// }
@@ -1035,16 +1034,16 @@ const runLoopPrueba = async function (req, res) {
 	// listPedidos.map(async p => {
 
 	// 	p.json_datos_delivery = JSON.parse(p.json_datos_delivery);
-	// 	// console.log('pedido procesar', p);
-	// 	console.log('p.latitude', p.latitude);
+	// 	// logger.debug('pedido procesar', p);
+	// 	logger.debug('p.latitude', p.latitude);
 
 	// 	const _dataJson = p.json_datos_delivery.p_header.arrDatosDelivery;			
 
-	// 	console.log('_dataJson.arrDatosDelivery.metodoPago.idtipo_pago', _dataJson.metodoPago.idtipo_pago)		
+	// 	logger.debug('_dataJson.arrDatosDelivery.metodoPago.idtipo_pago', _dataJson.metodoPago.idtipo_pago)		
 
 	// 	const _cantidadEfectivoPagar = _dataJson.metodoPago.idtipo_pago !== 2 ? parseFloat(_dataJson.importeTotal) : 0;
 
-	// 		console.log('_cantidadEfectivoPagar', _cantidadEfectivoPagar);
+	// 		logger.debug('_cantidadEfectivoPagar', _cantidadEfectivoPagar);
 	// })
 }
 module.exports.runLoopPrueba = runLoopPrueba;
@@ -1079,7 +1078,7 @@ module.exports.runLoopPrueba = runLoopPrueba;
 
 
 // const getIfPedidoNuevo = function (req, res) {
-// 	// console.log('======= init event-stream =====');
+// 	// logger.debug('======= init event-stream =====');
 
 // 	res.writeHead(200, {
 //         'Content-Type': 'text/event-stream',
@@ -1095,13 +1094,13 @@ module.exports.runLoopPrueba = runLoopPrueba;
 
 // function sseDemo(req, res) {
 //     const idrepartidor = req.query.id; //managerFilter.getInfoToken(req,'idrepartidor');;
-//     // console.log('======= init event-stream =====', idrepartidor);
+//     // logger.debug('======= init event-stream =====', idrepartidor);
 
 //     const intervalId = setInterval(async() => {
 //     	const read_query = `call procedure_delivery_reparitdor_nuevo_pedido(${idrepartidor});`;
 //     	const responsePedido =  await emitirRespuestaSP(read_query);
 
-//     	console.log('======= init event-stream =====', responsePedido);
+//     	logger.debug('======= init event-stream =====', responsePedido);
 	
 //         res.write("data: " + JSON.stringify(responsePedido) +
 //                     "\n\n", "utf8", () => {
@@ -1134,7 +1133,7 @@ module.exports.setAsignarRepartoAtencionCliente = setAsignarRepartoAtencionClien
 
 
 // function emitirRespuestaSP(xquery) {
-// 	console.log(xquery);
+// 	logger.debug(xquery);
 // 	return sequelize.query(xquery, {		
 // 		type: sequelize.QueryTypes.SELECT
 // 	})
@@ -1158,7 +1157,7 @@ module.exports.setAsignarRepartoAtencionCliente = setAsignarRepartoAtencionClien
 
 
 // function emitirRespuesta(xquery) {
-// 	console.log(xquery);
+// 	logger.debug(xquery);
 // 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 // 	.then(function (rows) {
 		
@@ -1173,7 +1172,7 @@ module.exports.setAsignarRepartoAtencionCliente = setAsignarRepartoAtencionClien
 // }
 
 function emitirRespuestaData(xquery) {
-	// console.log(xquery);
+	// logger.debug(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		
@@ -1190,7 +1189,7 @@ function emitirRespuestaData(xquery) {
 }
 
 // function execSqlQueryNoReturn(xquery, res) {
-// 	console.log(xquery);
+// 	logger.debug(xquery);
 // 	sequelize.query(xquery, {type: sequelize.QueryTypes.UPDATE}).spread(function(results, metadata) {
 //   // Results will be an empty array and metadata will contain the number of affected rows.
 
@@ -1206,7 +1205,7 @@ function emitirRespuestaData(xquery) {
 
 
 // function emitirRespuesta_RES(xquery, res) {
-// 	console.log(xquery);
+// 	logger.debug(xquery);
 // 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 // 	.then(function (rows) {
 		
@@ -1222,7 +1221,7 @@ function emitirRespuestaData(xquery) {
 
 
 // function emitirRespuestaSP_RES(xquery, res) {
-// 	console.log(xquery);
+// 	logger.debug(xquery);
 // 	sequelize.query(xquery, {		
 // 		type: sequelize.QueryTypes.SELECT
 // 	})

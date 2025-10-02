@@ -7,6 +7,7 @@ let config = require('../_config');
 const fetch = require("node-fetch");
 let managerFilter = require('../utilitarios/filters');
 const url_service = 'https://restobar.papaya.com.pe/consulta/';
+let logger = require('../utilitarios/logger');
 
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
@@ -21,18 +22,17 @@ const getConsultaDatosCliente = async function (req, res) {
     const doc = req.body.documento;
     // const idorg = req.body.idorg;
     const servicio = req.body.servicio; // dni o ruc
-
-    // console.log('cuenta de mesa: ', mesa);
+    
 	const read_query = `SELECT * FROM cliente where (estado=0 and ruc='${doc}') limit 1`;
     const response = await emitirRespuesta(read_query);
 
-    console.log('response dni', response);
-    console.log('response dni length', response.length);
+    logger.debug('response dni', response);
+    logger.debug('response dni length', response.length);
 
 
     if ( response.length === 0 ) {    	
     	xGetFindDniRuc(doc, servicio, (response) => {
-    		console.log('desde api consulta', response);
+    		logger.debug('desde api consulta', response);
     		return ReS(res, {
 				data: response
 			});
@@ -58,7 +58,7 @@ module.exports.setGuardarClienteNuevo = setGuardarClienteNuevo;
 
 
 function emitirRespuesta(xquery, res) {
-	console.log(xquery);
+	logger.debug(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		
@@ -73,7 +73,7 @@ function emitirRespuesta(xquery, res) {
 }
 
 function emitirRespuestaSP_RES(xquery, res) {
-	console.log(xquery);
+	logger.debug(xquery);
 	sequelize.query(xquery, {		
 		type: sequelize.QueryTypes.SELECT
 	})
@@ -109,7 +109,7 @@ async function xGetFindDniRuc(valor, servicio, callback) {
 
 					_url_servicio = url_service+servicio+"/api/service.php?"+label_num+"="+valor+"&token="+token;
 
-					console.log('url', _url_servicio);
+					logger.debug('url', _url_servicio);
 								
 					var nombres='', direccion='', telefono='';
 					var num_doc = valor;
@@ -119,8 +119,7 @@ async function xGetFindDniRuc(valor, servicio, callback) {
 				        method: 'POST',        
 				    }).then(function (response) {
 				        return response.json();
-				    }).then(function (dt) { 
-				    	// console.log(dt);						
+				    }).then(function (dt) { 				    					
 
 						if (dt.success && dt.haydatos) {			
 							if (servicio === 'ruc') {

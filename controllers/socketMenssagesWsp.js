@@ -5,6 +5,17 @@ let config = require('../_config');
 
 // --- Arrays de saludos y frases cordiales ---
 
+// interface Message 
+const Message = {
+	numero: '',       // Número de teléfono (formato: 51987654321)
+	mensaje: '',     // Texto del mensaje (opcional si hay multimedia)
+	tipo: 'texto',
+	archivo: {
+		url: '',        // URL del archivo
+		nombre: '',    // Nombre del archivo (para documentos)
+		caption: ''   // Descripción/caption (para imágenes y videos)
+	}
+}
 
 
 const saludos = [
@@ -142,10 +153,13 @@ function obtenerFechaHora() {
 }
 
 
-const sendMsjSocketWsp = function (dataMsj, io) {
+const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 	// 0: nuevo pedido notifica comercio
 		// 1: verificar telefono
-		// 2: notifica al cliente el repartidor que acepto pedido
+		// 2: notifica al cliente el repartidor que acepto pedido		
+
+		const roomNameMensajeria = `mensajeria_${dataSocket.idorg}${dataSocket.idsede}`;
+
 		console.log('dataMsj ===========> aa ==', dataMsj);
 		dataMsj = typeof dataMsj !== 'object' ? JSON.parse(dataMsj) : dataMsj;
 		const tipo = dataMsj.tipo;
@@ -280,6 +294,40 @@ const sendMsjSocketWsp = function (dataMsj, io) {
 				}
 			];
 			_sendServerMsj.bodyParameters = [];
+
+			// mensaje para mensajeria propia
+			const _frasesComprobante = elegirAleatorio(frasesComprobante);
+			const msjMensajeria = `${saludo} desde ${dataMsj.comercio}, ${_frasesComprobante} número ${dataMsj.numero_comprobante}. También puedes consultarlo en: papaya.com.pe`;
+
+			const listMessages = [
+				{ // texto
+					numero: dataMsj.telefono,
+					mensaje: msjMensajeria,
+					tipo: 'texto'
+				},
+				{ // pdf
+					numero: dataMsj.telefono,
+					tipo: 'documento',
+					archivo: {
+						url: _sendServerMsj.url_comprobante,
+						nombre: `${dataMsj.numero_comprobante}.pdf`,
+						caption: dataMsj.comercio
+					}
+				},
+				{ // xml
+					numero: dataMsj.telefono,
+					tipo: 'documento',
+					archivo: {
+						url: _sendServerMsj.url_comprobante_xml,
+						nombre: `${dataMsj.numero_comprobante}.xml`,
+						caption: dataMsj.comercio
+					}
+				}
+			];
+
+
+			console.log('enviado a mensajeria:', roomNameMensajeria, ' la lista de menesjaes: ', listMessages);
+			io.to(roomNameMensajeria).emit('send_message', listMessages);
 		}
 
 		// 	const _user_id = dataMsj.user_id ? `/${dataMsj.user_id}` : '';

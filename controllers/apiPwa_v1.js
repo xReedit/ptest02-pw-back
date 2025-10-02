@@ -9,6 +9,8 @@ let managerFilter = require('../utilitarios/filters');
 let handleStock = require('../service/handle.stock.v1');
 // let handleStock = require('../service/handle.stock');
 
+let logger = require('../utilitarios/logger');
+
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
 let mysql_clean = function (string) {
@@ -16,8 +18,7 @@ let mysql_clean = function (string) {
 };
 
 
-const emitirRespuesta = async (xquery) => {
-    // console.log(xquery);
+const emitirRespuesta = async (xquery) => {    
     try {
         // return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
         const trimmedQuery = xquery.trim().toLowerCase();
@@ -32,40 +33,36 @@ const emitirRespuesta = async (xquery) => {
         
         return await sequelize.query(xquery, { type: queryType });
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         return false;
     }
 };
 
 const emitirRespuesta_RES = async (xquery, res) => {
-    // console.log(xquery);
-
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
         return ReS(res, {
             data: rows
         });
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         return false;
     }
 };
 module.exports.emitirRespuesta_RES = emitirRespuesta_RES;
 
 const emitirRespuestaSP = async (xquery) => {
-    // console.log(xquery);
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
         const arr = Object.values(rows[0]);
         return arr;
     } catch (err) {
-        console.error(err);
+        logger.error({ error: err, query: xquery }, 'Error en emitirRespuesta');
         return false;
     }
 };
 
 const emitirRespuestaSP_RES = async (xquery, res) => {
-    // console.log(xquery);
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
 
@@ -174,7 +171,7 @@ const getObjCarta = async (dataCliente) => {
     const isClienteValue = iscliente === 'true' ? 1 : 0;
 
     const query = `CALL porcedure_pwa_pedido_carta(${idorg}, ${idsede}, ${isClienteValue})`;
-    console.log('carta === > ', query)
+    logger.debug({ query }, 'Obteniendo carta');
     return await emitirRespuestaSP(query);
 };
 module.exports.getObjCarta = getObjCarta;
@@ -266,9 +263,9 @@ const setItemCartaAfter = async function (op, item) {
     let read_query = '';
     if ( item.isalmacen.toString() === '1' ) { // si es producto}
         const _item = {cantidadSumar: item.cantidadSumar, idcarta_lista: item.idcarta_lista, cantidad_reset: item.cantidad_reset};
-        console.log('porcedure_pwa_update_cantidad_only_producto', _item)
+        logger.debug({ item: _item }, 'Actualizando cantidad producto almacén');
         read_query = `call porcedure_pwa_update_cantidad_only_producto(${op},'${JSON.stringify(_item)}')`;
-        console.log('read_query', read_query);
+        logger.debug({ query: read_query }, 'Query generada');
     } else {
         var item = JSON.stringify(item).replace(/\\n/g, '')
                                       .replace(/\\'/g, '')
@@ -446,9 +443,9 @@ module.exports.setItemCarta = setItemCarta;
 // module.exports.setNuevoPedido = setNuevoPedido;
 
 const setNuevoPedido = async (dataCliente, dataPedido) => {
-    console.log('pasa a =========== procedure_pwa_pedido_guardar 1');    
+    logger.debug('Guardando nuevo pedido - procedure_pwa_pedido_guardar');    
     const { idorg, idsede, idusuario } = dataPedido.dataUsuario ? dataPedido.dataUsuario : dataCliente;
-    console.log('idorg, idsede, idusuario === ', idorg, idsede, idusuario);
+    logger.debug({ idorg, idsede, idusuario }, 'Datos usuario pedido');
 
 
 
@@ -477,7 +474,7 @@ const setNuevoPedido = async (dataCliente, dataPedido) => {
 
 
     const query = `CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
-    console.log(`CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`);
+    logger.debug({ idorg, idsede, idusuario }, 'Ejecutando procedure_pwa_pedido_guardar');
     // return await emitirRespuestaSP(query);
 
     try {
@@ -521,7 +518,7 @@ module.exports.setNuevoPedido = setNuevoPedido;
 
 // para evitar pedidos perdidos cuando el socket pierde conexion
 const setNuevoPedido2 = async (req, res) => {
-    console.log('pasa a =========== procedure_pwa_pedido_guardar 2');
+    logger.debug('Guardando nuevo pedido 2 - procedure_pwa_pedido_guardar');
     const dataPedido = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const _dataCliente = dataPedido.dataUsuario;
     const { idorg, idsede, idusuario } = _dataCliente;
@@ -623,7 +620,7 @@ const getLaCuenta = async (req, res) => {
     const lastTime = debounceTimes[key];    
 
     if (lastTime && now - lastTime < 3000) {
-        console.log('menos de 3seg');
+        logger.warn({ key }, 'Solicitud rechazada: menos de 3 segundos desde la última');
         // Si la última solicitud fue hace menos de 2 segundos, no procesar la solicitud
         return res.status(429).json({ error: 'Too Many Requests' });
     }
@@ -693,7 +690,7 @@ const getConsultaDatosCliente = async function (req, res) {
         read_query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' order by nombres limit 1`;  
     }
 
-    console.log('doc cliente: ', doc);
+    logger.debug({ doc }, 'Buscando cliente por documento');
     // idorg=${idorg}) AND 
 	// const read_query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' ${_str_only_sede} order by nombres limit 1`;	
     return await emitirRespuesta_RES(read_query, res);
@@ -725,7 +722,6 @@ module.exports.setDatosFacturacionClientePwa = setDatosFacturacionClientePwa;
 // datos al inicio despues de escanear codigo
 const getDataSedeIni = async function (req, res) {	
 	const idsede = req.body.idsede;
-    // console.log('cuenta de mesa: ', mesa);
 	const read_query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit, pwa_delivery_comercio_online from sede where (idsede=${idsede}) AND estado=0`;	
     return await emitirRespuesta_RES(read_query, res);
 }
@@ -733,7 +729,6 @@ module.exports.getDataSedeIni = getDataSedeIni;
 
 const getIdSedeFromNickName = async function (req, res) {  
     const nomsede = req.body.nomsede;
-    // console.log('cuenta de mesa: ', mesa);
     const read_query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit, is_holding from sede where link_carta='${nomsede}' AND estado=0`;    
     return await emitirRespuesta_RES(read_query, res);
 }
@@ -1006,7 +1001,6 @@ module.exports.getListMesas = getListMesas;
 
 const updateTimeLinePedido = async function (idpedido,time_line) {
     const read_query = `insert into pedido_time_line_entrega (idpedido, time_line) values (${idpedido}, '${JSON.stringify(time_line)}') ON DUPLICATE KEY UPDATE time_line = '${JSON.stringify(time_line)}'`;
-    // console.log('updateTimeLinePedido', read_query);
     return await emitirRespuesta(read_query);        
 }
 module.exports.updateTimeLinePedido = updateTimeLinePedido;
@@ -1024,7 +1018,6 @@ module.exports.updateTimeLinePedido = updateTimeLinePedido;
 
 const setUserAccountRemove = async (req, res) => {
     const user = req.body.user;
-    // console.log('user remove', user);
 
     try {
         if (user.isCliente) {
@@ -1034,7 +1027,7 @@ const setUserAccountRemove = async (req, res) => {
 
         res.status(200).json({ success: true });
     } catch (error) {
-        console.error(error);
+        logger.error({ error }, 'Error al eliminar cuenta de usuario');
         res.status(500).json({ success: false, error: 'An error occurred.' });
     }
 };
@@ -1540,7 +1533,7 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
             }
         }   
     } catch (_error) {
-        console.error(_error);
+        logger.error({ error: _error }, 'Error en procesamiento de item desde pwa');
         
         const dataError = {
             incidencia: {

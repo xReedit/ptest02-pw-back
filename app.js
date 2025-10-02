@@ -1,3 +1,6 @@
+// Cargar variables de entorno desde .env
+require('dotenv').config();
+
 const http = require('http');
 const express = require("express"); 
 const socketIo = require('socket.io');

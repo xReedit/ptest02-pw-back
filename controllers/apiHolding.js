@@ -6,29 +6,27 @@ let managerFilter = require('../utilitarios/filters');
 let queryService = require('../service/query.service');
 let socketHoldingService = require('../service/holding.socket.sevice');
 const holdingService = require('../service/holding.sevice');
+let logger = require('../utilitarios/logger');
 
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
-const emitirRespuesta = async (xquery) => {
-    // console.log(xquery);
+const emitirRespuesta = async (xquery) => {    
     try {
         return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
-    } catch (err) {
-        console.error(err);
+    } catch (err) {        
+        logger.error(err);
         return false;
     }
 };
 
 const emitirRespuesta_RES = async (xquery, res) => {
-    // console.log(xquery);
-
     try {
         const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
         return ReS(res, {
             data: rows
         });
-    } catch (error) {
-        console.error(error);
+    } catch (error) {        
+        logger.error(error);
         return false;
     }
 };
@@ -74,10 +72,8 @@ const getListItemsPedidoDetalle = async function (v_idpedido) {
 const saveRegistroPagoPedido = async function (pedido, itemsPedidoDetalle) {    
     const _pedido = JSON.stringify(pedido);  
     const _itemsPedidoDetalle = JSON.stringify(itemsPedidoDetalle);   
-    console.log(`call procedure_save_pedido_holding( '${_pedido}', '${_itemsPedidoDetalle}');`); 
+    logger.debug(`call procedure_save_pedido_holding( '${_pedido}', '${_itemsPedidoDetalle}');`); 
     const xquery = `call procedure_save_pedido_holding(?,?);`;
-    // console.log(`call procedure_save_pedido_holding( '${_pedido}', '${_itemsPedidoDetalle}');`);
-
     return await queryService.emitirRespuestaSP_RAW(xquery, [_pedido, _itemsPedidoDetalle]);
 }
 
@@ -159,10 +155,8 @@ async function setSavePedidoClienteHolding (req, res) {
     const {id, pedido, idcliente, idsede_holding} = req.body;
 
     const _pedido = JSON.stringify(pedido);      
-    // console.log(`call procedure_save_pedido_cliente_holding( ${id}, '${_pedido}', '${idcliente}', '${idsede_holding}');`); 
+    logger.debug(`call procedure_save_pedido_cliente_holding( ${id}, '${_pedido}', '${idcliente}', '${idsede_holding}');`); 
     const xquery = `call procedure_save_pedido_cliente_holding(?,?,?,?);`;
-    // console.log(`===> call procedure_save_pedido_cliente_holding( '${pedido}', ${idcliente}, ${idsede_holding});`);
-
     const result = await queryService.emitirRespuestaSP_RAW(xquery, [id, _pedido, idcliente, idsede_holding]);
     return ReS(res, {
             success: true,
@@ -190,8 +184,7 @@ function setPedidoClienteAtendido (req, res) {
 
 function setPedidoClientePagado (req, res) {
     const { idpedido_cliente_confirmar_holding } = req.body;
-    const xquery = `update pedido_cliente_confirmar_holding set pagado = '1' where idpedido_cliente_confirmar_holding = ${idpedido_cliente_confirmar_holding}`;
-    // console.log(xquery);
+    const xquery = `update pedido_cliente_confirmar_holding set pagado = '1' where idpedido_cliente_confirmar_holding = ${idpedido_cliente_confirmar_holding}`;    
     queryService.emitirRespuesta_UPDATE(xquery, res);
     return ReS(res, {
         success: true,
@@ -217,8 +210,8 @@ async function getVerifyPedidoClienteMarcadoPagado(req, res) {
             success: true,
             pagado: isPaid
         });
-    } catch (error) {
-        console.error(error);
+    } catch (error) {        
+        logger.error(error);
         return ReE(res, {
             success: false,
             message: 'Error al verificar el estado de pago'

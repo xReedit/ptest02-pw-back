@@ -3,6 +3,7 @@ let Sequelize = require('sequelize');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
+let logger = require('../utilitarios/logger');
 
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
@@ -53,8 +54,7 @@ module.exports.setRegistrarPago = setRegistrarPago;
 
 
 
-function emitirRespuesta(xquery, res) {
-	// console.log(xquery);
+function emitirRespuesta(xquery, res) {	
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		
@@ -69,8 +69,7 @@ function emitirRespuesta(xquery, res) {
 }
 
 
-function emitirRespuestaSP(xquery) {
-	console.log(xquery);
+function emitirRespuestaSP(xquery) {	
 	return sequelize.query(xquery, {		
 		type: sequelize.QueryTypes.SELECT
 	})
@@ -88,8 +87,7 @@ function emitirRespuestaSP(xquery) {
 }
 
 
-function emitirRespuesta_RES(xquery, res) {
-	console.log(xquery);
+function emitirRespuesta_RES(xquery, res) {	
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		
@@ -104,8 +102,7 @@ function emitirRespuesta_RES(xquery, res) {
 }
 
 
-function emitirRespuestaSP_RES(xquery, res) {
-	console.log(xquery);
+function emitirRespuestaSP_RES(xquery, res) {	
 	sequelize.query(xquery, {		
 		type: sequelize.QueryTypes.SELECT
 	})

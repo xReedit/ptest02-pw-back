@@ -3,7 +3,10 @@ const { to, ReE, ReS }  = require('../service/uitl.service');
 // const config = require('../config');
 let config = require('../_config');
 const webpush = require('web-push');
-let Sequelize = require('sequelize');
+// let Sequelize = require('sequelize');
+const io = require("socket.io-client");
+const QueryServiceV1 = require('../service/query.service.v1');
+const sequelize = require('../config/database');
 
 const nodemailer = require("nodemailer");
 
@@ -33,16 +36,14 @@ webpush.setVapidDetails(
   config.privateKeyVapid
 );
 
-let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+// let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
 // sms mensaje de confirmacion de telefono
-const sendMsjConfirmacion = async function (req, res) {
-	// console.log ('idcliente', req.body);
+const sendMsjConfirmacion = async function (req, res) {	
 	// const numberPhone = req.body.numberphone;
 	// const idcliente = req.body.idcliente;
 
-	// const codigoVerificacion = Math.round(Math.random()* (9000 - 1)+parseInt(1000));
-	// console.log('codigo de verificacion', codigoVerificacion);
+	// const codigoVerificacion = Math.round(Math.random()* (9000 - 1)+parseInt(1000));	
     // // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
     // // emitirRespuesta_RES(read_query, res);        
     // var clientSMS = require('twilio')(config.accountSidSms, config.authTokenSms);
@@ -93,12 +94,6 @@ const sendMsjSMSNewPedido = async function (numberPhone, dato = 'Repartidor ') {
     // emitirRespuesta_RES(read_query, res);        
  //    var clientSMS = require('twilio')(config.accountSidSms, config.authTokenSms);
 
- // //    clientSMS.messages.create({
-// 	//   from: 'whatsapp:+14155238886',
-// 	//   body: 'Ahoy world!',
-// 	//   to: 'whatsapp:+51'+numberPhone
-// 	// }).then(message => console.log(message.sid));
-
  //    clientSMS.messages.create({
  //    	body: dato  + 'Papaya Express. Tiene un nuevo pedido.',
  //    	to: '+51'+numberPhone,  // Text this number
@@ -118,7 +113,7 @@ const sendMsjSMS = async function (req, res) {
 	// const numberPhone = req.body.phone;
 	// const contenido = req.body.contenido;
 
-	// console.log(contenido);
+	
 
     // var clientSMS = require('twilio')(config.accountSidSms, config.authTokenSms);
 
@@ -128,11 +123,9 @@ const sendMsjSMS = async function (req, res) {
     // 	from: '+17852279308' // From a valid Twilio number
 	// })
 	// .then((message) => {	
-	// 	console.log(message.sid);
 	// 	return res.json({success:true});
 	// })
 	// .catch(err => {
-	// 	console.log('error al enviar mensaje');
 	// 	return res.json({success:false});
 	// });
 }
@@ -155,11 +148,9 @@ const sendEmailSendGrid = async function (req, res) {
 	sgMail
 	  .send(msg)
 	  .then(() => {
-	    console.log('Email sent')
 	    return res.json({success:true});
 	  })
 	  .catch((error) => {
-	    console.error(error)
 	    return res.json({success:false});
 	  })
 
@@ -195,18 +186,11 @@ module.exports.sendEmailSendGrid = sendEmailSendGrid;
 	    html: _msj.htmlContent, // html body
 	  });
 
-	  console.log("Message sent: %s", info.messageId);
-	  // Message sent: <b658f8ca-6296-ccf4-8306-87d57a0b4321@example.com>
-
-	  // Preview only available when sending through an Ethereal account
-	  // console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
-	  // Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
 	}
 
 	try {
 		main().catch((error) => {
-			console.error(error)
-		    return res.json({success:false});
+			return res.json({success:false});
 		});
 
 		res.status(200).json({
@@ -256,7 +240,7 @@ const sendEmailSendAWSSES = async function (req, res) {
             html: _msj.htmlContent // html body			
         });
 
-        console.log("Message sent: %s", info);
+        logger.debug("Message sent: %s", info);
 
         res.status(200).json({
             ok: true,
@@ -279,8 +263,10 @@ const pushSuscripcion = async function (req) {
 	const suscripcion = req.body.suscripcion;
 	const idcliente = req.body.idcliente;
 
-	const read_query = `update cliente_socketid set key_suscripcion_push = '${JSON.stringify(suscripcion)}' where idcliente = ${idcliente}`;
-	return emitirRespuesta(read_query);
+	// const read_query = `update cliente_socketid set key_suscripcion_push = '${JSON.stringify(suscripcion)}' where idcliente = ${idcliente}`;
+	// return emitirRespuesta(read_query);
+	const update_query = `update cliente_socketid set key_suscripcion_push = ? where idcliente = ?`;
+	return await QueryServiceV1.ejecutarConsulta(update_query, [JSON.stringify(suscripcion), idcliente], 'UPDATE', 'pushSuscripcion');
 }
 module.exports.pushSuscripcion = pushSuscripcion;
 
@@ -289,8 +275,7 @@ const sendPushNotificaction = function (req, res) {
 	const codigo_postal = req.body.codigo_postal;
 	const idcliente = req.body.idcliente;
 	const notificationPayload = req.body.notification
-
-	console.log('notificationPayload', notificationPayload);
+	
 
 	// const notificationPayload = {
  //        "notification": {
@@ -316,8 +301,8 @@ const sendPushNotificaction = function (req, res) {
 						where ${where_query} cs.key_suscripcion_push != ''`;
 
 
-	emitirRespuesta(read_query).then(allSubscriptions => {
-		console.log(allSubscriptions);
+
+	emitirRespuesta(read_query).then(allSubscriptions => {		
 		res.json(allSubscriptions);
 
 		 // Promise.all(
@@ -333,12 +318,10 @@ const sendPushNotificaction = function (req, res) {
 	    Promise.all(allSubscriptions.map(sub => webpush.sendNotification(
         sub, JSON.stringify(notificationPayload) )))
         .then(() => res.status(200).json({message: 'Newsletter sent successfully.'}))
-        .catch(err => {
-            console.error("Error sending notification, reason: ", err);
+        .catch(err => {            
             res.sendStatus(500);
         });	       
-	});
-	// console.log('listUsuarios send notificacion', listUsuarios);
+	});	
 }
 module.exports.sendPushNotificaction = sendPushNotificaction;
 
@@ -373,16 +356,15 @@ const sendPushNotificactionComercio = function (key_suscripcion_push, tipo_msj) 
 		} 
 
 
-	// console.log('notificationPayload', payload);
 	// para web
     webpush.sendNotification(
     	key_suscripcion_push, JSON.stringify(payload) )
 		.then(() => 
 			// res.status(200).json({message: 'mensaje enviado con exito'})
-			console.log('ok')
+			logger.debug('mensaje enviado con exito')
 		)
         .catch(err => {
-           	console.error("Error sending notification, reason: ", err);
+           	logger.error("Error sending notification, reason: ", err);
            	// res.sendStatus(500);
         });
 
@@ -394,13 +376,10 @@ module.exports.sendPushNotificactionComercio = sendPushNotificactionComercio;
 const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_msj) {	
 	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
 
-	console.log('======== notifica a=======', key_suscripcion_push)
-
 	// if (typeof key_suscripcion_push === "object") { // es web
 
 		// key_suscripcion_push = JSON.parse(key_suscripcion_push);
 
-		// console.log('notificationPayload', payload);
 		// para version web
 		let payload = {
 			"notification": {		        
@@ -416,10 +395,10 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 	    	key_suscripcion_push, JSON.stringify(payload) )
 			.then(() => 
 				// res.status(200).json({message: 'mensaje enviado con exito'})
-				console.log('ok')
+				logger.debug('ok')
 			)
 	        .catch(err => {
-	           	console.error("Error sending notification, reason: ", err);
+	           	logger.error("Error sending notification, reason: ", err);
 	           	// res.sendStatus(500);
 	        });
 
@@ -458,11 +437,9 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 
 	sender.send(message, { registrationIds: registrationIds }, (err, response) => {
 	  if (err) {
-	  	// res.sendStatus(500);
-	    console.error(err);
+	    logger.error(err);
 	  } else {
-	  	// res.status(200).json({message: 'mensaje enviado con exito'})
-	    console.log(response);
+	    logger.debug(response);
 	  }
 	});
 
@@ -486,7 +463,7 @@ const sendPushNotificactionRepartidorAceptaPedido = function (_dataMsjs) {
 	const key_suscripcion_push = _dataMsjs.key_suscripcion_push;
 	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
 	
-	console.log('push key_push', key_suscripcion_push);
+	logger.debug('push key_push', key_suscripcion_push);
 	// const key_suscripcion_push = Repartidor.key_suscripcion_push;	
 	// const notificationPayload = payload;
 	let payload;	
@@ -535,7 +512,7 @@ module.exports.sendPushNotificactionRepartidorAceptaPedido = sendPushNotificacti
 // TEST
 // envia notificacion push a repartidor de que tiene un pedido
 const sendPushNotificactionOneRepartidorTEST = function (req, res) {
-	console.log('push test');
+	logger.debug('push test');
 	const key_suscripcion_push = req.body.key_suscripcion_push;
 	const _payload = req.body.payload || null;
 	const tipo_msj = 0;	
@@ -615,10 +592,10 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 	sender.send(message, { registrationIds: registrationIds }, (err, response) => {
 	  if (err) {
 	  	res.sendStatus(500);
-	    console.error(err);
+	    logger.error(err);
 	  } else {
 	  	res.status(200).json({message: 'mensaje enviado con exito'})
-	    console.log(response);
+	    logger.debug(response);
 	  }
 	});
 
@@ -639,10 +616,10 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
     	key_suscripcion_push, JSON.stringify(payload) )
 		.then(() => 
 			// res.status(200).json({message: 'mensaje enviado con exito'})
-			console.log('ok')
+			logger.debug('ok')
 		)
         .catch(err => {
-           	console.error("Error sending notification, reason: ", err);
+           	logger.error("Error sending notification, reason: ", err);
            	// res.sendStatus(500);
         });
 
@@ -720,27 +697,25 @@ const sendPushWebTest = async function (req, res) {
 module.exports.sendPushWebTest = sendPushWebTest;
 
 
-function emitirRespuestaSP(xquery) {
-	console.log(xquery);
-	return sequelize.query(xquery, {		
-		type: sequelize.QueryTypes.SELECT
-	})
-	.then(function (rows) {
+// function emitirRespuestaSP(xquery) {	
+// 	return sequelize.query(xquery, {		
+// 		type: sequelize.QueryTypes.SELECT
+// 	})
+// 	.then(function (rows) {
 
-		// convertimos en array ya que viene en object
-		var arr = [];
-		arr = Object.values(rows[0]);		
+// 		// convertimos en array ya que viene en object
+// 		var arr = [];
+// 		arr = Object.values(rows[0]);		
 		
-		return arr;
-	})
-	.catch((err) => {
-		return false;
-	});
-}
+// 		return arr;
+// 	})
+// 	.catch((err) => {
+// 		return false;
+// 	});
+// }
 
 
-function emitirRespuesta(xquery, res) {
-	console.log(xquery);
+function emitirRespuesta(xquery, res) {	
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		

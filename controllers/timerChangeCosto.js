@@ -6,11 +6,14 @@ let Sequelize = require('sequelize');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 
-let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+// let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
-let mysql_clean = function (string) {
-        return sequelize.getQueryInterface().escape(string);
-};
+let logger = require('../utilitarios/logger');
+const QueryServiceV1 = require('../service/query.service.v1');
+
+// let mysql_clean = function (string) {
+//         return sequelize.getQueryInterface().escape(string);
+// };
 
 const timeRefesh = 600000; // cada 10min
 let listProgramacionPlaza = [];
@@ -18,8 +21,11 @@ let intervalComand;
 
 const runTimerCosto = async function () {
 
-  const read_query = `SELECT * from sede_config_service_delivery where estado = 0`;
-  const _list = await emitirRespuesta(read_query); 
+   const read_query = `SELECT * from sede_config_service_delivery where estado = 0`;
+  // const _list = await emitirRespuesta(read_query); 
+
+  const _list = await QueryServiceV1.ejecutarConsulta(read_query, [], 'SELECT', 'runTimerCosto');
+
   listProgramacionPlaza = _list;
   // console.log('lista de configuracion de plazas horarios', _list);
 
@@ -86,8 +92,12 @@ function comandListChangeCosto() {
   }
 
  function guardarCambiosChangeCosto(plazaSelected) {
-  	const read_query = `update sede_config_service_delivery set c_minimo = ${plazaSelected.c_minimo} where idsede_config_service_delivery = ${plazaSelected.idsede_config_service_delivery}`;
-    emitirRespuesta(read_query);  
+  	// const read_query = `update sede_config_service_delivery set c_minimo = ${plazaSelected.c_minimo} where idsede_config_service_delivery = ${plazaSelected.idsede_config_service_delivery}`;
+    // emitirRespuesta(read_query);  
+
+    const update_query = `update sede_config_service_delivery set c_minimo = ? where idsede_config_service_delivery = ?`;
+    QueryServiceV1.ejecutarConsulta(update_query, [plazaSelected.c_minimo, plazaSelected.idsede_config_service_delivery], 'UPDATE', 'guardarCambiosChangeCosto');
+    
   }
 
 

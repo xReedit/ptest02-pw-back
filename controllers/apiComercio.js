@@ -6,7 +6,8 @@ let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 let logger = require('../utilitarios/logger');
 
-let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+// let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+const sequelize = require('../config/database');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);

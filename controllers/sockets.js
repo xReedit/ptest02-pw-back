@@ -428,6 +428,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					return;
 				}
 
+				item.idsede = dataCliente.idsede;
+				item.idusuario = dataCliente.idusuario;
+
 				item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND'  : item.cantidad;
 				const isCheckExistSubItemsWithCantidad = handleStock.checkExistSubItemsWithCantidad(item);
 				logger.debug({ isCheckExistSubItemsWithCantidad }, 'Is check exist subitems with cantidad');

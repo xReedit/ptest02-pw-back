@@ -8,38 +8,56 @@ let logger = require('../utilitarios/logger');
 
 const serviceTimerChangeCosto = require('./timerChangeCosto.js');
 
-let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+// ✅ IMPORTANTE: Usar instancia centralizada de Sequelize
+const sequelize = require('../config/database');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
 };
 
 // primer idpedido de la fecha seleccionada
-const getFirtsIdPedidoDate = function (req, res) {
-	const fini = req.body.fromDate;	
-    // const read_query = `select COALESCE(min(idpedido), 0) idpedido from pedido where cast(fecha_hora as date) = cast('${fini}' as date) order by idpedido desc`;
-    const read_query = `call procedure_monitor_min_pedido_day('${fini}')`;
-    emitirRespuestaSP_RES(read_query, res);      
+const getFirtsIdPedidoDate = async function (req, res) {
+	const fini = req.body.fromDate;
+	// ✅ SEGURO: Prepared statement
+    const read_query = `CALL procedure_monitor_min_pedido_day(?)`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [fini],
+        type: sequelize.QueryTypes.SELECT
+    });
+    const arr = Object.values(rows[0]);
+    return ReS(res, { data: arr });
 }
 module.exports.getFirtsIdPedidoDate = getFirtsIdPedidoDate;
 
 
 // registro de comercio
-const getPedidos = function (req, res) {
+const getPedidos = async function (req, res) {
 	const fini = req.body.fromDate;
 	const ffin = req.body.toDate;
 	const firtsIdPedidoDate = req.body.firtsIdPedidoDate;
-    const read_query = `call procedure_pwa_delivery_monitor_pedidos('${fini}', '${ffin}', 0, ${firtsIdPedidoDate})`;
-    emitirRespuestaSP_RES(read_query, res);        
+	// ✅ SEGURO: Prepared statement
+    const read_query = `CALL procedure_pwa_delivery_monitor_pedidos(?, ?, 0, ?)`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [fini, ffin, firtsIdPedidoDate],
+        type: sequelize.QueryTypes.SELECT
+    });
+    const arr = Object.values(rows[0]);
+    return ReS(res, { data: arr });
 }
 module.exports.getPedidos = getPedidos;
 
-const getPedidosAbono = function (req, res) {
+const getPedidosAbono = async function (req, res) {
 	const fini = req.body.fromDate;
 	const ffin = req.body.toDate;
 	const firtsIdPedidoDate = req.body.firtsIdPedidoDate;
-    const read_query = `call procedure_pwa_delivery_monitor_pedidos('${fini}', '${ffin}', 1, ${firtsIdPedidoDate})`;
-    emitirRespuestaSP_RES(read_query, res);        
+	// ✅ SEGURO: Prepared statement
+    const read_query = `CALL procedure_pwa_delivery_monitor_pedidos(?, ?, 1, ?)`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [fini, ffin, firtsIdPedidoDate],
+        type: sequelize.QueryTypes.SELECT
+    });
+    const arr = Object.values(rows[0]);
+    return ReS(res, { data: arr });
 }
 module.exports.getPedidosAbono = getPedidosAbono;
 
@@ -49,12 +67,18 @@ const getRepartidores = function (req, res) {
 }
 module.exports.getRepartidores = getRepartidores;
 
-const getCientesScanQr = async function (req, res) {	
-	const op = req.body.fromDate.toString === "0" ? 0 : 1;    
+const getCientesScanQr = async function (req, res) {
+	const op = req.body.fromDate.toString === "0" ? 0 : 1;
     const fini = req.body.fromDate || '';
 	const ffin = req.body.toDate || '';
-    const read_query = `call procedure_pwa_delivery_monitor_get_scan_qr('${fini}', '${ffin}', ${op})`;
-    emitirRespuestaSP_RES(read_query, res);        
+	// ✅ SEGURO: Prepared statement
+    const read_query = `CALL procedure_pwa_delivery_monitor_get_scan_qr(?, ?, ?)`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [fini, ffin, op],
+        type: sequelize.QueryTypes.SELECT
+    });
+    const arr = Object.values(rows[0]);
+    return ReS(res, { data: arr });
 }
 module.exports.getCientesScanQr = getCientesScanQr;
 
@@ -64,10 +88,15 @@ const getCientes = async function (req, res) {
 }
 module.exports.getCientes = getCientes;
 
-const getRepartidoreCiudad = function (req, res) {	
+const getRepartidoreCiudad = async function (req, res) {
 	const codigo_postal = req.body.codigo_postal;
-    const read_query = `SELECT * from repartidor where idrepartidor=1 or codigo_postal = '${codigo_postal}' and estado = 0 and online = 1 and COALESCE(idsede_suscrito, 0) = 0`;
-    emitirRespuesta_RES(read_query, res);  
+	// ✅ SEGURO: Prepared statement
+    const read_query = `SELECT * FROM repartidor WHERE idrepartidor=1 OR codigo_postal = ? AND estado = 0 AND online = 1 AND COALESCE(idsede_suscrito, 0) = 0`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [codigo_postal],
+        type: sequelize.QueryTypes.SELECT
+    });
+    return ReS(res, { data: rows });
 }
 module.exports.getRepartidoreCiudad = getRepartidoreCiudad;
 
@@ -80,61 +109,99 @@ module.exports.getPedidosPendientesRepartidor = getPedidosPendientesRepartidor;
 
 const setResetRepartidor = async function (req, res) {
 	const idrepartidor = req.body.idrepartidor;
-	const read_query = `update repartidor set pedidos_reasignados = 0 where idrepartidor = ${idrepartidor};`;
-    emitirRespuesta(read_query, res);       
+	// ✅ SEGURO: Prepared statement
+	const read_query = `UPDATE repartidor SET pedidos_reasignados = 0 WHERE idrepartidor = ?`;
+    await sequelize.query(read_query, {
+        replacements: [idrepartidor],
+        type: sequelize.QueryTypes.UPDATE
+    });
+    return ReS(res, { data: true });
 }
 module.exports.setResetRepartidor = setResetRepartidor;
 
 
-const setLiberarRepartidor = function (req, res) {  
+const setLiberarRepartidor = async function (req, res) {
 	const idrepartidor = req.body.idrepartidor;
-    const read_query = `update repartidor set ocupado = 0, flag_paso_pedido = 0, pedido_por_aceptar = null, solicita_liberar_pedido=0 where idrepartidor = ${idrepartidor};`;
-    emitirRespuesta(read_query, res);     
+	// ✅ SEGURO: Prepared statement
+    const read_query = `UPDATE repartidor SET ocupado = 0, flag_paso_pedido = 0, pedido_por_aceptar = null, solicita_liberar_pedido=0 WHERE idrepartidor = ?`;
+    await sequelize.query(read_query, {
+        replacements: [idrepartidor],
+        type: sequelize.QueryTypes.UPDATE
+    });
+    return ReS(res, { data: true });
 }
 module.exports.setLiberarRepartidor = setLiberarRepartidor;
 
-const setCheckLiquidado = function (req, res) {  
+const setCheckLiquidado = async function (req, res) {
 	const idpedido = req.body.idpedido;
-    const read_query = `update pedido set check_liquidado = '1' where idpedido  = ${idpedido};`;
-    emitirRespuesta(read_query, res);     
+	// ✅ SEGURO: Prepared statement
+    const read_query = `UPDATE pedido SET check_liquidado = '1' WHERE idpedido = ?`;
+    await sequelize.query(read_query, {
+        replacements: [idpedido],
+        type: sequelize.QueryTypes.UPDATE
+    });
+    return ReS(res, { data: true });
 }
 module.exports.setCheckLiquidado = setCheckLiquidado;
 
-const setCheckAbonado = function (req, res) {  
+const setCheckAbonado = async function (req, res) {
 	const idpedido = req.body.idpedido;
     const idtransaccion = req.body.idpwa_pago_transaction;
-    const read_query = `update pedido set check_pagado = '1', check_pago_fecha = now() where idpedido = ${idpedido}; 
-                        update pwa_pago_transaction set abonado = 1 where idpwa_pago_transaction = ${idtransaccion}`;
-    emitirRespuesta(read_query, res);     
+	// ✅ SEGURO: 2 queries separados con prepared statements
+    await sequelize.query(
+        `UPDATE pedido SET check_pagado = '1', check_pago_fecha = now() WHERE idpedido = ?`,
+        { replacements: [idpedido], type: sequelize.QueryTypes.UPDATE }
+    );
+    await sequelize.query(
+        `UPDATE pwa_pago_transaction SET abonado = 1 WHERE idpwa_pago_transaction = ?`,
+        { replacements: [idtransaccion], type: sequelize.QueryTypes.UPDATE }
+    );
+    return ReS(res, { data: true });
 }
 module.exports.setCheckAbonado = setCheckAbonado;
 
-const setCheckAbonadoRepartidor = function (req, res) {
+const setCheckAbonadoRepartidor = async function (req, res) {
 	const idpedido = req.body.idpedido;
-    const read_query = `update pedido set check_pago_repartidor = '1' where idpedido = ${idpedido};`;
-    emitirRespuesta(read_query, res);     
+	// ✅ SEGURO: Prepared statement
+    const read_query = `UPDATE pedido SET check_pago_repartidor = '1' WHERE idpedido = ?`;
+    await sequelize.query(read_query, {
+        replacements: [idpedido],
+        type: sequelize.QueryTypes.UPDATE
+    });
+    return ReS(res, { data: true });
 }
 module.exports.setCheckAbonadoRepartidor = setCheckAbonadoRepartidor;
 
-const setAsignarPedidoManual = function (req, res) {
+const setAsignarPedidoManual = async function (req, res) {
 	const dataPedido = req.body.pedido;
     
-    const read_query = `call procedure_delivery_set_pedido_repartidor_manual('${JSON.stringify(dataPedido)}')`;
+	// ✅ SEGURO: Prepared statement
+    const read_query = `CALL procedure_delivery_set_pedido_repartidor_manual(?)`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [JSON.stringify(dataPedido)],
+        type: sequelize.QueryTypes.SELECT
+    });
     
     // en firebase se actualiza el repartidor 0524
     // activar luego
-    // apiFireBase.updateIdPedidosRepartidor(dataPedido.idrepartidor, dataPedido.pedido_asignado_manual);    
+    // apiFireBase.updateIdPedidosRepartidor(dataPedido.idrepartidor, dataPedido.pedido_asignado_manual);
 
-    emitirRespuestaSP_RES(read_query, res);  
-    
+    const arr = Object.values(rows[0]);
+    return ReS(res, { data: arr });
 }
 module.exports.setAsignarPedidoManual = setAsignarPedidoManual;
 
-const setRegistraPagoComercio = function (req, res) {
+const setRegistraPagoComercio = async function (req, res) {
 	const dataRegistro = req.body.registro;
     
-    const read_query = `call procedure_monitor_registro_pago_comercio('${JSON.stringify(dataRegistro)}')`;
-    emitirRespuestaSP_RES(read_query, res);  
+	// ✅ SEGURO: Prepared statement
+    const read_query = `CALL procedure_monitor_registro_pago_comercio(?)`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [JSON.stringify(dataRegistro)],
+        type: sequelize.QueryTypes.SELECT
+    });
+    const arr = Object.values(rows[0]);
+    return ReS(res, { data: arr });
 }
 module.exports.setRegistraPagoComercio = setRegistraPagoComercio;
 
@@ -145,19 +212,30 @@ const getComerciosResumen = function (req, res) {
 }
 module.exports.getComerciosResumen = getComerciosResumen;
 
-const getComercioCalcularPago = function (req, res) {	
+const getComercioCalcularPago = async function (req, res) {
 	const desde = req.body.desde;
 	const hasta = req.body.hasta;
-	const idsede = req.body.idsede;		
-    const read_query = `call procedure_monitor_comercios_caluclar('${desde}', '${hasta}', ${idsede})`;
-    emitirRespuestaSP_RES(read_query, res);        
+	const idsede = req.body.idsede;
+	// ✅ SEGURO: Prepared statement
+    const read_query = `CALL procedure_monitor_comercios_caluclar(?, ?, ?)`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [desde, hasta, idsede],
+        type: sequelize.QueryTypes.SELECT
+    });
+    const arr = Object.values(rows[0]);
+    return ReS(res, { data: arr });
 }
 module.exports.getComercioCalcularPago = getComercioCalcularPago;
 
-const setHistorialPagoComercio = function (req, res) {	
+const setHistorialPagoComercio = async function (req, res) {
 	const idsede = req.body.idsede;
-    const read_query = `SELECT * from sede_detalle_pago where idsede = '${idsede}'`;
-    emitirRespuesta_RES(read_query, res);  
+	// ✅ SEGURO: Prepared statement
+    const read_query = `SELECT * FROM sede_detalle_pago WHERE idsede = ?`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [idsede],
+        type: sequelize.QueryTypes.SELECT
+    });
+    return ReS(res, { data: rows });
 }
 module.exports.setHistorialPagoComercio = setHistorialPagoComercio;
 
@@ -182,24 +260,33 @@ const getRepartidoresPedidosAceptados = function (req, res) {
 }
 module.exports.getRepartidoresPedidosAceptados = getRepartidoresPedidosAceptados;
 
-const setSedeInfo = function (req, res) {
+const setSedeInfo = async function (req, res) {
 	const registro = req.body.registro;
-    const read_query = `update sede set comsion_entrega = ${registro.comision}, costo_restobar_fijo_mensual='${registro.restobar}' where idsede=${registro.idsede}`;
-    emitirRespuesta(read_query, res);     
+	// ✅ SEGURO: Prepared statement
+    const read_query = `UPDATE sede SET comsion_entrega = ?, costo_restobar_fijo_mensual=? WHERE idsede=?`;
+    await sequelize.query(read_query, {
+        replacements: [registro.comision, registro.restobar, registro.idsede],
+        type: sequelize.QueryTypes.UPDATE
+    });
+    return ReS(res, { data: true });
 }
 module.exports.setSedeInfo = setSedeInfo;
 
-const getAllPedidosComercio = function (req, res) {		
+const getAllPedidosComercio = async function (req, res) {
 	const idsede = req.body.idsede;
 	const fdesde = req.body.desde;
 	const fhasta = req.body.hasta;
-    // const read_query = `SELECT * from pedido where idsede = ${idsede} and  STR_TO_DATE(fecha, '%d/%m/%Y') BETWEEN STR_TO_DATE('${fdesde}', '%d/%m/%Y') and STR_TO_DATE('${fhasta}', '%d/%m/%Y') and pwa_is_delivery = 1`;
+	// ✅ SEGURO: Prepared statement
     const read_query = `
     	SELECT p.*, r.nombre as nom_repartidor, r.telefono as telefono_repartidor 
-		from pedido p
-			left join repartidor r on r.idrepartidor = p.idrepartidor 
-		where p.idsede = ${idsede} and  STR_TO_DATE(p.fecha, '%d/%m/%Y') BETWEEN STR_TO_DATE('${fdesde}', '%d/%m/%Y') and STR_TO_DATE('${fhasta}', '%d/%m/%Y') and p.pwa_is_delivery = 1`;
-    emitirRespuesta_RES(read_query, res);  
+		FROM pedido p
+			LEFT JOIN repartidor r ON r.idrepartidor = p.idrepartidor 
+		WHERE p.idsede = ? AND STR_TO_DATE(p.fecha, '%d/%m/%Y') BETWEEN STR_TO_DATE(?, '%d/%m/%Y') AND STR_TO_DATE(?, '%d/%m/%Y') AND p.pwa_is_delivery = 1`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [idsede, fdesde, fhasta],
+        type: sequelize.QueryTypes.SELECT
+    });
+    return ReS(res, { data: rows });
 }
 module.exports.getAllPedidosComercio = getAllPedidosComercio;
 
@@ -210,24 +297,39 @@ const getAllSedes = function (req, res) {
 }
 module.exports.getAllSedes = getAllSedes;
 
-const getAllDescuentosSede = function (req, res) {		
+const getAllDescuentosSede = async function (req, res) {
 	const idsede = req.body.idsede;
-    const read_query = `SELECT idsede_descuento, descripcion, f_desde, f_fin, numero_pedidos, if ( STR_TO_DATE(f_fin, '%d/%m/%Y %H:%i:%s') > now(), 1 , 0 ) activo  from sede_descuento where idsede = ${idsede} and estado = 0;`;
-    emitirRespuesta_RES(read_query, res);  
+	// ✅ SEGURO: Prepared statement
+    const read_query = `SELECT idsede_descuento, descripcion, f_desde, f_fin, numero_pedidos, IF(STR_TO_DATE(f_fin, '%d/%m/%Y %H:%i:%s') > now(), 1, 0) activo FROM sede_descuento WHERE idsede = ? AND estado = 0`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [idsede],
+        type: sequelize.QueryTypes.SELECT
+    });
+    return ReS(res, { data: rows });
 }
 module.exports.getAllDescuentosSede = getAllDescuentosSede;
 
-const getItemDescuentosSede = function (req, res) {		
+const getItemDescuentosSede = async function (req, res) {
 	const idsede_descuento = req.body.idsede_descuento;
-    const read_query = `SELECT * from sede_descuento_detalle where idsede_descuento = ${idsede_descuento}`;
-    emitirRespuesta_RES(read_query, res);  
+	// ✅ SEGURO: Prepared statement
+    const read_query = `SELECT * FROM sede_descuento_detalle WHERE idsede_descuento = ?`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [idsede_descuento],
+        type: sequelize.QueryTypes.SELECT
+    });
+    return ReS(res, { data: rows });
 }
 module.exports.getItemDescuentosSede = getItemDescuentosSede;
 
-const deleteItemDescuentosSede = function (req, res) {		
-	const idsede_descuento = req.body.idsede_descuento;    
-    const read_query = `update sede_descuento set estado = 1 where idsede_descuento = ${idsede_descuento}`;
-    emitirRespuesta(read_query, res);  
+const deleteItemDescuentosSede = async function (req, res) {
+	const idsede_descuento = req.body.idsede_descuento;
+	// ✅ SEGURO: Prepared statement
+    const read_query = `UPDATE sede_descuento SET estado = 1 WHERE idsede_descuento = ?`;
+    await sequelize.query(read_query, {
+        replacements: [idsede_descuento],
+        type: sequelize.QueryTypes.UPDATE
+    });
+    return ReS(res, { data: true });
 }
 module.exports.deleteItemDescuentosSede = deleteItemDescuentosSede;
 
@@ -245,24 +347,34 @@ const getTablaPrecipitacion = function (req, res) {
 }
 module.exports.getTablaPrecipitacion = getTablaPrecipitacion;
 
-const setImporteComisionLluvia = function (req, res) {	
-	const idsede_config_service_delivery = req.body.idsede_config_service_delivery;    
-	const costo_show = req.body.clima_comision.costo_show;    
-	const costo_x_km_adicional_show = req.body.clima_comision.costo_x_km_adicional_show;    
-	const isRain = req.body.clima_comision.isRain;    
-    const read_query = `update sede_config_service_delivery set c_minimo = ${costo_show}, c_km=${costo_x_km_adicional_show}, is_rain=${isRain} where idsede_config_service_delivery = ${idsede_config_service_delivery}`;
-    emitirRespuesta(read_query, res);  
+const setImporteComisionLluvia = async function (req, res) {
+	const idsede_config_service_delivery = req.body.idsede_config_service_delivery;
+	const costo_show = req.body.clima_comision.costo_show;
+	const costo_x_km_adicional_show = req.body.clima_comision.costo_x_km_adicional_show;
+	const isRain = req.body.clima_comision.isRain;
+	// ✅ SEGURO: Prepared statement
+    const read_query = `UPDATE sede_config_service_delivery SET c_minimo = ?, c_km=?, is_rain=? WHERE idsede_config_service_delivery = ?`;
+    await sequelize.query(read_query, {
+        replacements: [costo_show, costo_x_km_adicional_show, isRain, idsede_config_service_delivery],
+        type: sequelize.QueryTypes.UPDATE
+    });
+    return ReS(res, { data: true });
 }
 module.exports.setImporteComisionLluvia = setImporteComisionLluvia;
 
 // datos al inicio despues de escanear codigo
-const getDataSedeInfoFacById = async function (req, res) {  
-    const idsede = req.body.idsede;    
+const getDataSedeInfoFacById = async function (req, res) {
+    const idsede = req.body.idsede;
+	// ✅ SEGURO: Prepared statement
     const read_query = `SELECT s.idsede, s.idorg, o.nombre, o.ruc, o.direccion, s.ciudad, o.tipo_contribuyente 
-                from sede s
-                    inner join org o on o.idorg = s.idorg
-                where (s.idsede=${idsede}) AND s.estado=0`;    
-    emitirRespuesta_RES(read_query, res);
+                FROM sede s
+                    INNER JOIN org o ON o.idorg = s.idorg
+                WHERE s.idsede=? AND s.estado=0`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [idsede],
+        type: sequelize.QueryTypes.SELECT
+    });
+    return ReS(res, { data: rows });
 }
 module.exports.getDataSedeInfoFacById = getDataSedeInfoFacById;
 
@@ -272,54 +384,76 @@ const getAplicaA = async function (req, res) {
 	const idsede = req.body.idsede;
 	let read_query = '';
 
+	// ✅ SEGURO: Prepared statement para cada caso
 	switch (aplica) {
       case 0:
-      	read_query = `SELECT concat(s.descripcion, ' | ',  i.descripcion) descripcion, i.iditem as id 
-					from item i 
-						inner join carta_lista cl on cl.iditem = i.iditem
-						inner join seccion s on s.idseccion = cl.idseccion
-					where i.idsede=${idsede} and i.estado=0 order by i.descripcion`;
+      	read_query = `SELECT CONCAT(s.descripcion, ' | ', i.descripcion) descripcion, i.iditem as id 
+					FROM item i 
+						INNER JOIN carta_lista cl ON cl.iditem = i.iditem
+						INNER JOIN seccion s ON s.idseccion = cl.idseccion
+					WHERE i.idsede=? AND i.estado=0 ORDER BY i.descripcion`;
         break;
       case 1:
-      	read_query = `SELECT descripcion, idseccion as id from seccion where idsede=${idsede} and estado=0 order by descripcion`;
+      	read_query = `SELECT descripcion, idseccion as id FROM seccion WHERE idsede=? AND estado=0 ORDER BY descripcion`;
         break;
       case 2:
-      	read_query = `SELECT concat(pf.descripcion,' | ', p.descripcion) descripcion, p.idproducto as id from producto p inner join producto_familia pf on pf.idproducto_familia = p.idproducto_familia where p.idsede=${idsede} and p.estado=0 order by pf.descripcion, p.descripcion`;
+      	read_query = `SELECT CONCAT(pf.descripcion,' | ', p.descripcion) descripcion, p.idproducto as id FROM producto p INNER JOIN producto_familia pf ON pf.idproducto_familia = p.idproducto_familia WHERE p.idsede=? AND p.estado=0 ORDER BY pf.descripcion, p.descripcion`;
         break;
       case 3:
-      	read_query = `SELECT descripcion, idproducto_familia as id from producto_familia where idsede = ${idsede} and estado=0 order by descripcion`;
+      	read_query = `SELECT descripcion, idproducto_familia as id FROM producto_familia WHERE idsede = ? AND estado=0 ORDER BY descripcion`;
         break;
-    }	
-    emitirRespuesta_RES(read_query, res);        
+    }
+    const rows = await sequelize.query(read_query, {
+        replacements: [idsede],
+        type: sequelize.QueryTypes.SELECT
+    });
+    return ReS(res, { data: rows });
 }
 module.exports.getAplicaA = getAplicaA;
 
-const setRegistrarDescuento = function (req, res) {	
-	const obj = req.body.obj;	
-    const read_query = `call procedure_app_descuentos('${JSON.stringify(obj)}')`;
-    emitirRespuestaSP_RES(read_query, res);        
+const setRegistrarDescuento = async function (req, res) {
+	const obj = req.body.obj;
+	// ✅ SEGURO: Prepared statement
+    const read_query = `CALL procedure_app_descuentos(?)`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [JSON.stringify(obj)],
+        type: sequelize.QueryTypes.SELECT
+    });
+    const arr = Object.values(rows[0]);
+    return ReS(res, { data: arr });
 }
 module.exports.setRegistrarDescuento = setRegistrarDescuento;
 
-const setOptionPlaza = function (req, res) {	
-	const obj = req.body.obj;	
-    const read_query = `call procedure_monitor_set_option_plaza('${JSON.stringify(obj)}')`;
-    emitirRespuestaSP_RES(read_query, res);        
+const setOptionPlaza = async function (req, res) {
+	const obj = req.body.obj;
+	// ✅ SEGURO: Prepared statement
+    const read_query = `CALL procedure_monitor_set_option_plaza(?)`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [JSON.stringify(obj)],
+        type: sequelize.QueryTypes.SELECT
+    });
+    const arr = Object.values(rows[0]);
+    return ReS(res, { data: arr });
 }
 module.exports.setOptionPlaza = setOptionPlaza;
 
 
 
-const getPedidosMandados = function (req, res) {		
+const getPedidosMandados = async function (req, res) {
 	const fini = req.body.fromDate;
 	const ffin = req.body.toDate;
+	// ✅ SEGURO: Prepared statement
     const read_query = `SELECT pm.*, c.nombres nom_cliente, c.f_registro, c.ruc, c.telefono,c.calificacion, TIMESTAMPDIFF(MINUTE, pm.fecha_hora, now()) min_transcurridos
     		, r.nombre as nom_repartidor, r.telefono as telefono_repartidor
-			from pedido_mandado pm
-				inner join cliente c on c.idcliente = pm.pedido_json->>'$.idcliente'
-				LEFT join repartidor r on r.idrepartidor = pm.idrepartidor
-			where cast(pm.fecha_hora as date) BETWEEN cast('${fini}' as date) and cast('${ffin}' as date)`;
-    emitirRespuesta_RES(read_query, res);  
+			FROM pedido_mandado pm
+				INNER JOIN cliente c ON c.idcliente = pm.pedido_json->>'$.idcliente'
+				LEFT JOIN repartidor r ON r.idrepartidor = pm.idrepartidor
+			WHERE CAST(pm.fecha_hora as date) BETWEEN CAST(? as date) AND CAST(? as date)`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [fini, ffin],
+        type: sequelize.QueryTypes.SELECT
+    });
+    return ReS(res, { data: rows });
 }
 module.exports.getPedidosMandados = getPedidosMandados;
 
@@ -336,19 +470,29 @@ const getCalificacionComercio = function (req, res) {
 }
 module.exports.getCalificacionComercio = getCalificacionComercio;
 
-const setOnComercio = function (req, res) {		
-	const idsede = req.body.idsede;    
-	const estado = req.body.estado;    
-    const read_query = `update sede set pwa_delivery_comercio_online = ${estado} where idsede = ${idsede}`;
-    emitirRespuesta(read_query, res);  
+const setOnComercio = async function (req, res) {
+	const idsede = req.body.idsede;
+	const estado = req.body.estado;
+	// ✅ SEGURO: Prepared statement
+    const read_query = `UPDATE sede SET pwa_delivery_comercio_online = ? WHERE idsede = ?`;
+    await sequelize.query(read_query, {
+        replacements: [estado, idsede],
+        type: sequelize.QueryTypes.UPDATE
+    });
+    return ReS(res, { data: true });
 }
 module.exports.setOnComercio = setOnComercio;
 
-const getRetirosCashAtm = function (req, res) {	
+const getRetirosCashAtm = async function (req, res) {
 	const fini = req.body.fromDate;
 	const ffin = req.body.toDate;
-    const read_query = `SELECT *, DATE_FORMAT(fecha_hora_registro, "%d/%m/%Y %H:%m:%i") fecha_hora, TIMESTAMPDIFF(MINUTE, fecha_hora_registro, now()) as min_transcurridos,r.nombre nom_repartidor from atm_retiros a left join repartidor r on a.idrepartidor = r.idrepartidor where cast(fecha_hora_registro as date) BETWEEN cast('${fini}' as date) and cast('${ffin}' as date) order by idatm_retiros desc;`;
-    emitirRespuesta_RES(read_query, res);        
+	// ✅ SEGURO: Prepared statement
+    const read_query = `SELECT *, DATE_FORMAT(fecha_hora_registro, "%d/%m/%Y %H:%m:%i") fecha_hora, TIMESTAMPDIFF(MINUTE, fecha_hora_registro, now()) as min_transcurridos,r.nombre nom_repartidor FROM atm_retiros a LEFT JOIN repartidor r ON a.idrepartidor = r.idrepartidor WHERE CAST(fecha_hora_registro as date) BETWEEN CAST(? as date) AND CAST(? as date) ORDER BY idatm_retiros desc`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [fini, ffin],
+        type: sequelize.QueryTypes.SELECT
+    });
+    return ReS(res, { data: rows });
 }
 module.exports.getRetirosCashAtm = getRetirosCashAtm;
 
@@ -356,11 +500,18 @@ module.exports.getRetirosCashAtm = getRetirosCashAtm;
 const setPedidoNoAntendido = async function (req, res) {
 	const idpedido = req.body.idpedido;
     const idpwa_pago_transaction = req.body.idpwa_pago_transaction;
-	let read_query = `update pedido set pwa_delivery_atendido = 1 where idpedido = ${idpedido};`;
-    if ( idpwa_pago_transaction ) {
-        read_query = read_query + ` update pwa_pago_transaction set anulado = 1 where idpwa_pago_transaction = ${idpwa_pago_transaction};`;
+	// ✅ SEGURO: 2 queries separados con prepared statements
+    await sequelize.query(
+        `UPDATE pedido SET pwa_delivery_atendido = 1 WHERE idpedido = ?`,
+        { replacements: [idpedido], type: sequelize.QueryTypes.UPDATE }
+    );
+    if (idpwa_pago_transaction) {
+        await sequelize.query(
+            `UPDATE pwa_pago_transaction SET anulado = 1 WHERE idpwa_pago_transaction = ?`,
+            { replacements: [idpwa_pago_transaction], type: sequelize.QueryTypes.UPDATE }
+        );
     }
-    emitirRespuesta(read_query, res);       
+    return ReS(res, { data: true });
 }
 module.exports.setPedidoNoAntendido = setPedidoNoAntendido;
 
@@ -401,50 +552,78 @@ const getPendientesConfirmacionPagoServicio = function (req, res) {
 module.exports.getPendientesConfirmacionPagoServicio = getPendientesConfirmacionPagoServicio;
 
 
-const getInfoSedeFacturacionById = function (req, res) {   
+const getInfoSedeFacturacionById = async function (req, res) {
     const ruc = req.body.ruc;
-    const read_query = `select s.* from sede s inner join org o on o.idorg = s.idorg where o.ruc = '${ruc}'`;
-    emitirRespuesta_RES(read_query, res);        
+	// ✅ SEGURO: Prepared statement
+    const read_query = `SELECT s.* FROM sede s INNER JOIN org o ON o.idorg = s.idorg WHERE o.ruc = ?`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [ruc],
+        type: sequelize.QueryTypes.SELECT
+    });
+    return ReS(res, { data: rows });
 }
 module.exports.getInfoSedeFacturacionById = getInfoSedeFacturacionById;
 
 
 const setFacturaConfirmarPagoServicio = async function (req, res) {
-    const idconfirmacion = req.body.idconfirmacion;    
-    const external_id = req.body.external_id;    
-    let read_query = `update sede_pago_confirmacion set external_id = '${external_id}', confirmado=1 where idsede_pago_confirmacion = ${idconfirmacion};`;
-    emitirRespuesta(read_query, res);       
+    const idconfirmacion = req.body.idconfirmacion;
+    const external_id = req.body.external_id;
+	// ✅ SEGURO: Prepared statement
+    const read_query = `UPDATE sede_pago_confirmacion SET external_id = ?, confirmado=1 WHERE idsede_pago_confirmacion = ?`;
+    await sequelize.query(read_query, {
+        replacements: [external_id, idconfirmacion],
+        type: sequelize.QueryTypes.UPDATE
+    });
+    return ReS(res, { data: true });
 }
 module.exports.setFacturaConfirmarPagoServicio = setFacturaConfirmarPagoServicio;
 
 const setAnularPagoServicio = async function (req, res) {
-    const umf_pago = req.body.umf_pago;    
-    const idsede = req.body.idsede;    
+    const umf_pago = req.body.umf_pago;
+    const idsede = req.body.idsede;
     const idsede_pago_confirmacion = req.body.idsede_pago_confirmacion;
-    let read_query = `update sede set umf_pago = '${umf_pago}' where idsede = ${idsede}; update sede_pago_confirmacion set no_confirmado = 1 where idsede_pago_confirmacion = ${idsede_pago_confirmacion};`;
-    emitirRespuesta(read_query, res);       
+	// ✅ SEGURO: 2 queries separados con prepared statements
+    await sequelize.query(
+        `UPDATE sede SET umf_pago = ? WHERE idsede = ?`,
+        { replacements: [umf_pago, idsede], type: sequelize.QueryTypes.UPDATE }
+    );
+    await sequelize.query(
+        `UPDATE sede_pago_confirmacion SET no_confirmado = 1 WHERE idsede_pago_confirmacion = ?`,
+        { replacements: [idsede_pago_confirmacion], type: sequelize.QueryTypes.UPDATE }
+    );
+    return ReS(res, { data: true });
 }
 module.exports.setAnularPagoServicio = setAnularPagoServicio;
 
 
-const getShowPedidosAsignadosRepartidor = function (req, res) {   
+const getShowPedidosAsignadosRepartidor = async function (req, res) {
     const arrPedidos = req.body.arr;
-    const read_query = `select p1.idpedido, ptle.time_line, p1.json_datos_delivery->'$.p_header.arrDatosDelivery.establecimiento.nombre' establecimiento
+	// ✅ SEGURO: Prepared statement
+    const read_query = `SELECT p1.idpedido, ptle.time_line, p1.json_datos_delivery->'$.p_header.arrDatosDelivery.establecimiento.nombre' establecimiento
                             ,TIMESTAMPDIFF(MINUTE, p1.fecha_hora, now()) t_transcurrido
                             ,p1.pwa_estado, p1.pwa_delivery_tiempo_atendido,p1.flag_is_cliente
-                        from pedido p1
-                        left join pedido_time_line_entrega ptle on ptle.idpedido = p1.idpedido 
-                        where p1.idpedido in (${arrPedidos})`;    
-    emitirRespuesta_RES(read_query, res);        
+                        FROM pedido p1
+                        LEFT JOIN pedido_time_line_entrega ptle ON ptle.idpedido = p1.idpedido 
+                        WHERE p1.idpedido IN (?)`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [arrPedidos],
+        type: sequelize.QueryTypes.SELECT
+    });
+    return ReS(res, { data: rows });
 }
 module.exports.getShowPedidosAsignadosRepartidor = getShowPedidosAsignadosRepartidor;
 
-const getPedidoById = function (req, res) {  
-    const idpedido = req.body.idpedido;     
-    read_query = `SELECT p.*, r.nombre as nom_repartidor, r.telefono telefono_repartidor from pedido p
-left join repartidor r on p.idrepartidor = r.idrepartidor 
-where p.idpedido=${idpedido};`;
-    emitirRespuesta_RES(read_query, res);        
+const getPedidoById = async function (req, res) {
+    const idpedido = req.body.idpedido;
+	// ✅ SEGURO: Prepared statement
+    const read_query = `SELECT p.*, r.nombre as nom_repartidor, r.telefono telefono_repartidor FROM pedido p
+LEFT JOIN repartidor r ON p.idrepartidor = r.idrepartidor 
+WHERE p.idpedido=?`;
+    const rows = await sequelize.query(read_query, {
+        replacements: [idpedido],
+        type: sequelize.QueryTypes.SELECT
+    });
+    return ReS(res, { data: rows });
 }
 module.exports.getPedidoById = getPedidoById;
 

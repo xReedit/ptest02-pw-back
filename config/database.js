@@ -1,95 +1,68 @@
 /**
- * Configuración de Sequelize para conexión con la base de datos
- * Centraliza los parámetros de conexión y configuración de pool
+ * Configuración CENTRALIZADA de Sequelize para conexión con la base de datos
+ * ⭐ IMPORTANTE: Usar SOLO esta instancia en todo el proyecto
+ * 
+ * Beneficios:
+ * - Una sola conexión compartida (pool optimizado)
+ * - Mejor rendimiento bajo alta carga
+ * - Menor consumo de memoria
+ * - Manejo automático de reconexiones
  */
 
 const { Sequelize } = require('sequelize');
+const config = require('../_config');
 
-let _config;
-try {
-  _config = require('../_config');
-} catch (e) {
-  _config = {
-    port: '',
-    portSocket: '',
-    database: '',
-    username: '',
-    password: '',
-    db_host: '',
-    port: '',
-    db_port: '',
-    publicKeyVapid: '',
-    privateKeyVapid: '',
-    firebaseApikey: ''
-  };
-}
-
-// Obtener credenciales desde variables de entorno o usar valores por defecto
-const dbConfig = {
-  host: process.env.DB_HOST || _config?.db_host,
-  port: process.env.DB_PORT || _config?.db_port,
-  username: process.env.DB_USER || _config?.username,
-  password: process.env.DB_PASSWORD || _config?.password,
-  database: process.env.DB_NAME || _config?.database,
-  dialect: 'mysql',
-  // Opciones de pool optimizadas para alta demanda
-  pool: {
-    max: 20,             // Máximo de conexiones en pool (aumentado para alta demanda)
-    min: 5,              // Mínimo de conexiones en pool
-    acquire: 30000,      // Tiempo máximo para adquirir conexión (ms)
-    idle: 10000,         // Tiempo máximo de inactividad (ms)
-    evict: 1000,         // Tiempo entre comprobaciones de conexiones inactivas
-    handleDisconnects: true // Manejar reconexiones automáticas
-  },
-  // Opciones adicionales para mejor rendimiento y manejo de errores
+// ✅ Usar configuración centralizada de _config.js con pool optimizado
+const sequelizeOptions = {
+  ...config.sequelizeOption,
   dialectOptions: {
-    // Tiempo de espera para conexión inicial
-    connectTimeout: 60000, 
-    // Flags recomendados para MySQL con alta concurrencia
-    flags: [
-      'FOUND_ROWS',
-      'IGNORE_SPACE',
-      'MULTI_STATEMENTS'
-    ]
+    timezone: '-05:00',      // GMT-5 para Perú/Colombia
+    dateStrings: true,       // Evita conversiones automáticas
+    typeCast: true          // Mantiene tipos correctos
   },
-  // Opciones para timeouts de consultas
+  // Pool optimizado para alta demanda (evita deadlocks)
+  pool: {
+    max: 20,              // Máximo 20 conexiones concurrentes
+    min: 5,               // Mínimo 5 conexiones activas
+    acquire: 30000,       // 30s para adquirir conexión
+    idle: 10000,          // 10s de inactividad antes de liberar
+    evict: 1000,          // Revisar conexiones inactivas cada 1s
+    handleDisconnects: true  // Reconexión automática
+  },
+  // Reintentos automáticos en caso de deadlock
   retry: {
-    max: 3 // Reintentos máximos
-  },
-  // Tiempo de espera para consultas - a nivel general
-  queryTimeout: 30000,
-  // Opciones generales
-  logging: process.env.NODE_ENV === 'production' ? false : console.log,
-  timezone: '-05:00', // Ajustar a tu zona horaria
-  define: {
-    underscored: true,    // Usar snake_case para campos en DB
-    timestamps: false,    // No usar timestamps automáticos
-    freezeTableName: true // No pluralizar nombres de tablas
+    max: 3,
+    match: [
+      /ER_LOCK_DEADLOCK/,
+      /SQLITE_BUSY/
+    ]
   }
 };
 
-// Crear instancia de Sequelize
+// ⭐ Crear UNA SOLA instancia de Sequelize para toda la aplicación
 const sequelize = new Sequelize(
-  dbConfig.database,
-  dbConfig.username,
-  dbConfig.password,
-  {
-    host: dbConfig.host,
-    port: dbConfig.port,
-    dialect: dbConfig.dialect,
-    pool: dbConfig.pool,
-    dialectOptions: dbConfig.dialectOptions,
-    logging: dbConfig.logging,
-    timezone: dbConfig.timezone,
-    define: dbConfig.define,
-    // Configuraciones para mejor rendimiento en consultas
-    query: {
-      raw: true // Devuelve objetos JS planos por defecto
-    }
-  }
+  config.database,
+  config.username,
+  config.password,
+  sequelizeOptions
 );
 
-// Exportar instancia de Sequelize
+// Verificar conexión al iniciar
+sequelize.authenticate()
+  .then(() => {
+    const logger = require('../utilitarios/logger');
+    logger.info({
+      host: config.db_host,
+      database: config.database,
+      pool: sequelizeOptions.pool
+    }, '✅ Base de datos conectada correctamente');
+  })
+  .catch(err => {
+    const logger = require('../utilitarios/logger');
+    logger.error({ err }, '❌ Error al conectar a la base de datos');
+  });
+
+// ⭐ Exportar SOLO esta instancia (no crear nuevas)
 module.exports = {
   sequelize,
   Sequelize

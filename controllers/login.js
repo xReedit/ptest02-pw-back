@@ -1,15 +1,13 @@
 const { to, ReE, ReS } = require('../service/uitl.service');
-let bcrypt = require('bcryptjs'); //passoword
+// let bcrypt = require('bcryptjs'); //password
 let jwt = require('jsonwebtoken');
-// const SEED = require('../config').SEED;
 const SEED = require('../_config').SEED;
+const loggerPino = require('../utilitarios/logger');
 
-let Sequelize = require('sequelize');
-// let config = require('../config');
-let config = require('../_config');
-
-
-let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+// ✅ IMPORTANTE: Usar instancia centralizada de Sequelize (mejor rendimiento)
+// const sequelize = require('../config/database');
+// const { Sequelize } = require('sequelize');
+const QueryServiceV1 = require('../service/query.service.v1');
 
 const init = async function (req, res) {
         return ReS(res, { message: 'hello desde LA API GENERAL 2 INIT version 1' });
@@ -18,31 +16,48 @@ module.exports.init = init;
 
 
 const logger = async function (req, res) {
-        const usuario = req.body.nomusuario;
-        const pass = req.body.pass;
+        try {
+                const usuario = req.body.nomusuario;
+                const pass = req.body.pass;
+                
+                // ✅ SEGURO: Prepared statement previene SQL Injection
+                const read_query = `SELECT u.* FROM usuario u 
+                        INNER JOIN sede s ON u.idsede = s.idsede 
+                        LEFT JOIN sede_estado se ON s.idsede = se.idsede 
+                        WHERE u.usuario = ? 
+                        AND POSITION('A2' IN u.acc) > 0 
+                        AND u.estado = 0 
+                        AND se.is_bloqueado = 0 
+                        AND se.is_baja = 0 
+                        AND u.estadistica = 1`;
 
-        // console.log('passs ', req.body);
+                // const rows = await sequelize.query(read_query, { 
+                //         replacements: [usuario],
+                //         type: sequelize.QueryTypes.SELECT 
+                // });
 
-        // let read_query = "SELECT * FROM `usuario` WHERE `usuario` = '" + usuario + "' and estadistica=1";
-        let read_query = "SELECT u.* FROM usuario u inner join sede s on u.idsede = s.idsede left join sede_estado se on s.idsede = se.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0 and se.is_bloqueado = 0 and se.is_baja=0 and u.estadistica=1";
-        console.log(read_query);
+                const rows = await QueryServiceV1.ejecutarConsulta(read_query, [usuario], 'SELECT', 'logger');
+                
+                // ✅ Validar que el usuario exista
+                if (!rows || rows.length === 0) {
+                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                }
 
-        sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })
-                .then(function (rows) {
-                        
-                        const result =  pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
-                        if (!result) {
-                                return ReE(res, 'Credenciales Incorrectas.');
-                                // return ReE(res, { usuario: rows[0], error: 'Credenciales Incorrectas' });
-                        }
+                // TODO: Activar bcrypt en siguiente paso
+                const result = pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
+                if (!result) {
+                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                }
 
-                        rows[0].pass = ':)';
-                        const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: 14400 });
+                rows[0].pass = ':)';
+                const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: 14400 });
 
-                        return ReS(res, { usuario: rows[0], token: token });
+                return ReS(res, { usuario: rows[0], token: token });
 
-                })
-                .catch((err) => { return ReE(res, err); });
+        } catch (err) {
+                loggerPino.error({ err, usuario: req.body.nomusuario }, 'Error en login');
+                return ReE(res, 'Error al procesar login', 500);
+        }
 }
 
 module.exports.logger = logger;
@@ -50,39 +65,51 @@ module.exports.logger = logger;
 
 // pwa-app-pedido
 const loggerUsAutorizado = async function (req, res) {
-        const usuario = req.body.nomusuario;
-        const pass = req.body.pass;
+        try {
+                const usuario = req.body.nomusuario;
+                const pass = req.body.pass;
 
-        // console.log('passs ', req.body);
+                // ✅ SEGURO: Prepared statement previene SQL Injection
+                const read_query = `SELECT u.*, s.is_holding, s.is_mozo_accept_payments 
+                        FROM usuario u 
+                        INNER JOIN sede s ON u.idsede = s.idsede 
+                        LEFT JOIN sede_estado se ON s.idsede = se.idsede 
+                        WHERE u.usuario = ? 
+                        AND POSITION('A2' IN u.acc) > 0 
+                        AND u.estado = 0 
+                        AND se.is_bloqueado = 0 
+                        AND se.is_baja = 0`;
 
-        let read_query = "SELECT u.*, s.is_holding, s.is_mozo_accept_payments FROM usuario u inner join sede s on u.idsede = s.idsede left join sede_estado se on s.idsede = se.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0 and se.is_bloqueado = 0 and se.is_baja=0";
-        // let read_query = "SELECT u.* FROM usuario u inner join sede s on u.idsede = s.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0";
-        console.log(read_query);
+                // const rows = await sequelize.query(read_query, { 
+                //         replacements: [usuario],
+                //         type: sequelize.QueryTypes.SELECT 
+                // });
 
-        sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })
-                .then(function (rows) {
-                        
-                        const result =  pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
-                        if (!result) {
-                                return ReE(res, 'Credenciales Incorrectas.');
-                                // return ReE(res, { usuario: rows[0], error: 'Credenciales Incorrectas' });
-                        }
+                const rows = await QueryServiceV1.ejecutarConsulta(read_query, [usuario], 'SELECT', 'loggerUsAutorizado');
+                
+                // ✅ Validar que el usuario exista
+                if (!rows || rows.length === 0) {
+                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                }
 
-                        // var p = rows[0].pass;
-                        // console.log('pass ', p);        
-                        var p = rows[0].pass;
-                        p = Buffer.from(p).toString('base64');
-                        console.log('pass ', p);                        
-                        rows[0].pass = p;
+                // TODO: Activar bcrypt en siguiente paso
+                const result = pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
+                if (!result) {
+                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                }
 
-                        // console.log('usuario logueado ', rows[0]);
-                        
-                        const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: '2d' });
+                var p = rows[0].pass;
+                p = Buffer.from(p).toString('base64');                        
+                rows[0].pass = p;
+                
+                const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: '2d' });
 
-                        return ReS(res, { usuario: rows[0], token: token });
+                return ReS(res, { usuario: rows[0], token: token });
 
-                })
-                .catch((err) => { return ReE(res, err); });
+        } catch (err) {
+                loggerPino.error({ err, usuario: req.body.nomusuario }, 'Error en login autorizado');
+                return ReE(res, 'Error al procesar login', 500);
+        }
 }
 
 module.exports.loggerUsAutorizado = loggerUsAutorizado;
@@ -90,48 +117,46 @@ module.exports.loggerUsAutorizado = loggerUsAutorizado;
 
 
 const loggerUsAutorizadoRepartidor = async function (req, res) {
-        const usuario = req.body.nomusuario;
-        const pass = req.body.pass;
+        try {
+                const usuario = req.body.nomusuario;
+                const pass = req.body.pass;
+                
+                // ✅ SEGURO: Prepared statement previene SQL Injection
+                const read_query = `SELECT idrepartidor, nombre, apellido, ciudad, usuario, pass, idsede_suscrito, telefono  
+                        FROM repartidor 
+                        WHERE usuario = ? 
+                        AND estado = 0`;
 
-        // console.log('passs ', req.body);
-        
-        // let read_query = "SELECT u.* FROM usuario u inner join sede s on u.idsede = s.idsede inner join sede_estado se on s.idsede = se.idsede WHERE u.usuario = '" + usuario + "' and POSITION('A2' IN u.acc) > 0 and u.estado = 0 and se.is_bloqueado = 0 and se.is_baja=0 and u.estadistica=1";
-        // let read_query = "SELECT u.* FROM usuario u WHERE u.usuario = '" + usuario + "' and u.estado = 0";
-        let read_query = "SELECT idrepartidor, nombre, apellido, ciudad, usuario, pass, idsede_suscrito, telefono  FROM repartidor WHERE usuario = '" + usuario + "' and estado = 0";                
-        // console.log(read_query);
+                // const rows = await sequelize.query(read_query, { 
+                //         replacements: [usuario],
+                //         type: sequelize.QueryTypes.SELECT 
+                // });
 
-        sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })
-                .then(function (rows) {
-                        
-                        const result =  pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
-                        if (!result) {
-                                return ReE(res, 'Credenciales Incorrectas.');
-                                // return ReE(res, { usuario: rows[0], error: 'Credenciales Incorrectas' });
-                        }
+                const rows = await QueryServiceV1.ejecutarConsulta(read_query, [usuario], 'SELECT', 'loggerUsAutorizadoRepartidor');
+                
+                // ✅ Validar que el repartidor exista
+                if (!rows || rows.length === 0) {
+                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                }
 
-                        // var p = rows[0].pass;
-                        // console.log('pass ', p);        
-                        var p = rows[0].pass;
-                        p = Buffer.from(p).toString('base64');
-                        console.log('pass ', p);                        
-                        rows[0].pass = p;
+                // TODO: Activar bcrypt en siguiente paso
+                const result = pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
+                if (!result) {
+                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                }
 
-                        // console.log('usuario logueado ', rows[0]);
-                        
-                        const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: '2d'});
-                        
-                        // no caduca
-                        // const payloadTojen = {
-                        //         idusuario: rows[0].idrepartidor,
-                        //         idsede_suscrito: rows[0].idsede_suscrito
-                        // }
+                var p = rows[0].pass;
+                p = Buffer.from(p).toString('base64');                        
+                rows[0].pass = p;
+                
+                const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: '2d'});
 
-                        // const token = jwt.sign({ usuario: payloadTojen }, SEED, { expiresIn: '2d' });
+                return ReS(res, { usuario: rows[0], token: token });
 
-                        return ReS(res, { usuario: rows[0], token: token });
-
-                })
-                .catch((err) => { return ReE(res, err); });
+        } catch (err) {
+                loggerPino.error({ err, usuario: req.body.nomusuario }, 'Error en login repartidor');
+                return ReE(res, 'Error al procesar login', 500);
+        }
 }
 
 module.exports.loggerUsAutorizadoRepartidor = loggerUsAutorizadoRepartidor;
@@ -140,38 +165,46 @@ module.exports.loggerUsAutorizadoRepartidor = loggerUsAutorizadoRepartidor;
 
 // pwa-app-pedido
 const loggerUsAutorizadoPacman = async function (req, res) {
-        const usuario = req.body.nomusuario;
-        const pass = req.body.pass;
+        try {
+                const usuario = req.body.nomusuario;
+                const pass = req.body.pass;
 
-        // console.log('passs ', req.body);
+                // ✅ SEGURO: Prepared statement previene SQL Injection
+                const read_query = `SELECT * FROM usuario 
+                        WHERE usuario = ? 
+                        AND pacman = 1 
+                        AND estado = 0`;
 
-        let read_query = "SELECT * FROM `usuario` WHERE `usuario` = '" + usuario + "' and pacman = 1 and estado = 0";
-        console.log(read_query);
+                // const rows = await sequelize.query(read_query, { 
+                //         replacements: [usuario],
+                //         type: sequelize.QueryTypes.SELECT 
+                // });
 
-        sequelize.query(read_query, { type: sequelize.QueryTypes.SELECT })
-                .then(function (rows) {
-                        
-                        const result =  pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
-                        if (!result) {
-                                return ReE(res, 'Credenciales Incorrectas.');
-                                // return ReE(res, { usuario: rows[0], error: 'Credenciales Incorrectas' });
-                        }
+                const rows = await QueryServiceV1.ejecutarConsulta(read_query, [usuario], 'SELECT', 'loggerUsAutorizadoPacman');
+                
+                // ✅ Validar que el usuario exista
+                if (!rows || rows.length === 0) {
+                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                }
 
-                        // var p = rows[0].pass;
-                        // console.log('pass ', p);        
-                        var p = rows[0].pass;
-                        p = Buffer.from(p).toString('base64');
-                        console.log('pass ', p);                        
-                        rows[0].pass = p;
+                // TODO: Activar bcrypt en siguiente paso
+                const result = pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
+                if (!result) {
+                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                }
 
-                        // console.log('usuario logueado ', rows[0]);
-                        
-                        const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: '2d' });
+                var p = rows[0].pass;
+                p = Buffer.from(p).toString('base64');                        
+                rows[0].pass = p;
+                
+                const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: '2d' });
 
-                        return ReS(res, { usuario: rows[0], token: token });
+                return ReS(res, { usuario: rows[0], token: token });
 
-                })
-                .catch((err) => { return ReE(res, err); });
+        } catch (err) {
+                loggerPino.error({ err, usuario: req.body.nomusuario }, 'Error en login pacman');
+                return ReE(res, 'Error al procesar login', 500);
+        }
 }
 
 module.exports.loggerUsAutorizadoPacman = loggerUsAutorizadoPacman;

@@ -161,6 +161,89 @@ class QueryServiceV1 {
             throw err;
         }
     }
+
+    /**
+     * Ejecuta un procedimiento almacenado y retorna Object.values(result[0])
+     * Patrón común usado en apiRepartidor.js
+     * @param {String} query - Llamada al procedimiento almacenado
+     * @param {Array} replacements - Parámetros para el procedimiento
+     * @param {String} errorContext - Contexto del error para logging
+     * @returns {Promise<Array|null>} - Resultado del procedimiento o null si hay error
+     */
+    static async ejecutarProcedimiento(query, replacements = [], errorContext = 'procedimiento') {
+        try {
+            const result = await sequelize.query(query, {
+                replacements,
+                type: QueryTypes.SELECT
+            });
+
+            // 🆕 Validar que result[0] existe antes de hacer Object.values
+            if (!result || !result[0] || typeof result[0] !== 'object') {
+                console.debug(`⚠️ ${errorContext}: Procedimiento no retornó datos válidos`, { result });
+                return [];
+            } else {
+                return Object.values(result[0]);
+            }
+
+
+            // return Object.values(result[0]);
+        } catch (err) {
+            console.error(`❌ Error en ${errorContext}:`, err.message);
+            return null;
+        }
+    }
+
+    /**
+     * Ejecuta una consulta UPDATE/INSERT/DELETE con manejo de errores
+     * Patrón común usado en apiRepartidor.js
+     * @param {String} query - Consulta SQL a ejecutar
+     * @param {Array} replacements - Parámetros para la consulta
+     * @param {String} queryType - Tipo de consulta (UPDATE, INSERT, DELETE)
+     * @param {String} errorContext - Contexto del error para logging
+     * @returns {Promise<boolean>} - true si exitoso, false si hay error
+     */
+    static async ejecutarConsulta(query, replacements = [], queryType = 'UPDATE', errorContext = 'consulta') {
+        try {
+
+            if (!queryType) {
+                // detectamos egun el query
+                const queryUpper = query.trim().toUpperCase();
+                if (queryUpper.startsWith('UPDATE')) {
+                    queryType = 'UPDATE';
+                } else if (queryUpper.startsWith('INSERT')) {
+                    queryType = 'INSERT';
+                } else if (queryUpper.startsWith('DELETE')) {
+                    queryType = 'DELETE';
+                } else if (queryUpper.startsWith('SELECT')) {
+                    queryType = 'SELECT';
+                }
+            } 
+            
+            const typeMap = {
+                'UPDATE': QueryTypes.UPDATE,
+                'INSERT': QueryTypes.INSERT,
+                'DELETE': QueryTypes.DELETE,
+                'SELECT': QueryTypes.SELECT
+            };
+
+            if (queryType === 'SELECT') {
+                return await sequelize.query(query, {
+                    replacements,
+                    type: typeMap[queryType]
+                });
+            } else {
+                await sequelize.query(query, {
+                    replacements,
+                    type: typeMap[queryType]
+                });
+                return true;
+            }
+            
+        } catch (err) {
+            console.error(`❌ Error en ${errorContext}:`, err.message);
+            return queryType === 'SELECT' ? [] : false;
+        }
+    }
 }
 
 module.exports = QueryServiceV1;

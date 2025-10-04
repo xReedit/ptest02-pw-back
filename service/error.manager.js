@@ -1,7 +1,7 @@
 let config = require('../_config');
 let Sequelize = require('sequelize');
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
-
+const logger = require('../utilitarios/logger');
 
 // registrar errores
 const logError = function (payload) {
@@ -10,7 +10,7 @@ const logError = function (payload) {
         let errorString = JSON.stringify(data);        
         errorString = errorString.replace(/'/g, "\\'");
         const query = `INSERT INTO historial_error (error, origen, fecha) VALUES ('${errorString}', '${data.origen}', NOW())`;
-        console.log(query);
+        logger.debug(query);
             
         sequelize.query(query, { type: sequelize.QueryTypes.INSERT })
             // .then(function (rows) {
@@ -18,8 +18,7 @@ const logError = function (payload) {
             // })
             // .catch((err) => { console.error('Error logging error:', err); });
     } catch (error) {
-        
-        console.error('Error logging error:', error);        
+        logger.error('Error logging error:', error);        
     }
 }
 module.exports.logError = logError;

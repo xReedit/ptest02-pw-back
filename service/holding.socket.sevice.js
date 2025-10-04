@@ -46,7 +46,7 @@ function connectSocket(infoUser) {
         });
 
         socketHolding.on('connect', () => {
-            console.log('socket connected');            
+            // console.log('socket connected');            
             resolve(socketHolding);            
         });
 

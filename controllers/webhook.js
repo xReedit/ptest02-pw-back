@@ -1,5 +1,6 @@
 const { to, ReE, ReS } = require('../service/uitl.service');
 const crypto = require('crypto');
+const logger = require('../utilitarios/logger');
 
 // Función para validar la firma
 function validarFirmaWebhook(payload, signature, secretKey) {
@@ -23,14 +24,14 @@ const setWebhookCobranza = async function (req, res) {
     // Validar firma si existe
     if (signature && secretKey) {
         if (!validarFirmaWebhook(req.body, signature, secretKey)) {
-            console.error('❌ Firma inválida - posible ataque');
+            logger.error('❌ Firma inválida - posible ataque');
             return res.status(401).json({ error: 'Firma inválida' });
         }
-        console.log('✅ Firma validada correctamente');
+        logger.debug('✅ Firma validada correctamente');
     }
 
     // Procesar webhook
-    console.log('🎯 Webhook válido recibido:', req.body);
+    logger.debug('🎯 Webhook válido recibido:', req.body);
     res.status(200).json({ success: true });
 }
 module.exports.setWebhookCobranza = setWebhookCobranza;

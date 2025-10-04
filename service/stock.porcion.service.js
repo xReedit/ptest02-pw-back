@@ -81,10 +81,14 @@ class StockPorcionService {
         }
         
         const { iditem, cantidadProducto, idsede, idusuario, idpedido, tipoMovimiento, esReset } = params;
+
+        logger.debug({ MAX_RETRIES: CONFIG.MAX_RETRIES, RETRY_DELAY_MS: CONFIG.RETRY_DELAY_MS }, 'llegamos a los parametros CONFIG');
         
         // Retry loop para manejar deadlocks
         while (attempt < CONFIG.MAX_RETRIES) {
             attempt++;
+
+            logger.debug({ attempt }, '📦 [stock.porcion.service] Intentando actualizar stock con historial');
             
             try {
                 // Iniciar transacción con configuración optimizada
@@ -95,6 +99,8 @@ class StockPorcionService {
                 
                 // Paso 1: Obtener receta del item (qué porciones consume)
                 const receta = await this._obtenerRecetaItem(iditem, transaction);
+
+                logger.debug({ receta, iditem }, '📦 [stock.porcion.service] Receta obtenida');
                 
                 if (!receta || receta.length === 0) {
                     await transaction.commit();
@@ -105,6 +111,8 @@ class StockPorcionService {
                         ejecutionTime: Date.now() - startTime
                     };
                 }
+
+                logger.debug({ receta }, '📦 [stock.porcion.service] Receta obtenida');
                 
                 // Paso 2: Lock pesimista en las porciones (evita race conditions)
                 const porcionesIds = receta.map(r => r.idporcion).filter(id => id > 0);
@@ -112,10 +120,15 @@ class StockPorcionService {
                 
                 // NOTA: NO validamos stock aquí porque el procedimiento almacenado ya lo hizo
                 // Si llegamos aquí es porque el procedimiento ejecutó correctamente
+
+                logger.debug({ porcionesConLock }, '📦 [stock.porcion.service] Porciones con lock obtenidas');
                 
                 // Paso 3: SOLO obtener el stock actual (NO actualizar, eso lo hace el procedimiento)
                 // El procedimiento almacenado YA actualizó el stock, solo necesitamos registrar el historial
                 const porcionesActualizadas = await this._obtenerStockActualPorciones(receta, transaction);
+
+                logger.debug({ porcionesActualizadas }, '📦 [stock.porcion.service] Porciones actualizadas obtenidas');
+                
                 // Paso 5: Registrar movimientos en historial
                 await this._registrarMovimientosHistorial(
                     porcionesActualizadas,
@@ -505,11 +518,16 @@ class StockPorcionService {
      * @private
      */
     static async _registrarMovimientosHistorial(porcionesActualizadas, datosBase, transaction) {
+        logger.debug({ porcionesActualizadas, datosBase }, '📦 [stock.porcion.service] Registrando movimientos en porcion_historial');
         const { iditem, cantidadProducto, idsede, idusuario, idpedido, tipoMovimiento } = datosBase;
         
         const tipoMovConfig = CONFIG.TIPO_MOVIMIENTO[tipoMovimiento] || CONFIG.TIPO_MOVIMIENTO.VENTA;
         
         for (const porcion of porcionesActualizadas) {
+            const cantidad = Math.abs(porcion.cantidadAjustada);
+
+            logger.debug({ cantidad }, '📦 [stock.porcion.service] Registrando movimiento en porcion_historial');
+
             const query = `
                 INSERT INTO porcion_historial (
                     tipo_movimiento,

@@ -319,7 +319,8 @@ class ItemService {
             
             // Usar la nueva implementación para manejar deadlocks y reintentos
             const jsonParam = JSON.stringify(_itemProcessPorcion);
-            updatedItem = await QueryServiceV1.emitirRespuestaSP('call procedure_stock_item_porcion(?)', [jsonParam]);
+            logger.info({ jsonParam }, '📦 [item.v1] Llamando a procedure_stock_item_porcion');
+            updatedItem = await QueryServiceV1.ejecutarProcedimiento('call procedure_stock_item_porcion(?)', [jsonParam], 'processItemPorcion');
             
             // console.log('✅ [item.v1] procedure_stock_item_porcion exitoso');
             
@@ -340,8 +341,18 @@ class ItemService {
                     tipoMovimiento = 'VENTA_DEVOLUCION'; // Cancelación/devolución (aumenta)
                 }
                 
+                logger.debug({ 
+                    iditem: item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem,
+                    cantidadProducto: Math.abs(item.cantidadSumar || item.cantidad_reset || 1),
+                    idsede: item.idsede || 1,
+                    idusuario: item.idusuario || 1,
+                    idpedido: item.idpedido || null,
+                    tipoMovimiento: tipoMovimiento,
+                    esReset: esReset
+                }, '📦 [item.v1] Llamando a actualizarStockConHistorial');
+                
                 const resultadoPorciones = await StockPorcionService.actualizarStockConHistorial({
-                    iditem: item.iditem,
+                    iditem: item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem,
                     cantidadProducto: Math.abs(item.cantidadSumar || item.cantidad_reset || 1),
                     idsede: item.idsede || 1,
                     idusuario: item.idusuario || 1,

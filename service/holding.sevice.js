@@ -1,6 +1,7 @@
 const apiPwa = require('../controllers/apiPwa_v1');
 const apiHolding = require('../controllers/apiHolding');
 const cocinarArrayPrinter = require('../service/cocinar.array.printer')
+const logger = require('../utilitarios/logger');
 
 async function proccessSavePedidoHolding(dataSend, io) {    
     // console.log('object dataSend', JSON.stringify(dataSend));  
@@ -191,7 +192,6 @@ async function handlePedidoPrinting(io, chanelMarca, dataRpt, impresora) {
         
 
         if (!impresora || !impresora[0]) {
-            console.log('Printer configuration not found');
             return;
         }
 
@@ -321,10 +321,10 @@ async function savePedidosAgrupados(pedidosAgrupados, arrSubtotales, io, onlyMoz
                 pedidosParaPago[0].dataPedido,
                 consolidatedPedidoDetails                
             );
-            console.log('rptPago === ', JSON.stringify(rptPago));
+            logger.debug({ rptPago }, 'rptPago === ');
             
         } catch (error) {
-            console.error('Error saving consolidated payment:', error);
+            logger.error({ error }, 'Error saving consolidated payment');
         }
     }
 

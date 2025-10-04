@@ -1,10 +1,11 @@
 // const { use } = require("../routes/v3");
+const logger = require('../utilitarios/logger');
 let socketIO;
 let socketPP;
 const connection = function (dataCliente, socket, io) {    
     socketIO = io;
     socketPP = socket;
-    console.log('Cliente conectado: ' + JSON.stringify(dataCliente));
+    logger.debug('Cliente conectado: ' + JSON.stringify(dataCliente));
     socket.emit('roomMessage', dataCliente);
     
     let apiRoutes = getApiRoutes();
@@ -31,9 +32,9 @@ const testPinPad = async (payload) => {
 }
 
 const transaccionPinPad = async (payload) => {    
-    console.log('payload', payload);
+    logger.debug('payload', payload);
     const transaction = getBaseTransaction(payload.transaction);
-    console.log('baseTransaction', transaction);    
+    logger.debug('baseTransaction', transaction);    
 
     return assignRoomAndListen(payload.pinPadSN, 'transaccionApiPinPad', 'transaccionApiPinPadResponse', transaction, 60000);    
 }
@@ -77,7 +78,7 @@ const convertAmount = (amount) => {
 const assignRoomAndListen = async (pinPadSN, eventToEmit, responseEvent, payload = {}, timeout = 10000) => {
     const room = getRoom(pinPadSN);
     return new Promise(async (resolve, reject) => {
-        console.log('room pinpad =====>> ', room, 'eventToEmit ===>> ', eventToEmit);
+        logger.debug('room pinpad =====>> ', room, 'eventToEmit ===>> ', eventToEmit);
         
         // Emitir el evento al room
         socketIO.to(room).emit(eventToEmit, payload);
@@ -85,7 +86,7 @@ const assignRoomAndListen = async (pinPadSN, eventToEmit, responseEvent, payload
         try {
             // Obtener todos los sockets en la sala
             const sockets = await socketIO.in(room).allSockets();
-            console.log('Sockets en la sala:', Array.from(sockets));
+            logger.debug('Sockets en la sala:', Array.from(sockets));
             
             if (sockets.size === 0) {
                 reject({ success: false, message: 'PinPad no disponible' });
@@ -123,7 +124,7 @@ const assignRoomAndListen = async (pinPadSN, eventToEmit, responseEvent, payload
 
 function getRoom(pinPadSN) {
     let chanelRoom = `pinpad-${pinPadSN}`;
-    console.log('chanelRoom conectado ', chanelRoom);
+    logger.debug('chanelRoom conectado ', chanelRoom);
     return chanelRoom;
 }
 

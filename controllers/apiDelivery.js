@@ -1,11 +1,13 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
-let Sequelize = require('sequelize');
+// let Sequelize = require('sequelize');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 let logger = require('../utilitarios/logger');
 
-let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+// ✅ SEGURO: Conexión centralizada
+const sequelize = require('../config/database');
+const QueryServiceV1 = require('../service/query.service.v1');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
@@ -226,8 +228,12 @@ module.exports.getCalificacionSede = getCalificacionSede;
 
 const getSharedUrlCarta = async function (req, res) {
 	const idsede = req.body.idsede;
-    const read_query = `call procedure_generator_qr_mesa(${idsede})`;
-    return await emitirRespuestaSP_RES(read_query, res);       
+    // const read_query = `call procedure_generator_qr_mesa(${idsede})`;
+    // return await emitirRespuestaSP_RES(read_query, res);    
+    
+    const query = `CALL procedure_generator_qr_mesa(?)`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [idsede], 'getSharedUrlCarta');
+    return ReS(res, { data: rows });
 }
 module.exports.getSharedUrlCarta = getSharedUrlCarta;
 

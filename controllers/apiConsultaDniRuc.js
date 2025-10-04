@@ -9,11 +9,13 @@ let managerFilter = require('../utilitarios/filters');
 const url_service = 'https://restobar.papaya.com.pe/consulta/';
 let logger = require('../utilitarios/logger');
 
-let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+// let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+// const sequelize = require('../config/database');
+const QueryServiceV1 = require('../service/query.service.v1');
 
-let mysql_clean = function (string) {
-        return sequelize.getQueryInterface().escape(string);
-};
+// let mysql_clean = function (string) {
+//         return sequelize.getQueryInterface().escape(string);
+// };
 
 
 // consulta dni o ruc del cliente si no encuentra en la bd lo busca en el servicio
@@ -23,8 +25,11 @@ const getConsultaDatosCliente = async function (req, res) {
     // const idorg = req.body.idorg;
     const servicio = req.body.servicio; // dni o ruc
     
-	const read_query = `SELECT * FROM cliente where (estado=0 and ruc='${doc}') limit 1`;
-    const response = await emitirRespuesta(read_query);
+	// const read_query = `SELECT * FROM cliente where (estado=0 and ruc='${doc}') limit 1`;
+    // const response = await emitirRespuesta(read_query);
+
+	const read_query = `SELECT * FROM cliente where (estado=0 and ruc=? limit 1`;
+    const response = await QueryServiceV1.ejecutarConsulta(read_query, [doc], 'SELECT', 'getConsultaDatosCliente');
 
     logger.debug('response dni', response);
     logger.debug('response dni length', response.length);
@@ -46,51 +51,56 @@ const getConsultaDatosCliente = async function (req, res) {
 }
 module.exports.getConsultaDatosCliente = getConsultaDatosCliente;
 
-const setGuardarClienteNuevo = function (req, res) {	
+const setGuardarClienteNuevo = async function (req, res) {	
     const idorg = managerFilter.getInfoToken(req,'idorg');
     const dataCliente = req.body.cliente;    
     
-    const read_query = `call procedure_pwa_guardar_nuevo_cliente(${idorg}, '${JSON.stringify(dataCliente)}');`;	
-    emitirRespuestaSP_RES(read_query, res);
+    // const read_query = `call procedure_pwa_guardar_nuevo_cliente(${idorg}, '${JSON.stringify(dataCliente)}');`;	
+    // emitirRespuestaSP_RES(read_query, res);
+	const read_query = `call procedure_pwa_guardar_nuevo_cliente(?, ?);`;	    
+	const response = await QueryServiceV1.ejecutarProcedimiento(read_query, [idorg, JSON.stringify(dataCliente)], 'getConsultaDatosCliente');
 
+	return ReS(res, {
+		data: response
+	});
 }
 module.exports.setGuardarClienteNuevo = setGuardarClienteNuevo;
 
 
-function emitirRespuesta(xquery, res) {
-	logger.debug(xquery);
-	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
-	.then(function (rows) {
+// function emitirRespuesta(xquery, res) {
+// 	logger.debug(xquery);
+// 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+// 	.then(function (rows) {
 		
-		// return ReS(res, {
-		// 	data: rows
-		// });
-		return rows;
-	})
-	.catch((err) => {
-		return false;
-	});
-}
+// 		// return ReS(res, {
+// 		// 	data: rows
+// 		// });
+// 		return rows;
+// 	})
+// 	.catch((err) => {
+// 		return false;
+// 	});
+// }
 
-function emitirRespuestaSP_RES(xquery, res) {
-	logger.debug(xquery);
-	sequelize.query(xquery, {		
-		type: sequelize.QueryTypes.SELECT
-	})
-	.then(function (rows) {
+// function emitirRespuestaSP_RES(xquery, res) {
+// 	logger.debug(xquery);
+// 	sequelize.query(xquery, {		
+// 		type: sequelize.QueryTypes.SELECT
+// 	})
+// 	.then(function (rows) {
 
-		// convertimos en array ya que viene en object
-		var arr = [];
-		arr = Object.values(rows[0]) ;
+// 		// convertimos en array ya que viene en object
+// 		var arr = [];
+// 		arr = Object.values(rows[0]) ;
 		
-		return ReS(res, {
-			data: arr
-		});
-	})
-	.catch((err) => {
-		return ReE(res, err);
-	});
-}
+// 		return ReS(res, {
+// 			data: arr
+// 		});
+// 	})
+// 	.catch((err) => {
+// 		return ReE(res, err);
+// 	});
+// }
 
 
 

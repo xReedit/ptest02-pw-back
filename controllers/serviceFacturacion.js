@@ -13,9 +13,11 @@ let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 
 const fetch = require("node-fetch");
+const logger = require('../utilitarios/logger');
 // var FormData = require('form-data');
 let url_restobar = config.URL_RESTOBAR;
 let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
@@ -194,13 +196,11 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
 
         }
 
-        console.log(jsonData);
-
+        
         // envia a sunat
        const rptPrint = await xSendApiSunat(xArrayEncabezado.authorization_api_comprobante, jsonData, xArrayComprobante.idtipo_comprobante_serie);
 
-
-       console.log('rptPrint', rptPrint);
+       
     // });
 
     // mandamos a imprimir 
@@ -234,7 +234,7 @@ function xJsonSunatCocinarItemDetalle(orden, ValorIGV, isExoneradoIGV) {
     const xListItemsRpt = [];
     const procentaje_IGV = parseFloat(parseFloat(ValorIGV)/100);
 
-    console.log('orden ============= > ', orden);
+    logger.debug('orden ============= > ', orden);
     // var valor_referencial_unitario_por_item_en_operaciones_no_onerosas_y_codigo = {"monto_de_valor_referencial_unitario": "01", "codigo_de_tipo_de_precio": "02"};
     // orden[0].items.map(items => {
         orden[0].items.map( (x, index) => {
@@ -357,8 +357,6 @@ async function xSendApiSunat(authorization_api_comprobante, json_xml, idtipo_com
     const _idregistro_p = '';
     const _viene_facturador = 0;
     
-    console.log('_headers', _headers);
-    console.log('JSON.stringify(json_xml)', JSON.stringify(json_xml));
     //xPopupLoad.xopen();
     // xm_all_xToastOpen("Conectando con Sunat...");
 
@@ -368,8 +366,7 @@ async function xSendApiSunat(authorization_api_comprobante, json_xml, idtipo_com
         body: JSON.stringify(json_xml),
     }).then(function (response) {
         return response.json();
-    }).then(function (res) { 
-        console.log('success cpe', res);
+    }).then(function (res) {         
         const errSoap = res.response ? res.response.error_soap : false;
         // if (res.success || !errSoap) { // respuesta ok
             rpt.ok = true; 
@@ -393,7 +390,6 @@ async function xSendApiSunat(authorization_api_comprobante, json_xml, idtipo_com
 
             return rpt;
     }).catch(async function (error) { // error de conexion o algo pero imprime
-        console.log('error cpe', error);
 
         const data = {
                 pdf:'0',
@@ -502,7 +498,7 @@ function xCeroIzq(Num, CantidadCeros){
 async function CpeInterno_Error(data, _idregistro_p, _viene_facturador, idtipo_comprobante_serie) {
   let dataSave = {};
 
-  console.log(' error  CpeInterno_Error', data);
+  logger.debug(' error  CpeInterno_Error', data);
 
   dataSave = data;
   dataSave.estado_api = 1;

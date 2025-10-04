@@ -1,5 +1,5 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
-let Sequelize = require('sequelize');
+// let Sequelize = require('sequelize');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
@@ -8,7 +8,8 @@ let socketHoldingService = require('../service/holding.socket.sevice');
 const holdingService = require('../service/holding.sevice');
 let logger = require('../utilitarios/logger');
 
-let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+// let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+const sequelize = require('../config/database');
 
 const emitirRespuesta = async (xquery) => {    
     try {

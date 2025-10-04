@@ -2,6 +2,7 @@
 // evniar mensajes al whatsapp 112023
 
 let config = require('../_config');
+const logger = require('../utilitarios/logger');
 
 // --- Arrays de saludos y frases cordiales ---
 
@@ -160,11 +161,11 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 
 		const roomNameMensajeria = `mensajeria_${dataSocket.idorg}${dataSocket.idsede}`;
 
-		console.log('dataMsj ===========> aa ==', dataMsj);
+		logger.debug('dataMsj ===========> aa ==', dataMsj);
 		dataMsj = typeof dataMsj !== 'object' ? JSON.parse(dataMsj) : dataMsj;
 		const tipo = dataMsj.tipo;
 
-		console.log("tipo === ", tipo)
+		logger.debug("tipo === ", tipo)
 
 		var _sendServerMsj = {telefono: 0, msj: '', tipo: 0};
 		var msj;
@@ -326,7 +327,7 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 			];
 
 
-			console.log('enviado a mensajeria:', roomNameMensajeria, ' la lista de menesjaes: ', listMessages);
+			logger.debug('enviado a mensajeria:', roomNameMensajeria, ' la lista de menesjaes: ', listMessages);
 			io.to(roomNameMensajeria).emit('send_message', listMessages);
 		}
 
@@ -439,7 +440,7 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 			_sendServerMsj.msj = dataMsj.msj
 		}
 
-		console.log('_sendServerMsj === ', _sendServerMsj);
+		logger.debug('_sendServerMsj === ', _sendServerMsj);
 
 
 		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);

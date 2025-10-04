@@ -1,17 +1,15 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
-let Sequelize = require('sequelize');
 let errorManager = require('../service/error.manager');
-// let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
-// let utilitarios = require('../utilitarios/fecha.js');
 
 let handleStock = require('../service/handle.stock.v1');
-// let handleStock = require('../service/handle.stock');
-
 let logger = require('../utilitarios/logger');
 
-let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+// ✅ IMPORTANTE: Usar instancia centralizada de Sequelize
+const sequelize = require('../config/database');
+// const { Sequelize } = require('sequelize');
+const QueryServiceV1 = require('../service/query.service.v1');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
@@ -96,13 +94,20 @@ const ejecutarQuery = async (query) => {
 const setClienteConectado = async ({ idcliente, socketid }) => {
     if (!idcliente) return false;
 
-    const query = `
-        INSERT INTO cliente_socketid (idcliente, socketid, conectado)
-        VALUES (${idcliente}, '${socketid}', '1')
-        ON DUPLICATE KEY UPDATE socketid = '${socketid}', conectado = '1';
-    `;
+    // const query = `
+    //     INSERT INTO cliente_socketid (idcliente, socketid, conectado)
+    //     VALUES (${idcliente}, '${socketid}', '1')
+    //     ON DUPLICATE KEY UPDATE socketid = '${socketid}', conectado = '1';
+    // `;
 
-    return await ejecutarQuery(query);
+    // return await ejecutarQuery(query);
+
+    // ✅ SEGURO: Prepared statement
+    const query = `INSERT INTO cliente_socketid (idcliente, socketid, conectado)
+    VALUES (?, ?, '1')
+    ON DUPLICATE KEY UPDATE socketid = ?, conectado = '1';`;
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [idcliente, socketid], 'INSERT', 'setClienteConectado');
+    return rows;
 };
 module.exports.setClienteConectado = setClienteConectado;
 
@@ -120,13 +125,15 @@ module.exports.setClienteConectado = setClienteConectado;
 const setClienteDesconectado = async ({ idcliente, socketid }) => {
     if (!idcliente || idcliente === 'undefined') return false;
 
-    const query = `
-        UPDATE cliente_socketid
-        SET conectado = '0'
-        WHERE idcliente = '${idcliente}';
-    `;
+    // const query = `
+    //     UPDATE cliente_socketid
+    //     SET conectado = '0'
+    //     WHERE idcliente = '${idcliente}';
+    // `;
 
-    return await ejecutarQuery(query);
+    // return await ejecutarQuery(query);
+    const query = `UPDATE cliente_socketid SET conectado = '0' WHERE idcliente = ?;`;
+    QueryServiceV1.ejecutarConsulta(query, [idcliente], 'UPDATE', 'setClienteDesconectado');
 };
 module.exports.setClienteDesconectado = setClienteDesconectado;
 
@@ -141,13 +148,15 @@ module.exports.setClienteDesconectado = setClienteDesconectado;
 
 
 const getSocketIdCliente = async (listIdCliente) => {
-    const query = `
-        SELECT socketid
-        FROM cliente_socketid
-        WHERE idcliente IN (${listIdCliente});
-    `;
+    // const query = `
+    //     SELECT socketid
+    //     FROM cliente_socketid
+    //     WHERE idcliente IN (${listIdCliente});
+    // `;
 
-    return await ejecutarQuery(query);
+    // return await ejecutarQuery(query);
+    const query = `SELECT socketid FROM cliente_socketid WHERE idcliente IN (${listIdCliente});`;
+    return await QueryServiceV1.ejecutarConsulta(query, [], 'SELECT', 'getSocketIdCliente');    
 };
 module.exports.getSocketIdCliente = getSocketIdCliente;
 
@@ -170,9 +179,12 @@ const getObjCarta = async (dataCliente) => {
     const { idorg, idsede, iscliente } = dataCliente;
     const isClienteValue = iscliente === 'true' ? 1 : 0;
 
-    const query = `CALL porcedure_pwa_pedido_carta(${idorg}, ${idsede}, ${isClienteValue})`;
-    logger.debug({ query }, 'Obteniendo carta');
-    return await emitirRespuestaSP(query);
+    // const query = `CALL porcedure_pwa_pedido_carta(${idorg}, ${idsede}, ${isClienteValue})`;
+    // logger.debug({ query }, 'Obteniendo carta');
+    // return await emitirRespuestaSP(query);
+    const query = `CALL porcedure_pwa_pedido_carta(?, ?, ?)`;
+    return await QueryServiceV1.ejecutarProcedimiento(query, [idorg, idsede, isClienteValue], 'getObjCarta');
+
 };
 module.exports.getObjCarta = getObjCarta;
 
@@ -193,8 +205,10 @@ module.exports.getObjCarta = getObjCarta;
 const getDataSede = async (dataCliente) => {
     const { idorg, idsede } = dataCliente;
 
-    const query = `CALL procedure_pwa_pedido_dataorg(${idorg}, ${idsede})`;
-    return await emitirRespuestaSP(query);
+    // const query = `CALL procedure_pwa_pedido_dataorg(${idorg}, ${idsede})`;
+    // return await emitirRespuestaSP(query);
+    const query = `CALL procedure_pwa_pedido_dataorg(?, ?)`;
+    return await QueryServiceV1.ejecutarProcedimiento(query, [idorg, idsede], 'getDataSede');
 };
 module.exports.getDataSede = getDataSede;
 
@@ -211,8 +225,10 @@ module.exports.getDataSede = getDataSede;
 const getDataSedeDescuentos = async (dataCliente) => {
     const { idsede } = dataCliente;
 
-    const query = `CALL procedure_pwa_sede_descuentos(${idsede})`;
-    return await emitirRespuestaSP(query);
+    // const query = `CALL procedure_pwa_sede_descuentos(${idsede})`;
+    // return await emitirRespuestaSP(query);
+    const query = `CALL procedure_pwa_sede_descuentos(?)`;
+    return await QueryServiceV1.ejecutarProcedimiento(query, [idsede], 'getDataSedeDescuentos');
 };
 module.exports.getDataSedeDescuentos = getDataSedeDescuentos;
 
@@ -227,11 +243,13 @@ module.exports.getDataSedeDescuentos = getDataSedeDescuentos;
 
 const getTipoConsumo = async (dataCliente) => {
     const { idorg, idsede } = dataCliente;
-    const query = `
-        SELECT idtipo_consumo, descripcion, titulo, idimpresora 
-        FROM tipo_consumo 
-        WHERE (idorg = ${idorg} AND idsede = ${idsede}) AND estado = 0`;
-    return await emitirRespuesta(query);
+    // const query = `
+    //     SELECT idtipo_consumo, descripcion, titulo, idimpresora 
+    //     FROM tipo_consumo 
+    //     WHERE (idorg = ${idorg} AND idsede = ${idsede}) AND estado = 0`;
+    // return await emitirRespuesta(query);
+    const query = `SELECT idtipo_consumo, descripcion, titulo, idimpresora FROM tipo_consumo WHERE (idorg = ? AND idsede = ?) AND estado = 0`;
+    return await QueryServiceV1.ejecutarConsulta(query, [idorg, idsede], 'SELECT', 'getTipoConsumo');
 };
 module.exports.getTipoConsumo = getTipoConsumo;
 
@@ -250,8 +268,11 @@ module.exports.getTipoConsumo = getTipoConsumo;
 
 const getReglasCarta = async (dataCliente) => {
     const { idorg, idsede } = dataCliente;
-    const query = `CALL procedure_pwa_reglas_carta_subtotales(${idorg}, ${idsede})`;
-    return await emitirRespuestaSP(query);
+    // const query = `CALL procedure_pwa_reglas_carta_subtotales(${idorg}, ${idsede})`;
+    // return await emitirRespuestaSP(query);
+
+    const query = `CALL procedure_pwa_reglas_carta_subtotales(?, ?)`;
+    return await QueryServiceV1.ejecutarProcedimiento(query, [idorg, idsede], 'getReglasCarta');
 };
 module.exports.getReglasCarta = getReglasCarta;
 
@@ -473,12 +494,14 @@ const setNuevoPedido = async (dataCliente, dataPedido) => {
 
 
 
-    const query = `CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
+    // const query = `CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
+    const query = `CALL procedure_pwa_pedido_guardar(?, ?, ?, ?)`;
     logger.debug({ idorg, idsede, idusuario }, 'Ejecutando procedure_pwa_pedido_guardar');
     // return await emitirRespuestaSP(query);
 
     try {
-        return await emitirRespuestaSP(query);
+        // return await emitirRespuestaSP(query);
+        return await QueryServiceV1.ejecutarProcedimiento(query, [idorg, idsede, idusuario, _json], 'setNuevoPedido');        
     } catch (error) {
         return ReE(res, error);
     }
@@ -543,10 +566,12 @@ const setNuevoPedido2 = async (req, res) => {
     // 2. Convertir a JSON y escapar comillas simples para SQL
     const _json = JSON.stringify(cleanObject).replace(/'/g, "\\'");
     
-    const query = `CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
+    // const query = `CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
+    const query = `CALL procedure_pwa_pedido_guardar(?, ?, ?, ?)`;
 
     try {
-        return await emitirRespuestaSP_RES(query, res);
+        // return await emitirRespuestaSP_RES(query, res);
+        return await QueryServiceV1.ejecutarProcedimiento(query, [idorg, idsede, idusuario, _json], 'setNuevoPedido2');        
     } catch (error) {
         return ReE(res, error);
     }
@@ -561,8 +586,11 @@ module.exports.setNuevoPedido2 = setNuevoPedido2;
 
 const setPrintComanda = async (dataCliente, dataPrint) => {
     const { idorg, idsede, idusuario } = dataCliente;
-    const query = `CALL procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}')`;
-    return await emitirRespuestaSP(query);
+    // const query = `CALL procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}')`;
+    // return await emitirRespuestaSP(query);
+
+    const query = `CALL procedure_pwa_print_comanda(?, ?, ?, ?)`;
+    return await QueryServiceV1.ejecutarProcedimiento(query, [idorg, idsede, idusuario, JSON.stringify(dataPrint)], 'setPrintComanda');
 };
 module.exports.setPrintComanda = setPrintComanda;
 
@@ -586,8 +614,12 @@ const setPrinterOtherDocs = async (req, res) => {
     const idusuario = managerFilter.getInfoToken(req, 'idusuario');
     const dataPrint = req.body.dataPrint;
     const isprecuenta = req.body.isprecuenta || 0;
-    const query = `CALL procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}', ${isprecuenta})`;
-    return await emitirRespuestaSP_RES(query, res);
+    // const query = `CALL procedure_pwa_print_comanda(${idorg}, ${idsede}, ${idusuario},'${JSON.stringify(dataPrint)}', ${isprecuenta})`;
+    // return await emitirRespuestaSP_RES(query, res);
+
+    const query = `CALL procedure_pwa_print_comanda(?, ?, ?, ?, ?)`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [idorg, idsede, idusuario, JSON.stringify(dataPrint), isprecuenta], 'setPrinterOtherDocs');
+    return ReS(res, {data: rows || [] });
 };
 module.exports.setPrinterOtherDocs = setPrinterOtherDocs;
 
@@ -635,8 +667,12 @@ const getLaCuenta = async (req, res) => {
         }
     }
 
-    const query = `CALL procedure_bus_pedido_bd_3051(${mesa}, '', '${idpedido}', ${idorg}, ${idsede}, 0, -1);`;
-    return await emitirRespuestaSP_RES(query, res);
+    // const query = `CALL procedure_bus_pedido_bd_3051(${mesa}, '', '${idpedido}', ${idorg}, ${idsede}, 0, -1);`;
+    // return await emitirRespuestaSP_RES(query, res);
+
+    const query = `CALL procedure_bus_pedido_bd_3051(?, ?, ?, ?, ?, ?, ?);`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [mesa, '', idpedido, idorg, idsede, 0, -1], 'getLaCuenta');
+    return ReS(res, {data: rows || [] });
 };
 module.exports.getLaCuenta = getLaCuenta;
 
@@ -647,8 +683,12 @@ const getLaCuentaFromCliente = async function (req, res) {
     const idcliente = req.body.idcliente;
     const num_mesa = req.body.num_mesa;
 
-	const read_query = `call procedure_pwa_cuenta_cliente(${idcliente}, ${idsede}, ${num_mesa});`;	
-    return await emitirRespuestaSP_RES(read_query, res); 
+	// const read_query = `call procedure_pwa_cuenta_cliente(${idcliente}, ${idsede}, ${num_mesa});`;	
+    // return await emitirRespuestaSP_RES(read_query, res); 
+
+    const query = `CALL procedure_pwa_cuenta_cliente(?, ?, ?);`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [idcliente, idsede, num_mesa], 'getLaCuentaFromCliente');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getLaCuentaFromCliente = getLaCuentaFromCliente;
 
@@ -660,16 +700,24 @@ const getLaCuentaFromClienteTotales = async function (req, res) {
     const num_mesa = req.body.num_mesa;
     const idpedido = req.body.idpedido ? req.body.idpedido : null;
 
-	const read_query = `call procedure_pwa_cuenta_cliente_totales(${idcliente}, ${idsede}, ${idpedido}, ${num_mesa});`;	
-    return await emitirRespuestaSP_RES(read_query, res); 
+	// const read_query = `call procedure_pwa_cuenta_cliente_totales(${idcliente}, ${idsede}, ${idpedido}, ${num_mesa});`;	
+    // return await emitirRespuestaSP_RES(read_query, res); 
+
+    const query = `CALL procedure_pwa_cuenta_cliente_totales(?, ?, ?, ?);`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [idcliente, idsede, idpedido, num_mesa], 'getLaCuentaFromClienteTotales');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getLaCuentaFromClienteTotales = getLaCuentaFromClienteTotales;
 
 const getLaCuentaFromPedidoTotales = async function (req, res) {
     const idpedido = req.body.idpedido;
 
-	const read_query = `call procedure_pwa_cuenta_cliente_totales('', '', ${idpedido});`;	
-    return await emitirRespuestaSP_RES(read_query, res); 
+	// const read_query = `call procedure_pwa_cuenta_cliente_totales('', '', ${idpedido});`;	
+    // return await emitirRespuestaSP_RES(read_query, res); 
+
+    const query = `CALL procedure_pwa_cuenta_cliente_totales(?, ?, ?);`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [idpedido], 'getLaCuentaFromPedidoTotales');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getLaCuentaFromPedidoTotales = getLaCuentaFromPedidoTotales;
 
@@ -683,17 +731,28 @@ const getConsultaDatosCliente = async function (req, res) {
     var read_query = '';
 
     if ( onlySede ) {
-        read_query = `SELECT * FROM cliente c 
+        // read_query = `SELECT * FROM cliente c 
+        //                 inner join cliente_sede cs on c.idcliente = cs.idcliente 
+        //             where c.estado=0 and c.ruc='${doc}' and cs.idsede = ${idsede} order by nombres limit 1`;
+        const query = `SELECT * FROM cliente c 
                         inner join cliente_sede cs on c.idcliente = cs.idcliente 
-                    where c.estado=0 and c.ruc='${doc}' and cs.idsede = ${idsede} order by nombres limit 1`;
+                    where c.estado=0 and c.ruc=? and cs.idsede = ? order by nombres limit 1`;
+        const rows = await QueryServiceV1.ejecutarConsulta(query, [doc, idsede], 'SELECT', 'getConsultaDatosCliente');
+        return ReS(res, {data: rows || [] });
     } else {
-        read_query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' order by nombres limit 1`;  
+        // read_query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' order by nombres limit 1`;  
+        const query = `SELECT * FROM cliente where estado=0 and ruc=? order by nombres limit 1`; 
+        const rows = await QueryServiceV1.ejecutarConsulta(query, [doc], 'SELECT', 'getConsultaDatosCliente');
+        return ReS(res, {data: rows || [] });
     }
 
-    logger.debug({ doc }, 'Buscando cliente por documento');
+    // logger.debug({ doc }, 'Buscando cliente por documento');
     // idorg=${idorg}) AND 
 	// const read_query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' ${_str_only_sede} order by nombres limit 1`;	
-    return await emitirRespuesta_RES(read_query, res);
+    // return await emitirRespuesta_RES(read_query, res);
+
+    // const query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' ${_str_only_sede} order by nombres limit 1`;	
+    
 }
 module.exports.getConsultaDatosCliente = getConsultaDatosCliente;
 
@@ -705,8 +764,12 @@ const getConsultaDatosClienteNoTk = async function (req, res) {
     // console.log('doc cliente: ', doc);
     // idorg=${idorg}) AND 
     // const read_query = `SELECT * FROM cliente where estado=0 and ruc='${doc}' order by pwa_id desc, telefono desc limit 1`;    
-    const read_query = `SELECT * FROM cliente where estado=0 and pwa_id='dni|${doc}' and ruc='${doc}' order by pwa_id desc, telefono desc, pwa_code_verification desc limit 1`;    
-    return await emitirRespuesta_RES(read_query, res);
+    // const read_query = `SELECT * FROM cliente where estado=0 and pwa_id='dni|${doc}' and ruc='${doc}' order by pwa_id desc, telefono desc, pwa_code_verification desc limit 1`;    
+    // return await emitirRespuesta_RES(read_query, res);
+
+    const query = `SELECT * FROM cliente where estado=0 and pwa_id='dni|${doc}' and ruc=? order by pwa_id desc, telefono desc, pwa_code_verification desc limit 1`;    
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [doc], 'SELECT', 'getConsultaDatosClienteNoTk');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getConsultaDatosClienteNoTk = getConsultaDatosClienteNoTk;
 
@@ -714,36 +777,56 @@ module.exports.getConsultaDatosClienteNoTk = getConsultaDatosClienteNoTk;
 // guarda los datos de facturacion que especifica el usuario desde pwa
 const setDatosFacturacionClientePwa = async function (req, res) {
     const data = req.body;
-    const read_query = `call procedure_set_datos_facturacion_pwa('${JSON.stringify(data)}');`;   
-    return await emitirRespuestaSP_RES(read_query, res); 
+    // const read_query = `call procedure_set_datos_facturacion_pwa('${JSON.stringify(data)}');`;   
+    // return await emitirRespuestaSP_RES(read_query, res); 
+
+    const query = `call procedure_set_datos_facturacion_pwa(?);`;   
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [JSON.stringify(data)], 'setDatosFacturacionClientePwa');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.setDatosFacturacionClientePwa = setDatosFacturacionClientePwa;
 
 // datos al inicio despues de escanear codigo
 const getDataSedeIni = async function (req, res) {	
 	const idsede = req.body.idsede;
-	const read_query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit, pwa_delivery_comercio_online from sede where (idsede=${idsede}) AND estado=0`;	
-    return await emitirRespuesta_RES(read_query, res);
+	// const read_query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit, pwa_delivery_comercio_online from sede where (idsede=${idsede}) AND estado=0`;	
+    // return await emitirRespuesta_RES(read_query, res);
+
+    const query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit, pwa_delivery_comercio_online from sede where (idsede=?) AND estado=0`;	
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [idsede], 'SELECT', 'getDataSedeIni');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getDataSedeIni = getDataSedeIni;
 
 const getIdSedeFromNickName = async function (req, res) {  
     const nomsede = req.body.nomsede;
-    const read_query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit, is_holding from sede where link_carta='${nomsede}' AND estado=0`;    
-    return await emitirRespuesta_RES(read_query, res);
+    // const read_query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit, is_holding from sede where link_carta='${nomsede}' AND estado=0`;    
+    // return await emitirRespuesta_RES(read_query, res);
+
+    const query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit, is_holding from sede where link_carta=? AND estado=0`;    
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [nomsede], 'SELECT', 'getIdSedeFromNickName');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getIdSedeFromNickName = getIdSedeFromNickName;
 
 
 const getReglasApp = async function (req, res) {	
-	const read_query = `SELECT * from pwa_reglas_app where estado=0`;	
-    return await emitirRespuesta_RES(read_query, res);
+	// const read_query = `SELECT * from pwa_reglas_app where estado=0`;	
+    // return await emitirRespuesta_RES(read_query, res);
+
+    const query = `SELECT * from pwa_reglas_app where estado=0`;	
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [], 'SELECT', 'getReglasApp');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getReglasApp = getReglasApp;
 
 const getConsAppDelivery = async function (req, res) {	
-	const read_query = `SELECT value from sys_const where llave in ('DELIVERY_CANTIDAD_ITEMS_ESCALA', 'DELIVERY_COSTO_ITEMS_ESCALA')`;	
-    return await emitirRespuesta_RES(read_query, res);
+	// const read_query = `SELECT value from sys_const where llave in ('DELIVERY_CANTIDAD_ITEMS_ESCALA', 'DELIVERY_COSTO_ITEMS_ESCALA')`;	
+    // return await emitirRespuesta_RES(read_query, res);
+
+    const query = `SELECT value from sys_const where llave in ('DELIVERY_CANTIDAD_ITEMS_ESCALA', 'DELIVERY_COSTO_ITEMS_ESCALA')`;	
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [], 'SELECT', 'getConsAppDelivery');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getConsAppDelivery = getConsAppDelivery;
 
@@ -751,17 +834,24 @@ module.exports.getConsAppDelivery = getConsAppDelivery;
 const setRegisterClienteLogin = async function (req, res) {
 	// const idorg = req.body.idorg;
 	const dataLogin = req.body;
-	const read_query = `call procedure_pwa_register_cliente_login('${JSON.stringify(dataLogin)}')`;
+	// const read_query = `call procedure_pwa_register_cliente_login('${JSON.stringify(dataLogin)}')`;
 
-    return await emitirRespuestaSP_RES(read_query, res); 
+    // return await emitirRespuestaSP_RES(read_query, res); 
+
+    const query = `call procedure_pwa_register_cliente_login(?, ?);`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [JSON.stringify(dataLogin), ''], 'setRegisterClienteLogin');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.setRegisterClienteLogin = setRegisterClienteLogin;
 
 const getCalcTimeDespacho = async function (req, res) {	
 	const idsede = req.body.idsede;
-	const read_query = `call procedure_pwa_calc_time_despacho('${idsede}')`;
+	// const read_query = `call procedure_pwa_calc_time_despacho('${idsede}')`;
+    // return await emitirRespuestaSP_RES(read_query, res); 
 
-    return await emitirRespuestaSP_RES(read_query, res); 
+    const query = `call procedure_pwa_calc_time_despacho(?);`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [idsede], 'getCalcTimeDespacho');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getCalcTimeDespacho = getCalcTimeDespacho;
 
@@ -770,9 +860,13 @@ module.exports.getCalcTimeDespacho = getCalcTimeDespacho;
 const getEncuesta = async function (req, res) {	
     const idsede = req.body.idsede;
         
-    const read_query = `SELECT preguntas from encuesta_sede_conf where idsede=${idsede} and estado=0 limit 1`;
+    // const read_query = `SELECT preguntas from encuesta_sede_conf where idsede=${idsede} and estado=0 limit 1`;
     // return emitirRespuestaSP(read_query);      
-    return await emitirRespuesta_RES(read_query, res);  
+    // return await emitirRespuesta_RES(read_query, res);  
+
+    const query = `SELECT preguntas from encuesta_sede_conf where idsede=? and estado=0 limit 1`;
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [idsede], 'SELECT', 'getEncuesta');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getEncuesta = getEncuesta;
 
@@ -780,9 +874,13 @@ module.exports.getEncuesta = getEncuesta;
 const getEncuestaOpRespuesta = async function (req, res) {	
     const idsede = req.body.idsede;
         
-    const read_query = `select * from encuesta_respuesta where estado=0`;
+    // const read_query = `select * from encuesta_respuesta where estado=0`;
     // return emitirRespuestaSP(read_query);      
-    return await emitirRespuesta_RES(read_query, res);  
+    // return await emitirRespuesta_RES(read_query, res);  
+
+    const query = `select * from encuesta_respuesta where estado=0`;
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [], 'SELECT', 'getEncuestaOpRespuesta');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getEncuestaOpRespuesta = getEncuestaOpRespuesta;
 
@@ -791,9 +889,12 @@ module.exports.getEncuestaOpRespuesta = getEncuestaOpRespuesta;
 const setEncuestaGuardar = async function (req, res) {	
 	const id = req.body.i;
 	const item = req.body.item;
-	const read_query = `call procedure_save_encuesta(${id}, '${JSON.stringify(item)}')`;
+	// const read_query = `call procedure_save_encuesta(${id}, '${JSON.stringify(item)}')`;
+    // return await emitirRespuestaSP_RES(read_query, res); 
 
-    return await emitirRespuestaSP_RES(read_query, res); 
+    const query = `call procedure_save_encuesta(?, ?);`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [id, JSON.stringify(item)], 'setEncuestaGuardar');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.setEncuestaGuardar = setEncuestaGuardar;
 
@@ -801,40 +902,86 @@ module.exports.setEncuestaGuardar = setEncuestaGuardar;
 const getSedeRequiereGPS = async function (req, res) {	
     const idsede = req.body.idsede;
         
-    const read_query = `select pwa_requiere_gps, is_holding from sede where idsede=${idsede} and estado=0`;
     // return emitirRespuestaSP(read_query);      
-    return await emitirRespuesta_RES(read_query, res);  
+    // const read_query = `select pwa_requiere_gps, is_holding from sede where idsede=${idsede} and estado=0`;
+    // return await emitirRespuesta_RES(read_query, res);  
+
+    const query = `select pwa_requiere_gps, is_holding from sede where idsede=? and estado=0`;
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [idsede], 'SELECT', 'getSedeRequiereGPS');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getSedeRequiereGPS = getSedeRequiereGPS;
 
 
 // cliente log por dni, buscar
 const getUsuarioClietenByDNI = async function (req, res) {	
-    const numdocumento = req.body.documento;
+    // try {
+        const { documento } = req.body;
         
-    const read_query = `select * from cliente where ruc='${numdocumento}' and estado=0`;
-    // return emitirRespuestaSP(read_query);      
-    return await emitirRespuesta_RES(read_query, res);  
+        // ✅ SEGURO: Prepared statement previene SQL Injection
+        // const read_query = `SELECT * FROM cliente WHERE ruc = ? AND estado = 0`;
+    //     const rows = await sequelize.query(read_query, {
+    //         replacements: [documento],
+    //         type: sequelize.QueryTypes.SELECT
+    //     });
+        
+    //     return ReS(res, { data: rows });
+    // } catch (error) {
+    //     logger.error({ err: error, body: req.body }, 'Error en getUsuarioClietenByDNI');
+    //     return ReE(res, 'Error al buscar cliente', 500);
+    // }
+
+    const query = `SELECT * FROM cliente WHERE ruc = ? AND estado = 0`;
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [documento], 'SELECT', 'getUsuarioClietenByDNI');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getUsuarioClietenByDNI = getUsuarioClietenByDNI;
 
 
 // cliente perfil
 const getClientePerfil = async function (req, res) {	
-    const idcliente = req.body.idcliente;
+    // try {
+        const { idcliente } = req.body;
         
-    const read_query = `select * from cliente where idcliente='${idcliente}' and estado=0`;
-    // return emitirRespuestaSP(read_query);      
-    return await emitirRespuesta_RES(read_query, res);  
+        // ✅ SEGURO: Prepared statement previene SQL Injection
+    //     const read_query = `SELECT * FROM cliente WHERE idcliente = ? AND estado = 0`;
+    //     const rows = await sequelize.query(read_query, {
+    //         replacements: [idcliente],
+    //         type: sequelize.QueryTypes.SELECT
+    //     });
+        
+    //     return ReS(res, { data: rows });
+    // } catch (error) {
+    //     logger.error({ err: error, body: req.body }, 'Error en getClientePerfil');
+    //     return ReE(res, 'Error al obtener perfil', 500);
+    // }
+
+    const query = `SELECT * FROM cliente WHERE idcliente = ? AND estado = 0`;
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [idcliente], 'SELECT', 'getClientePerfil');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getClientePerfil = getClientePerfil;
 
 const setClientePerfil = async function (req, res) {	
-    const idcliente = req.body.idcliente;
+    try {
+        const { idcliente, ruc, email, f_nac } = req.body;
         
-    const read_query = `update cliente set ruc='${req.body.ruc}', email='${req.body.email}', f_nac='${req.body.f_nac}' where idcliente=${idcliente}`;
-    // return emitirRespuestaSP(read_query);      
-    return await emitirRespuesta_RES(read_query, res);
+        // ✅ SEGURO: Prepared statement previene SQL Injection
+        // const read_query = `UPDATE cliente SET ruc = ?, email = ?, f_nac = ? WHERE idcliente = ?`;
+        // const rows = await sequelize.query(read_query, {
+        //     replacements: [ruc, email, f_nac, idcliente],
+        //     type: sequelize.QueryTypes.UPDATE
+        // });
+        
+        // return ReS(res, { data: rows });
+
+        const query = `UPDATE cliente SET ruc = ?, email = ?, f_nac = ? WHERE idcliente = ?`;
+        const rows = await QueryServiceV1.ejecutarConsulta(query, [ruc, email, f_nac, idcliente], 'UPDATE', 'setClientePerfil');
+        return ReS(res, {data: rows || [] });
+    } catch (error) {
+        logger.error({ err: error, body: req.body }, 'Error en setClientePerfil');
+        return ReE(res, 'Error al actualizar perfil', 500);
+    }
 }
 module.exports.setClientePerfil = setClientePerfil;
 
@@ -842,131 +989,298 @@ module.exports.setClientePerfil = setClientePerfil;
 const setClienteNewDireccion = async function (req, res) {	
 	// const id = req.body.i;
 	const _data = req.body;
-	const read_query = `call procedure_pwa_guardar_direccion_cliente('${JSON.stringify(_data)}')`;
+	// const read_query = `call procedure_pwa_guardar_direccion_cliente('${JSON.stringify(_data)}')`;
+    // return await emitirRespuestaSP_RES(read_query, res); 
 
-    return await emitirRespuestaSP_RES(read_query, res); 
+    const query = `call procedure_pwa_guardar_direccion_cliente(?)`;
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [JSON.stringify(_data)], 'SELECT', 'setClienteNewDireccion');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.setClienteNewDireccion = setClienteNewDireccion;
 
 
 const setHistoryError = async function (req, res) {	
-    const _elerror = req.body.elerror;
-    const _elorigen = req.body.elorigen;
+    try {
+        const { elerror, elorigen } = req.body;
         
-    const read_query = `insert into  historial_error(fecha, error, origen) values (now(), '${JSON.stringify(_elerror)}', '${_elorigen}')`;
-    // return emitirRespuestaSP(read_query);      
-    return await emitirRespuesta_RES(read_query, res);  
+        // ✅ SEGURO: Prepared statement previene SQL Injection
+        
+        const query = `INSERT INTO historial_error(fecha, error, origen) VALUES (NOW(), ?, ?)`;
+        const rows = await QueryServiceV1.ejecutarConsulta(query, [JSON.stringify(elerror), elorigen], 'INSERT', 'setHistoryError');
+
+        // const read_query = `INSERT INTO historial_error(fecha, error, origen) VALUES (NOW(), ?, ?)`;
+        // const rows = await sequelize.query(read_query, {
+        //     replacements: [JSON.stringify(elerror), elorigen],
+        //     type: sequelize.QueryTypes.INSERT
+        // });
+        
+        return ReS(res, { data: rows });
+    } catch (error) {
+        logger.error({ err: error, body: req.body }, 'Error en setHistoryError');
+        return ReE(res, 'Error al guardar error', 500);
+    }
 }
 module.exports.setHistoryError = setHistoryError;
 
 const getAllClienteBySearch = async function (req, res) {
-    const read_query = `call pwa_delivery_get_all_clientes()`;
-    return await emitirRespuestaSP_RES(read_query, res); 
+    // const read_query = `call pwa_delivery_get_all_clientes()`;
+    // return await emitirRespuestaSP_RES(read_query, res); 
+
+    const query = `call pwa_delivery_get_all_clientes()`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [], 'getAllClienteBySearch');
+    return ReS(res, {data: rows || [] });
 }
 module.exports.getAllClienteBySearch = getAllClienteBySearch;
 
 const getAllClienteBySearchName = async function (req, res) {
-    const buscar = req.body.buscar;
-    const idsede = managerFilter.getInfoToken(req, 'idsede');
-    const onlySede = req.body.only_sede || false;
-    // const _str_only_sede = onlySede ? ' and idsede = ' + idsede : ''; 
-    var read_query = '';
+    try {
+        const { buscar, only_sede } = req.body;
+        const idsede = managerFilter.getInfoToken(req, 'idsede');
+        const onlySede = only_sede || false;
+        
+        let read_query, replacements;
+        
+        // ✅ SEGURO: Prepared statement previene SQL Injection
+        if (onlySede) {
+            read_query = `SELECT c.idcliente, c.nombres, c.ruc, c.telefono 
+                FROM cliente c 
+                INNER JOIN cliente_sede cs ON c.idcliente = cs.idcliente 
+                WHERE c.estado = 0 
+                AND c.nombres != '' 
+                AND cs.idsede = ? 
+                AND LENGTH(c.nombres) > 10 
+                AND c.nombres LIKE ? 
+                GROUP BY c.nombres 
+                ORDER BY c.nombres`;
+            replacements = [idsede, `%${buscar}%`];
+        } else {
+            read_query = `SELECT idcliente, nombres, ruc, telefono 
+                FROM cliente 
+                WHERE estado = 0 
+                AND nombres != '' 
+                AND LENGTH(nombres) > 10 
+                AND nombres LIKE ? 
+                GROUP BY nombres 
+                ORDER BY nombres`;
+            replacements = [`%${buscar}%`];
+        }
+        
+        // const rows = await sequelize.query(read_query, {
+        //     replacements,
+        //     type: sequelize.QueryTypes.SELECT
+        // });
+        
+        // return ReS(res, { data: rows });
+        
+        const rows = await QueryServiceV1.ejecutarConsulta(read_query, replacements, 'SELECT', 'getAllClienteBySearchName');
+        return ReS(res, {data: rows || [] });
 
-    if ( onlySede ) {
-        read_query = `SELECT c.idcliente, c.nombres, c.ruc, c.telefono FROM cliente c 
-                        inner join cliente_sede cs on c.idcliente = cs.idcliente 
-                    where c.estado=0 and c.nombres!='' and cs.idsede = ${idsede} and LENGTH(c.nombres) > 10 and c.nombres like '%${buscar}%' group by c.nombres order by c.nombres`;
-    } else {
-        read_query = `select idcliente, nombres, ruc, telefono from cliente where estado=0 and nombres!='' and LENGTH(nombres) > 10 and nombres like '%${buscar}%' group by nombres order by nombres`;
+
+    } catch (error) {
+        logger.error({ err: error, body: req.body }, 'Error en getAllClienteBySearchName');
+        return ReE(res, 'Error al buscar clientes', 500);
     }
-    
-    return await emitirRespuesta_RES(read_query, res); 
 }
 module.exports.getAllClienteBySearchName = getAllClienteBySearchName;
 
 const getLastComisionEntrega = async function (req, res) {    
-    const code_postal = req.body.codigo_postal;
+    try {
+        const { codigo_postal } = req.body;
         
-    const read_query = `select * from sede_config_service_delivery where codigo_postal like '%${code_postal}%' limit 1`;
-    // return emitirRespuestaSP(read_query);      
-    return await emitirRespuesta_RES(read_query, res);  
+        // ✅ SEGURO: Prepared statement previene SQL Injection
+        const read_query = `SELECT * FROM sede_config_service_delivery 
+            WHERE codigo_postal LIKE ? 
+            LIMIT 1`;
+        
+        // const rows = await sequelize.query(read_query, {
+        //     replacements: [`%${codigo_postal}%`],
+        //     type: sequelize.QueryTypes.SELECT
+        // });
+        
+        // return ReS(res, { data: rows });
+
+        const rows = await QueryServiceV1.ejecutarConsulta(read_query, [`%${codigo_postal}%`], 'SELECT', 'getLastComisionEntrega');
+        return ReS(res, {data: rows || [] });
+    } catch (error) {
+        logger.error({ err: error, body: req.body }, 'Error en getLastComisionEntrega');
+        return ReE(res, 'Error al obtener comisión', 500);
+    }
 }
 module.exports.getLastComisionEntrega = getLastComisionEntrega;
 
 
 const getCanalesConsumo = async function (req, res) {    
-    const idsede = req.body.idsede;
-    const read_query = `SELECT idtipo_consumo, descripcion, titulo from tipo_consumo where idsede=${idsede} and estado=0`;
-    return await emitirRespuesta_RES(read_query, res);        
+    try {
+        const { idsede } = req.body;
+        
+        // ✅ SEGURO: Prepared statement previene SQL Injection
+        const read_query = `SELECT idtipo_consumo, descripcion, titulo 
+            FROM tipo_consumo 
+            WHERE idsede = ? AND estado = 0`;
+        
+        // const rows = await sequelize.query(read_query, {
+        //     replacements: [idsede],
+        //     type: sequelize.QueryTypes.SELECT
+        // });
+        
+        // return ReS(res, { data: rows });
+
+        const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idsede], 'SELECT', 'getCanalesConsumo');
+        return ReS(res, {data: rows || [] });
+    } catch (error) {
+        logger.error({ err: error, body: req.body }, 'Error en getCanalesConsumo');
+        return ReE(res, 'Error al obtener canales', 500);
+    }
 }
 module.exports.getCanalesConsumo = getCanalesConsumo;
 
 const setRegisterScanQr = async function (req, res) {    
-    const idsede = req.body.idsede;
-    const canal = req.body.canal;
-    const idscan = req.body.idscan || 0;
+    try {
+        const { idsede, canal, idscan = 0 } = req.body;
         
-    const read_query = `call procedure_register_scan_qr(${idsede}, '${canal}', ${idscan})`;
-    // return emitirRespuestaSP(read_query);      
-    return await emitirRespuestaSP_RES(read_query, res);  
+        // ✅ SEGURO: Prepared statement para stored procedure
+        const read_query = `CALL procedure_register_scan_qr(?, ?, ?)`;
+        // const rows = await sequelize.query(read_query, {
+        //     replacements: [idsede, canal, idscan],
+        //     type: sequelize.QueryTypes.SELECT
+        // });
+        
+        // const arr = Object.values(rows[0]);
+        // return ReS(res, { data: arr });
+
+        const rows = await QueryServiceV1.ejecutarProcedimiento(read_query, [idsede, canal, idscan], 'setRegisterScanQr');
+        return ReS(res, {data: rows || [] });
+    } catch (error) {
+        logger.error({ err: error, body: req.body }, 'Error en setRegisterScanQr');
+        return ReE(res, 'Error al registrar QR', 500);
+    }
 }
 module.exports.setRegisterScanQr = setRegisterScanQr;
 
 // enviado desde el servidor de impresion
-const setFlagPrinter = async function (id) {                
-    const read_query = `update print_server_detalle set impreso=1 where idprint_server_detalle=${id}`;    
-    return await emitirRespuestaSP(read_query);
+const setFlagPrinter = async function (id) {    
+    try {
+        // ✅ SEGURO: Prepared statement previene SQL Injection
+        const read_query = `UPDATE print_server_detalle SET impreso = 1 WHERE idprint_server_detalle = ?`;
+        // return await sequelize.query(read_query, {
+        //     replacements: [id],
+        //     type: sequelize.QueryTypes.UPDATE
+        // });
+
+        QueryServiceV1.ejecutarConsulta(read_query, [id], 'UPDATE', 'setFlagPrinter');        
+    } catch (error) {
+        logger.error({ err: error, id }, 'Error en setFlagPrinter');
+        return false;
+    }
 }
 module.exports.setFlagPrinter = setFlagPrinter;
 
-const setFlagPrinterChangeEstadoPedido = async function (id) {                
-    const read_query = `update pedido set pwa_estado='A' where idpedido=${id}`;    
-    return await emitirRespuestaSP(read_query);
+const setFlagPrinterChangeEstadoPedido = async function (id) {    
+    try {
+        // ✅ SEGURO: Prepared statement previene SQL Injection
+        const read_query = `UPDATE pedido SET pwa_estado = 'A' WHERE idpedido = ?`;
+        // return await sequelize.query(read_query, {
+        //     replacements: [id],
+        //     type: sequelize.QueryTypes.UPDATE
+        // });
+
+        QueryServiceV1.ejecutarConsulta(read_query, [id], 'UPDATE', 'setFlagPrinterChangeEstadoPedido');
+    } catch (error) {
+        logger.error({ err: error, id }, 'Error en setFlagPrinterChangeEstadoPedido');
+        return false;
+    }
 }
 module.exports.setFlagPrinterChangeEstadoPedido = setFlagPrinterChangeEstadoPedido;
 
 
 // busca los subitems del item seleccionado, para hacer mas rapida la consulta
-const getSearchSubitemsItem = async function (iditem) {    
-    // const iditem = req.body.iditem;
-        
-    const read_query = `call porcedure_pwa_pedido_carta_get_subitens(${iditem})`;
-    // return emitirRespuestaSP(read_query);      
-    // emitirRespuestaSP_RES(read_query, res);
-    return await emitirRespuestaSP(read_query);  
+const getSearchSubitemsItem = async function (iditem) {
+    try {
+        // ✅ SEGURO: Prepared statement para stored procedure
+        const read_query = `CALL porcedure_pwa_pedido_carta_get_subitens(?)`;
+        // const rows = await sequelize.query(read_query, {
+        //     replacements: [iditem],
+        //     type: sequelize.QueryTypes.SELECT
+        // });
+
+        return await QueryServiceV1.ejecutarProcedimiento(read_query, [iditem], 'getSearchSubitemsItem');
+    } catch (error) {
+        logger.error({ err: error, iditem }, 'Error en getSearchSubitemsItem');
+        return false;
+    }
 }
 module.exports.getSearchSubitemsItem = getSearchSubitemsItem;
 
 
-const setCodigoVerificacionTelefonoCliente =  async function (data) {    
-    // const iditem = req.body.iditem;
-    const numTelefono = parseInt(data.idcliente) < 0 ? data.numberphone : '';
-    const read_query = `call porcedure_pwa_update_phono_sms_cliente(${data.idcliente},'${numTelefono}', '${data.cod}')`;    
-    return await emitirRespuestaSP(read_query);  
+const setCodigoVerificacionTelefonoCliente =  async function (data) {
+    try {
+        const numTelefono = parseInt(data.idcliente) < 0 ? data.numberphone : '';
+        
+        // ✅ SEGURO: Prepared statement para stored procedure
+        const read_query = `CALL porcedure_pwa_update_phono_sms_cliente(?, ?, ?)`;
+        // const rows = await sequelize.query(read_query, {
+        //     replacements: [data.idcliente, numTelefono, data.cod],
+        //     type: sequelize.QueryTypes.SELECT
+        // });
+        
+        // return Object.values(rows[0]);
+        return await QueryServiceV1.ejecutarProcedimiento(read_query, [data.idcliente, numTelefono, data.cod], 'setCodigoVerificacionTelefonoCliente');
+    } catch (error) {
+        logger.error({ err: error, data }, 'Error en setCodigoVerificacionTelefonoCliente');
+        return false;
+    }
 }
 module.exports.setCodigoVerificacionTelefonoCliente = setCodigoVerificacionTelefonoCliente;
 
 const saveCallClientMesa =  async function (data, op) {        
-    const read_query = `call procedure_pwa_call_client_mesa('${JSON.stringify(data)}', ${op})`;
-    return await emitirRespuestaSP(read_query);
+    // const read_query = `call procedure_pwa_call_client_mesa('${JSON.stringify(data)}', ${op})`;
+    // return await emitirRespuestaSP(read_query);
+
+    const read_query = `call procedure_pwa_call_client_mesa(?, ?)`;
+    return await QueryServiceV1.ejecutarProcedimiento(read_query, [JSON.stringify(data), op], 'saveCallClientMesa');
 }
 module.exports.saveCallClientMesa = saveCallClientMesa;
 
-const listCallClientMesa =  async function (data) {        
-    const read_query = `SELECT num_mesa from cliente_solicita_atencion_mesa where idsede=${data.idsede} and atendido=0`;
-    return await emitirRespuesta(read_query);    
+const listCallClientMesa =  async function (data) {
+    try {
+        // ✅ SEGURO: Prepared statement previene SQL Injection
+        const read_query = `SELECT num_mesa FROM cliente_solicita_atencion_mesa WHERE idsede = ? AND atendido = 0`;
+        // return await sequelize.query(read_query, {
+        //     replacements: [data.idsede],
+        //     type: sequelize.QueryTypes.SELECT
+        // });
+        
+        return await QueryServiceV1.ejecutarConsulta(read_query, [data.idsede], 'SELECT', 'listCallClientMesa');
+    } catch (error) {
+        logger.error({ err: error, data }, 'Error en listCallClientMesa');
+        return [];
+    }
 }
 module.exports.listCallClientMesa = listCallClientMesa;
 
 
 // datos de facturacion
-const getComprobantesSede = async function (req, res) {   
-    const idsede = req.body.idsede;    
-    const read_query = `SELECT tc.idtipo_comprobante, tc.descripcion from tipo_comprobante_serie tcs 
-                        inner join tipo_comprobante tc on tcs.idtipo_comprobante = tc.idtipo_comprobante 
-                        where tcs.idsede = ${idsede} and tcs.estado = 0 and tc.codsunat != '0'`;
-    
-    return await emitirRespuesta_RES(read_query, res);
+const getComprobantesSede = async function (req, res) {
+    try {
+        const { idsede } = req.body;
+        
+        // ✅ SEGURO: Prepared statement previene SQL Injection
+        const read_query = `SELECT tc.idtipo_comprobante, tc.descripcion 
+            FROM tipo_comprobante_serie tcs 
+            INNER JOIN tipo_comprobante tc ON tcs.idtipo_comprobante = tc.idtipo_comprobante 
+            WHERE tcs.idsede = ? AND tcs.estado = 0 AND tc.codsunat != '0'`;
+        
+        // const rows = await sequelize.query(read_query, {
+        //     replacements: [idsede],
+        //     type: sequelize.QueryTypes.SELECT
+        // });
+        
+        const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idsede], 'SELECT', 'getComprobantesSede');
+        return ReS(res, { data: rows });
+    } catch (error) {
+        logger.error({ err: error, body: req.body }, 'Error en getComprobantesSede');
+        return ReE(res, 'Error al obtener comprobantes', 500);
+    }
 }
 module.exports.getComprobantesSede = getComprobantesSede;
 
@@ -974,11 +1288,18 @@ module.exports.getComprobantesSede = getComprobantesSede;
 const getLastPedidoClienteThisTable = async function (req, res) {   
     const idsede = req.body.idsede;    
     const nummesa = req.body.nummesa;   
+    // const read_query = `select p.referencia, TIMESTAMPDIFF(MINUTE, p.fecha_hora, now()) min 
+    //                     from pedido p left join pedido_correlativos pc on pc.idsede = p.idsede 
+    //                     where p.idpedido > pc.last_id_pedido_cierre and p.idsede=${idsede} and p.flag_is_cliente = 1 and p.nummesa = ${nummesa} and p.estado = 0 order by p.idpedido desc limit 1`;
+    
+    // return await emitirRespuesta_RES(read_query, res);
+
     const read_query = `select p.referencia, TIMESTAMPDIFF(MINUTE, p.fecha_hora, now()) min 
                         from pedido p left join pedido_correlativos pc on pc.idsede = p.idsede 
-                        where p.idpedido > pc.last_id_pedido_cierre and p.idsede=${idsede} and p.flag_is_cliente = 1 and p.nummesa = ${nummesa} and p.estado = 0 order by p.idpedido desc limit 1`;
+                        where p.idpedido > pc.last_id_pedido_cierre and p.idsede=? and p.flag_is_cliente = 1 and p.nummesa = ? and p.estado = 0 order by p.idpedido desc limit 1`;
     
-    return await emitirRespuesta_RES(read_query, res);
+    const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idsede, nummesa], 'SELECT', 'getLastPedidoClienteThisTable');
+    return ReS(res, { data: rows });
 }
 module.exports.getLastPedidoClienteThisTable = getLastPedidoClienteThisTable;
 
@@ -989,19 +1310,28 @@ const getListMesas = async function (req, res) {
     let read_query = '';
 
     if ( obj ) {
-        read_query = `call procedure_refresh_mesas_list_mozo(${idsede}, '${JSON.stringify(obj)}')`;    
+        // read_query = `call procedure_refresh_mesas_list_mozo(${idsede}, '${JSON.stringify(obj)}')`;    
+        read_query = `call procedure_refresh_mesas_list_mozo(?, ?)`;    
+        const rows = await QueryServiceV1.ejecutarProcedimiento(read_query, [idsede, JSON.stringify(obj)], 'getListMesas');
+        return ReS(res, { data: rows });
     } else {
-        read_query = `call procedure_refresh_mesas_list_mozo(${idsede}, null)`;    
+        // read_query = `call procedure_refresh_mesas_list_mozo(${idsede}, null)`;    
+        read_query = `call procedure_refresh_mesas_list_mozo(?, null)`;    
+        const rows = await QueryServiceV1.ejecutarProcedimiento(read_query, [idsede], 'getListMesas');
+        return ReS(res, { data: rows });
     }
     
-    return await emitirRespuestaSP_RES(read_query, res);
+    // return await emitirRespuestaSP_RES(read_query, res);
 }
 module.exports.getListMesas = getListMesas;
 
 
 const updateTimeLinePedido = async function (idpedido,time_line) {
-    const read_query = `insert into pedido_time_line_entrega (idpedido, time_line) values (${idpedido}, '${JSON.stringify(time_line)}') ON DUPLICATE KEY UPDATE time_line = '${JSON.stringify(time_line)}'`;
-    return await emitirRespuesta(read_query);        
+    // const read_query = `insert into pedido_time_line_entrega (idpedido, time_line) values (${idpedido}, '${JSON.stringify(time_line)}') ON DUPLICATE KEY UPDATE time_line = '${JSON.stringify(time_line)}'`;
+    // return await emitirRespuesta(read_query);        
+    
+    const read_query = `insert into pedido_time_line_entrega (idpedido, time_line) values (?, ?) ON DUPLICATE KEY UPDATE time_line = ?`;
+    QueryServiceV1.ejecutarConsulta(read_query, [idpedido, JSON.stringify(time_line), JSON.stringify(time_line)], 'INSERT', 'updateTimeLinePedido');
 }
 module.exports.updateTimeLinePedido = updateTimeLinePedido;
 
@@ -1021,8 +1351,11 @@ const setUserAccountRemove = async (req, res) => {
 
     try {
         if (user.isCliente) {
-            const read_query = `UPDATE usuario SET estado = 1 WHERE idusuario = ${user.idusuario}`;
-            return await emitirRespuestaSP(read_query);
+            // const read_query = `UPDATE usuario SET estado = 1 WHERE idusuario = ${user.idusuario}`;
+            // return await emitirRespuestaSP(read_query);
+            
+            const read_query = `UPDATE usuario SET estado = 1 WHERE idusuario = ?`;
+            QueryServiceV1.ejecutarConsulta(read_query, [user.idusuario], 'UPDATE', 'setUserAccountRemove');
         }
 
         res.status(200).json({ success: true });
@@ -1036,35 +1369,52 @@ module.exports.setUserAccountRemove = setUserAccountRemove;
 // listar todos los mozos para change user
 const getAllMozosChangeUser = async function (req, res) {
     const idsede = managerFilter.getInfoToken(req, 'idsede');
-    const read_query = `select idusuario, nombres, usuario from usuario where idsede=${idsede} and estado=0 and acc like '%A2%'`;
-    return await emitirRespuesta_RES(read_query, res);    
+    // const read_query = `select idusuario, nombres, usuario from usuario where idsede=${idsede} and estado=0 and acc like '%A2%'`;
+    // return await emitirRespuesta_RES(read_query, res);    
+
+
+    const read_query = `select idusuario, nombres, usuario from usuario where idsede=? and estado=0 and acc like '%A2%'`;
+    const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idsede], 'SELECT', 'getAllMozosChangeUser');
+    return ReS(res, { data: rows });
 }
 module.exports.getAllMozosChangeUser = getAllMozosChangeUser;
 
 // solicitud remoto de borrar
 const updatePermissionDeleteItemPedido = async function (idpedido_detalle) {
-    const read_query = `update pedido_detalle set permission_delete = '1' where idpedido_detalle=${idpedido_detalle}`;
-    await ejecutarQuery(read_query);        
+    // const read_query = `update pedido_detalle set permission_delete = '1' where idpedido_detalle=${idpedido_detalle}`;
+    // await ejecutarQuery(read_query);        
+
+    const read_query = `update pedido_detalle set permission_delete = '1' where idpedido_detalle=?`;
+    QueryServiceV1.ejecutarConsulta(read_query, [idpedido_detalle], 'UPDATE', 'updatePermissionDeleteItemPedido');
 }
 module.exports.updatePermissionDeleteItemPedido = updatePermissionDeleteItemPedido;
 
 // solicitud remoto de borrar
 const updatePermissionDeleteAllPedido = async function (idpedido) {
-    const read_query = `update pedido set permission_delete = '1' where idpedido in (${idpedido})`;
-    await ejecutarQuery(read_query);        
+    // const read_query = `update pedido set permission_delete = '1' where idpedido in (${idpedido})`;
+    // await ejecutarQuery(read_query);        
+
+    const read_query = `update pedido set permission_delete = '1' where idpedido in (?)`;
+    QueryServiceV1.ejecutarConsulta(read_query, [idpedido], 'UPDATE', 'updatePermissionDeleteAllPedido');
 }
 module.exports.updatePermissionDeleteAllPedido = updatePermissionDeleteAllPedido;
 
 // solicitud cambiar metodo de pago
 const updatePermissionChangeMetodoPago = async function (idregistro_pago_detalle) {
-    const read_query = `update registro_pago_detalle set permission_change = '1' where idregistro_pago_detalle = ${idregistro_pago_detalle}`;
-    await ejecutarQuery(read_query);        
+    // const read_query = `update registro_pago_detalle set permission_change = '1' where idregistro_pago_detalle = ${idregistro_pago_detalle}`;
+    // await ejecutarQuery(read_query);        
+
+    const read_query = `update registro_pago_detalle set permission_change = '1' where idregistro_pago_detalle = ?`;
+    QueryServiceV1.ejecutarConsulta(read_query, [idregistro_pago_detalle], 'UPDATE', 'updatePermissionChangeMetodoPago');
 }
 module.exports.updatePermissionChangeMetodoPago = updatePermissionChangeMetodoPago;
 
 const updatePermissionRemoveRegistroPago = async function (idregistro_pago) {
-    const read_query = `update registro_pago set permission_delete = '1' where idregistro_pago = ${idregistro_pago}`;
-    await ejecutarQuery(read_query);        
+    // const read_query = `update registro_pago set permission_delete = '1' where idregistro_pago = ${idregistro_pago}`;
+    // await ejecutarQuery(read_query);        
+
+    const read_query = `update registro_pago set permission_delete = '1' where idregistro_pago = ?`;
+    QueryServiceV1.ejecutarConsulta(read_query, [idregistro_pago], 'UPDATE', 'updatePermissionRemoveRegistroPago');
 }
 module.exports.updatePermissionRemoveRegistroPago = updatePermissionRemoveRegistroPago;
 
@@ -1130,21 +1480,31 @@ module.exports.updateSubItems = updateSubItems;
 
 const saveCallMozoHolding = (data) => {
     const {idpedido, idusuario} = data;
-    const read_query = `insert into sede_holding_call_pedido_listo(fecha, idpedido, idusuario, data) values (now(), ${idpedido}, ${idusuario}, '${JSON.stringify(data)}')`;
-    return emitirRespuesta(read_query);
+    // const read_query = `insert into sede_holding_call_pedido_listo(fecha, idpedido, idusuario, data) values (now(), ${idpedido}, ${idusuario}, '${JSON.stringify(data)}')`;
+    // return emitirRespuesta(read_query);
+    
+    const read_query = `insert into sede_holding_call_pedido_listo(fecha, idpedido, idusuario, data) values (now(), ?, ?, ?)`;
+    QueryServiceV1.ejecutarConsulta(read_query, [idpedido, idusuario, JSON.stringify(data)], 'INSERT', 'saveCallMozoHolding');
 }
 module.exports.saveCallMozoHolding = saveCallMozoHolding;
 
 const saveCallMozoHoldingEstado = (idpedido) => {
-    const read_query = `update sede_holding_call_pedido_listo set estado='1' where idpedido=${idpedido}`;
-    return emitirRespuesta(read_query);
+    // const read_query = `update sede_holding_call_pedido_listo set estado='1' where idpedido=${idpedido}`;
+    // return emitirRespuesta(read_query);
+
+    const read_query = `update sede_holding_call_pedido_listo set estado='1' where idpedido=?`;
+    QueryServiceV1.ejecutarConsulta(read_query, [idpedido], 'UPDATE', 'saveCallMozoHoldingEstado');
 }
 module.exports.saveCallMozoHoldingEstado = saveCallMozoHoldingEstado;
 
 const getListCallMozoHolding = async function (req, res) {
     const idusuario= managerFilter.getInfoToken(req, 'idusuario');
-    const read_query = `select * from sede_holding_call_pedido_listo where estado=0 and idusuario=${idusuario}`;
-    return await emitirRespuesta_RES(read_query, res);    
+    // const read_query = `select * from sede_holding_call_pedido_listo where estado=0 and idusuario=${idusuario}`;
+    // return await emitirRespuesta_RES(read_query, res);    
+
+    const read_query = `select * from sede_holding_call_pedido_listo where estado=0 and idusuario=?`;
+    const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idusuario], 'SELECT', 'getListCallMozoHolding');
+    return ReS(res, { data: rows });
 }
 module.exports.getListCallMozoHolding = getListCallMozoHolding;
 
@@ -1555,11 +1915,15 @@ module.exports.processAndEmitItem = processAndEmitItem;
 // consultar version app
 const getVersionApp = async function (req, res) {
     const {name_app} = req.body;
-    const version = await sequelize.query(`SELECT version,properties FROM app_version WHERE name_app = :name_app`, {
-        replacements: { name_app: name_app },
-        type: sequelize.QueryTypes.SELECT
-    });
+    // const version = await sequelize.query(`SELECT version,properties FROM app_version WHERE name_app = :name_app`, {
+    //     replacements: { name_app: name_app },
+    //     type: sequelize.QueryTypes.SELECT
+    // });
 
+    // res.json({ data: version });
+
+    const read_query = `SELECT version,properties FROM app_version WHERE name_app = ?`;
+    const version = await QueryServiceV1.ejecutarConsulta(read_query, [name_app], 'SELECT', 'getVersionApp');
     res.json({ data: version });
 }
 module.exports.getVersionApp = getVersionApp;

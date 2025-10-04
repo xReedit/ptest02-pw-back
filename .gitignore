@@ -11,6 +11,10 @@ mcp-mysql-simple/
 # Build de producción
 dist/
 dist-prod/
+test/
+db/
+
+find-sql-injection.js
 
 # Logs
 logs/*.log

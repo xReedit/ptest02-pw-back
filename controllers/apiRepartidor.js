@@ -1,7 +1,5 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
 const sendMsjsService = require('./sendMsj.js');
-let Sequelize = require('sequelize');
-// let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 const logger = require('../utilitarios/logger');
@@ -9,7 +7,11 @@ const logger = require('../utilitarios/logger');
 
 let intervalBucaRepartidor = null;
 
-let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
+// ✅ IMPORTANTE: Usar instancia centralizada de Sequelize
+const sequelize = require('../config/database');
+// const { Sequelize } = require('sequelize');
+
+const QueryServiceV1 = require('../service/query.service.v1');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
@@ -124,9 +126,15 @@ const onlyUpdateQuery = async (xquery, res) => {
 const setRepartidorConectado = async function (dataCLiente) {	
     const idrepartidor = dataCLiente.idrepartidor;
     const socketid = dataCLiente.socketid;
-    if ( idrepartidor ) {    	
-    	const read_query = `update repartidor set socketid = '${socketid}' where idrepartidor =${idrepartidor}`;
-    	await onlyUpdateQuery(read_query);
+    if ( idrepartidor ) {
+        // ✅ SEGURO: Mismo query, solo con prepared statement
+    	const read_query = `UPDATE repartidor SET socketid = ? WHERE idrepartidor = ?`;
+    	await sequelize.query(read_query, {
+            replacements: [socketid, idrepartidor],
+            type: sequelize.QueryTypes.UPDATE
+        });
+
+		QueryServiceV1.ejecutarConsulta(read_query, [socketid, idrepartidor], 'UPDATE', 'setRepartidorConectado');
     }    
 }
 module.exports.setRepartidorConectado = setRepartidorConectado;
@@ -142,8 +150,17 @@ const setEfectivoMano = async function (req, res) {
 
 	// logger.debug('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	
-    const read_query = `update repartidor set efectivo_mano = ${efectivo}, online = ${online} where idrepartidor = ${idrepartidor}`;
-    await execSqlQueryNoReturn(read_query, res);
+    // ✅ SEGURO: Mismo query, solo con prepared statement
+    // const read_query = `UPDATE repartidor SET efectivo_mano = ?, online = ? WHERE idrepartidor = ?`;
+    // await sequelize.query(read_query, {
+    //     replacements: [efectivo, online, idrepartidor],
+    //     type: sequelize.QueryTypes.UPDATE
+    // });
+    // return ReS(res, { data: true });
+
+	const read_query = `UPDATE repartidor SET efectivo_mano = ?, online = ? WHERE idrepartidor = ?`;
+	const result = await QueryServiceV1.ejecutarConsulta(read_query, [efectivo, online, idrepartidor], 'UPDATE', 'setEfectivoMano');
+	return ReS(res, { data: result });
 }
 module.exports.setEfectivoMano = setEfectivoMano;
 
@@ -157,8 +174,18 @@ const pushSuscripcion = async function (req, res) {
 
 	logger.debug('suscripcion ====>>', suscripcion)
 
-	const read_query = `update repartidor set pwa_code_verification = '${suscripcion}' where idrepartidor = ${idrepartidor}`;
-	return await emitirRespuestaSP_RES(read_query, res);
+    // ✅ SEGURO: Mismo query, solo con prepared statement
+	// const read_query = `UPDATE repartidor SET pwa_code_verification = ? WHERE idrepartidor = ?`;
+	// const rows = await sequelize.query(read_query, {
+    //     replacements: [suscripcion, idrepartidor],
+    //     type: sequelize.QueryTypes.UPDATE
+    // });
+    // const arr = Object.values(rows[0] || []);
+    // return ReS(res, { data: arr });
+
+	const read_query = `UPDATE repartidor SET pwa_code_verification = ? WHERE idrepartidor = ?`;
+	const result = await QueryServiceV1.ejecutarConsulta(read_query, [suscripcion, idrepartidor], 'UPDATE', 'pushSuscripcion');
+	return ReS(res, { data: result });
 }
 module.exports.pushSuscripcion = pushSuscripcion;
 
@@ -166,9 +193,17 @@ const setPositionNow = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	const pos = req.body.pos;
 	
-	
-    const read_query = `update repartidor set position_now = '${JSON.stringify(pos)}' where idrepartidor = ${idrepartidor}`;
-    return await emitirRespuesta_RES(read_query, res);
+    // ✅ SEGURO: Mismo query, solo con prepared statement
+    // const read_query = `UPDATE repartidor SET position_now = ? WHERE idrepartidor = ?`;
+    // const rows = await sequelize.query(read_query, {
+    //     replacements: [JSON.stringify(pos), idrepartidor],
+    //     type: sequelize.QueryTypes.UPDATE
+    // });
+    // return ReS(res, { data: rows });
+
+	const read_query = `UPDATE repartidor SET position_now = ? WHERE idrepartidor = ?`;
+	const result = await QueryServiceV1.ejecutarConsulta(read_query, [JSON.stringify(pos), idrepartidor], 'UPDATE', 'setPositionNow');
+	return ReS(res, { data: result });
 }
 module.exports.setPositionNow = setPositionNow;
 
@@ -176,9 +211,18 @@ const setCambioPassRepartidor = async function (req, res) {
 	const idrepartidor = req.body.idrepartidor;	
 	const p2 = req.body.p2;	
 
-	const read_query = `update repartidor set pass = '${p2}' where idrepartidor = ${idrepartidor}`;
-    await execSqlQueryNoReturn(read_query, res);
-    
+    // ✅ SEGURO: Mismo query, solo con prepared statement
+    // ⚠️ IMPORTANTE: La contraseña debería estar hasheada con bcrypt
+	// const read_query = `UPDATE repartidor SET pass = ? WHERE idrepartidor = ?`;
+    // await sequelize.query(read_query, {
+    //     replacements: [p2, idrepartidor],
+    //     type: sequelize.QueryTypes.UPDATE
+    // });
+    // return ReS(res, { data: true });
+
+	const read_query = `UPDATE repartidor SET pass = ? WHERE idrepartidor = ?`;
+	const result = await QueryServiceV1.ejecutarConsulta(read_query, [p2, idrepartidor], 'UPDATE', 'setCambioPassRepartidor');
+	return ReS(res, { data: result });
 }
 module.exports.setCambioPassRepartidor = setCambioPassRepartidor;
 
@@ -195,16 +239,37 @@ module.exports.setCambioPassRepartidor = setCambioPassRepartidor;
 const getRepartidoreForPedido = async function (dataPedido) {
 	const datosEstablecimiento = dataPedido.dataDelivery ? dataPedido.dataDelivery.establecimiento : dataPedido.datosDelivery.establecimiento;
 	const es_latitude = datosEstablecimiento.latitude;
-    const es_longitude = datosEstablecimiento.longitude;		                  
-    const read_query = `call procedure_delivery_get_repartidor(${es_latitude}, ${es_longitude})`;
-    return await emitirRespuestaSP(read_query);        
+    const es_longitude = datosEstablecimiento.longitude;
+    
+    // ✅ SEGURO: Mismo stored procedure, solo con prepared statement
+    // const read_query = `CALL procedure_delivery_get_repartidor(?, ?)`;
+    // const rows = await sequelize.query(read_query, {
+    //     replacements: [es_latitude, es_longitude],
+    //     type: sequelize.QueryTypes.SELECT
+    // });
+    // const arr = Object.values(rows[0]);
+    // return arr;
+
+	const read_query = `CALL procedure_delivery_get_repartidor(?, ?)`;
+	const result = await QueryServiceV1.ejecutarProcedimiento(read_query, [es_latitude, es_longitude], 'getRepartidoreForPedido');
+	return result;
 }
 module.exports.getRepartidoreForPedido = getRepartidoreForPedido;
 
 // dataPedido es el registro de la tabla pedido
-const getRepartidoreForPedidoFromInterval = async function (es_latitude, es_longitude, efectivoPagar) {		                  
-    const read_query = `call procedure_delivery_get_repartidor(${es_latitude}, ${es_longitude}, ${efectivoPagar})`;
-    return await emitirRespuestaSP(read_query);        
+const getRepartidoreForPedidoFromInterval = async function (es_latitude, es_longitude, efectivoPagar) {
+    // ✅ SEGURO: Mismo stored procedure, solo con prepared statement
+    // const read_query = `CALL procedure_delivery_get_repartidor(?, ?, ?)`;
+    // const rows = await sequelize.query(read_query, {
+    //     replacements: [es_latitude, es_longitude, efectivoPagar],
+    //     type: sequelize.QueryTypes.SELECT
+    // });
+    // const arr = Object.values(rows[0]);
+    // return arr;
+
+	const read_query = `CALL procedure_delivery_get_repartidor(?, ?, ?)`;
+	const result = await QueryServiceV1.ejecutarProcedimiento(read_query, [es_latitude, es_longitude, efectivoPagar], 'getRepartidoreForPedidoFromInterval');
+	return result;
 }
 module.exports.getRepartidoreForPedidoFromInterval = getRepartidoreForPedidoFromInterval;
 
@@ -220,21 +285,35 @@ const getPedidosEsperaRepartidor = async function (idsede) {
 	*/
 	
 	// return emitirRespuesta(read_query);  
+	// const read_query = `call procedure_delivery_pedidos_pendientes()`;
+ 	// const response = await emitirRespuestaSP(read_query);         	
+ 	// return response;
+
 	const read_query = `call procedure_delivery_pedidos_pendientes()`;
- 	const response = await emitirRespuestaSP(read_query);        
- 	// logger.debug('pedidos response', response);
- 	// logger.debug('pedidos pendiente', response.data);
- 	return response;
- 	 	
+	const response = await QueryServiceV1.ejecutarProcedimiento(read_query, [], 'getPedidosEsperaRepartidor');
+	logger.info({ response }, 'getPedidosEsperaRepartidor');
+	return (response === null || response === undefined) ? [] : response;
 
 
 }
-module.exports.getPedidosEsperaRepartidor = getPedidosEsperaRepartidor;
+module.exports.getPedidosEsperaRepartidor = getPedidosEsperaRepartidor; 
 
 // asigna el pedido temporalmente a espera que acepte
 const setAsignaTemporalPedidoARepartidor = async function (idpedido, idrepartidor_va, pedido) {	
-    const read_query = `call procedure_delivery_set_pedido_repartidor(${idpedido}, ${idrepartidor_va},'${JSON.stringify(pedido)}')`;
-    return await emitirRespuestaSP(read_query);        
+    // const read_query = `call procedure_delivery_set_pedido_repartidor(${idpedido}, ${idrepartidor_va},'${JSON.stringify(pedido)}')`;
+    // return await emitirRespuestaSP(read_query);        
+
+	// const read_query = `CALL procedure_delivery_set_pedido_repartidor(?, ?, ?)`;
+	// const result = await sequelize.query(read_query, {
+	// 	replacements: [idpedido, idrepartidor_va, JSON.stringify(pedido)],
+	// 	type: sequelize.QueryTypes.SELECT
+	// });
+	// return Object.values(result[0]);
+
+	const read_query = `CALL procedure_delivery_set_pedido_repartidor(?, ?, ?)`;
+	const result = await QueryServiceV1.ejecutarProcedimiento(read_query, [idpedido, idrepartidor_va, JSON.stringify(pedido)], 'setAsignaTemporalPedidoARepartidor');
+	return result;
+	
 }
 module.exports.setAsignaTemporalPedidoARepartidor = setAsignaTemporalPedidoARepartidor;
 
@@ -260,12 +339,36 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 
 		// resetea los contadores para empezar nuevamente
 		// update pedido set num_reasignaciones = 0 where idpedido = ${dataPedido.idpedido}; 
-		const read_query = `update repartidor set flag_paso_pedido='0', pedido_por_aceptar=null where flag_paso_pedido=${dataPedido.idpedido};`;
-    	return await emitirRespuestaSP(read_query); 
+		// const read_query = `update repartidor set flag_paso_pedido='0', pedido_por_aceptar=null where flag_paso_pedido=${dataPedido.idpedido};`;
+		// const read_query = `UPDATE repartidor SET flag_paso_pedido='0', pedido_por_aceptar=null WHERE flag_paso_pedido=?`;
+		// try {
+		// 	await sequelize.query(read_query, {
+		// 		replacements: [dataPedido.idpedido],
+		// 		type: sequelize.QueryTypes.UPDATE
+		// 	});
+		// 	return true;
+		// } catch (err) {
+		// 	logger.error({ err }, 'error reset repartidor');
+		// 	return false;
+		// }
+
+		const read_query = `UPDATE repartidor SET flag_paso_pedido='0', pedido_por_aceptar=null WHERE flag_paso_pedido=?`;
+		QueryServiceV1.ejecutarConsulta(read_query, [dataPedido.idpedido], 'UPDATE', 'resetRepartidor');
+    	// return await emitirRespuestaSP(read_query); 
 	} else {
 
-		const read_query = `call procedure_delivery_set_pedido_repartidor(${dataPedido.idpedido}, ${firtsRepartidor.idrepartidor}, '${JSON.stringify(dataPedido)}')`;
-		const res_call = await emitirRespuestaSP(read_query);
+		const read_query = `CALL procedure_delivery_set_pedido_repartidor(?, ?, ?)`;
+		// const result = await sequelize.query(read_query, {
+		// 	replacements: [dataPedido.idpedido, firtsRepartidor.idrepartidor, JSON.stringify(dataPedido)],
+		// 	type: sequelize.QueryTypes.SELECT
+		// });
+
+		QueryServiceV1.ejecutarProcedimiento(read_query, [dataPedido.idpedido, firtsRepartidor.idrepartidor, JSON.stringify(dataPedido)], 'setAsignaTemporalPedidoARepartidor');
+		
+		
+
+		
+		// const res_call = await emitirRespuestaSP(read_query);
 	}
 
 
@@ -273,8 +376,20 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 	logger.debug("============== last_notification = ", firtsRepartidor.last_notification);
 	if ( firtsRepartidor.last_notification === 0 ||  firtsRepartidor.last_notification > 7) {	
 		//sendMsjsService.sendMsjSMSNewPedido(firtsRepartidor.telefono);
-		const read_query = `update repartidor set last_notification = time(now()) where idrepartidor=${firtsRepartidor.idrepartidor};`;
-    	await emitirRespuestaSP(read_query);
+		// const read_query = `update repartidor set last_notification = time(now()) where idrepartidor=${firtsRepartidor.idrepartidor};`;
+    	// await emitirRespuestaSP(read_query);
+		// ✅ SEGURO: Prepared statement
+		const read_query = `UPDATE repartidor SET last_notification = time(now()) WHERE idrepartidor=?`;
+		// try {
+		// 	await sequelize.query(read_query, {
+		// 		replacements: [firtsRepartidor.idrepartidor],
+		// 		type: sequelize.QueryTypes.UPDATE
+		// 	});
+		// } catch (err) {
+		// 	logger.error({ err }, 'error update last_notification');
+		// }
+
+		QueryServiceV1.ejecutarConsulta(read_query, [firtsRepartidor.idrepartidor], 'UPDATE', 'updateLastNotification');
 	}
 
 	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0);
@@ -332,12 +447,38 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 
 		// resetea los contadores para empezar nuevamente
 		// update pedido set num_reasignaciones = 0 where idpedido = ${dataPedido.idpedido}; 
-		const read_query = `update repartidor set flag_paso_pedido=0, pedido_por_aceptar=null where flag_paso_pedido=${dataPedido.pedidos[0]};`;
-    	return await emitirRespuestaSP(read_query); 
+		// const read_query = `update repartidor set flag_paso_pedido=0, pedido_por_aceptar=null where flag_paso_pedido=${dataPedido.pedidos[0]};`;
+    	// return await emitirRespuestaSP(read_query); 
+
+		// ✅ SEGURO: Prepared statement
+		const sql = `UPDATE repartidor SET flag_paso_pedido=0, pedido_por_aceptar=null WHERE flag_paso_pedido=?`;
+		// try {
+		// 	await sequelize.query(sql, {
+		// 		replacements: [dataPedido.pedidos[0]],
+		// 		type: sequelize.QueryTypes.UPDATE
+		// 	});
+		// } catch (err) {
+		// 	logger.error({ err }, 'error sendPedidoRepartidorOp2');
+		// }
+
+		QueryServiceV1.ejecutarConsulta(sql, [dataPedido.pedidos[0]], 'UPDATE', 'resetRepartidor');
 	} else {
 
-		const read_query = `call procedure_delivery_set_pedido_repartidor(${dataPedido.pedidos[0]}, ${firtsRepartidor.idrepartidor}, '${JSON.stringify(dataPedido)}')`;
-		const res_call = await emitirRespuestaSP(read_query);
+		// const read_query = `call procedure_delivery_set_pedido_repartidor(${dataPedido.pedidos[0]}, ${firtsRepartidor.idrepartidor}, '${JSON.stringify(dataPedido)}')`;
+		// const res_call = await emitirRespuestaSP(read_query);
+
+		const read_query = `CALL procedure_delivery_set_pedido_repartidor(?, ?, ?)`;
+		// try {
+		// 	const result = await sequelize.query(read_query, {
+		// 		replacements: [dataPedido.pedidos[0], firtsRepartidor.idrepartidor, JSON.stringify(dataPedido)],
+		// 		type: sequelize.QueryTypes.SELECT
+		// 	});
+		// 	const res_call = Object.values(result[0]);
+		// } catch (err) {
+		// 	logger.error({ err }, 'error procedure_delivery_set_pedido_repartidor op2');
+		// }
+
+		QueryServiceV1.ejecutarProcedimiento(read_query, [dataPedido.pedidos[0], firtsRepartidor.idrepartidor, JSON.stringify(dataPedido)], 'setAsignaTemporalPedidoARepartidor');
 
 		// NOTIFICA MONITOR repartidor nuevo pedido
 		// logger.debug('===== notifica-server-pedido-por-aceptar');	
@@ -423,12 +564,44 @@ const setAsignarPedido2 = async function (req, res) {
 	const idpedido = req.body.idpedido;
 	const firstPedido = idpedido.split(',')[0];
 	
-    let read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido in (${idpedido});
-    					update repartidor set ocupado = 1, pedido_paso_va = 1, pedido_por_aceptar=null where idrepartidor = ${idrepartidor};
-    					update repartidor set flag_paso_pedido=0 where flag_paso_pedido=${firstPedido}`;
+    // let read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido in (${idpedido});
+    // 					update repartidor set ocupado = 1, pedido_paso_va = 1, pedido_por_aceptar=null where idrepartidor = ${idrepartidor};
+    // 					update repartidor set flag_paso_pedido=0 where flag_paso_pedido=${firstPedido}`;
 
-	// const read_query = `call procedure_delivery_asignar_pedido(${idrepartidor}, ${idpedido})`;    					
-    execSqlQueryNoReturn(read_query, res);     
+	// // const read_query = `call procedure_delivery_asignar_pedido(${idrepartidor}, ${idpedido})`;    					
+    // execSqlQueryNoReturn(read_query, res);     
+
+	try {
+		// ✅ SEGURO: 3 queries separados con prepared statements
+		// await sequelize.query(
+		// 	`UPDATE pedido SET idrepartidor = ? WHERE idpedido IN (?)`,
+		// 	{ replacements: [idrepartidor, idpedido], type: sequelize.QueryTypes.UPDATE }
+		// );
+
+		const read_query = `UPDATE pedido SET idrepartidor = ? WHERE idpedido IN (?)`;
+		QueryServiceV1.ejecutarConsulta(read_query, [idpedido], 'UPDATE', 'setAsignarPedido2');
+
+		// await sequelize.query(
+		// 	`UPDATE repartidor SET ocupado = 1, pedido_paso_va = 1, pedido_por_aceptar=null WHERE idrepartidor = ?`,
+		// 	{ replacements: [idrepartidor], type: sequelize.QueryTypes.UPDATE }
+		// );
+
+		const read_query1 = `UPDATE repartidor SET ocupado = 1, pedido_paso_va = 1, pedido_por_aceptar=null WHERE idrepartidor = ?`;
+		QueryServiceV1.ejecutarConsulta(read_query1, [idpedido], 'UPDATE', 'setAsignarPedido2');
+
+		// await sequelize.query(
+		// 	`UPDATE repartidor SET flag_paso_pedido=0 WHERE flag_paso_pedido=?`,
+		// 	{ replacements: [firstPedido], type: sequelize.QueryTypes.UPDATE }
+		// );
+
+		const read_query2 = `UPDATE repartidor SET flag_paso_pedido=0 WHERE flag_paso_pedido=?`;
+		await QueryServiceV1.ejecutarConsulta(read_query2, [firstPedido], 'UPDATE', 'setAsignarPedido2');
+
+		return ReS(res, { data: true });
+	} catch (err) {
+		logger.error({ err }, 'error setAsignarPedido2');
+		return ReE(res, err);
+	}
 
 	// actualizamos el pedido al repartidor firebase	    
 	// apiFireBase.updateIdPedidosRepartidor({userid: idrepartidor, idpedidos: idpedido});
@@ -439,39 +612,111 @@ module.exports.setAsignarPedido2 = setAsignarPedido2;
 // esto desde app repartidor 0923
 const setNullPedidosPorAceptar = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
-	const read_query = `update repartidor set ocupado = 1, pedido_paso_va = 1, pedido_por_aceptar=null where idrepartidor = ${idrepartidor};`;
-	execSqlQueryNoReturn(read_query, res); 
+	// const read_query = `update repartidor set ocupado = 1, pedido_paso_va = 1, pedido_por_aceptar=null where idrepartidor = ${idrepartidor};`;
+	// execSqlQueryNoReturn(read_query, res); 
+
+	// const read_query = `UPDATE repartidor SET ocupado = 1, pedido_paso_va = 1, pedido_por_aceptar=null WHERE idrepartidor = ?`;
+	// try {
+	// 	await sequelize.query(read_query, {
+	// 		replacements: [idrepartidor],
+	// 		type: sequelize.QueryTypes.UPDATE
+	// 	});
+	// 	return ReS(res, { data: true });
+	// } catch (err) {
+	// 	logger.error({ err }, 'error setNullPedidosPorAceptar');
+	// 	return ReE(res, err);
+	// }
+
+	const read_query = `UPDATE repartidor SET ocupado = 1, pedido_paso_va = 1, pedido_por_aceptar=null WHERE idrepartidor = ?`;
+	await QueryServiceV1.ejecutarConsulta(read_query, [idrepartidor], 'UPDATE', 'setNullPedidosPorAceptar');
 }
 module.exports.setNullPedidosPorAceptar = setNullPedidosPorAceptar;
 
 // cuando el repartidor acepta el pedido -- se asigna el pedido al repartitor
 const setAsignarPedido = async function (req, res) {  
-	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
-	const idpedido = req.body.idpedido;           
+	const idrepartidor = managerFilter.getInfoToken(req, 'idrepartidor');
+	const idpedido = req.body.idpedido;
 	const elRepartidor = req.body.repartidor;
 	const firstPedido = idpedido.split(',')[0];
+
+	try {
+		// ✅ SEGURO: 3 queries separados con prepared statements
+		// await sequelize.query(
+		// 	`UPDATE pedido SET idrepartidor = ? WHERE idpedido IN (?)`,
+		// 	{ replacements: [idrepartidor, idpedido], type: sequelize.QueryTypes.UPDATE }
+		// );
+
+		let read_query = `UPDATE pedido SET idrepartidor = ? WHERE idpedido IN (?)`;
+		await QueryServiceV1.ejecutarConsulta(read_query, [idpedido], 'UPDATE', 'setAsignarPedido');
+
+		// await sequelize.query(
+		// 	`UPDATE repartidor SET ocupado = 1, pedido_paso_va = 1 WHERE idrepartidor = ?`,
+		// 	{ replacements: [idrepartidor], type: sequelize.QueryTypes.UPDATE }
+		// );
+
+
+		read_query = `UPDATE repartidor SET ocupado = 1, pedido_paso_va = 1 WHERE idrepartidor = ?`;
+		await QueryServiceV1.ejecutarConsulta(read_query, [idrepartidor], 'UPDATE', 'setAsignarPedido');
+
+		// await sequelize.query(
+		// 	`UPDATE repartidor SET flag_paso_pedido=0 WHERE flag_paso_pedido=?`,
+		// 	{ replacements: [firstPedido], type: sequelize.QueryTypes.UPDATE }
+		// );
+
+		read_query = `UPDATE repartidor SET flag_paso_pedido=0 WHERE flag_paso_pedido=?`;
+		await QueryServiceV1.ejecutarConsulta(read_query, [firstPedido], 'UPDATE', 'setAsignarPedido');
+
+		// ✅ SEGURO: Query para obtener clientes con prepared statement
+		const clientesQuery = `SELECT DISTINCT c.idcliente, c.nombres, c.telefono, cs.key_suscripcion_push 
+							   FROM pedido p
+							   INNER JOIN cliente_socketid cs ON cs.idcliente = p.idcliente 
+							   INNER JOIN cliente c ON c.idcliente = p.idcliente 
+							   WHERE p.idpedido IN (?)`;
+
+		// const rows = await sequelize.query(clientesQuery, {
+		// 	replacements: [idpedido],
+		// 	type: sequelize.QueryTypes.SELECT
+		// });
+
+		const rows = await QueryServiceV1.ejecutarConsulta(clientesQuery, [idpedido], 'SELECT', 'setAsignarPedido');
+
+		const lisClientesPedido = rows || [];
+
+		// Resto de la lógica comentada se mantiene igual...
+		if (!lisClientesPedido) return ReS(res, { data: true });
+
+		return ReS(res, { data: true });
+	} catch (err) {
+		logger.error({ err }, 'error setAsignarPedido');
+		return ReE(res, err);
+	}
+
+	// const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
+	// const idpedido = req.body.idpedido;           
+	// const elRepartidor = req.body.repartidor;
+	// const firstPedido = idpedido.split(',')[0];
 	
-	// si acepta no borra
-	// , pedido_por_aceptar=null
-    let read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido in (${idpedido});
-    					update repartidor set ocupado = 1, pedido_paso_va = 1 where idrepartidor = ${idrepartidor};
-    					update repartidor set flag_paso_pedido=0 where flag_paso_pedido=${firstPedido}`;
+	// // si acepta no borra
+	// // , pedido_por_aceptar=null
+    // let read_query = `update pedido set idrepartidor = ${idrepartidor} where idpedido in (${idpedido});
+    // 					update repartidor set ocupado = 1, pedido_paso_va = 1 where idrepartidor = ${idrepartidor};
+    // 					update repartidor set flag_paso_pedido=0 where flag_paso_pedido=${firstPedido}`;
 
-	// const read_query = `call procedure_delivery_asignar_pedido(${idrepartidor}, ${idpedido})`;    					
-    execSqlQueryNoReturn(read_query, res);     
-    // return emitirRespuesta_RES(read_query, res);   
+	// // const read_query = `call procedure_delivery_asignar_pedido(${idrepartidor}, ${idpedido})`;    					
+    // execSqlQueryNoReturn(read_query, res);     
+    // // return emitirRespuesta_RES(read_query, res);   
 
 
-    // enviar mensajes PUSH a los clientes de los pedidos aceptados
-    read_query = `select DISTINCT c.idcliente, c.nombres, c.telefono, cs.key_suscripcion_push from pedido p
-						inner join cliente_socketid cs on cs.idcliente = p.idcliente 
-						inner join cliente c on c.idcliente = p.idcliente 
-						where p.idpedido in (${idpedido})`;
+    // // enviar mensajes PUSH a los clientes de los pedidos aceptados
+    // read_query = `select DISTINCT c.idcliente, c.nombres, c.telefono, cs.key_suscripcion_push from pedido p
+	// 					inner join cliente_socketid cs on cs.idcliente = p.idcliente 
+	// 					inner join cliente c on c.idcliente = p.idcliente 
+	// 					where p.idpedido in (${idpedido})`;
 
-	const lisClientesPedido = await emitirRespuestaSP(read_query);
-	var _dataMsjs, actions, data, _key_suscripcion_push;
+	// const lisClientesPedido = await emitirRespuestaSP(read_query);
+	// var _dataMsjs, actions, data, _key_suscripcion_push;
 
-	if (!lisClientesPedido) return;
+	// if (!lisClientesPedido) return;
 
 	// lisClientesPedido.map(c => {
 
@@ -505,35 +750,93 @@ const setAsignarPedido = async function (req, res) {
 module.exports.setAsignarPedido = setAsignarPedido;
 
 const setPasoVaPedido = async function (req, res) {
-	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
+	const idrepartidor = managerFilter.getInfoToken(req, 'idrepartidor');
 	const paso = req.body.paso_va;
-    const read_query = `update repartidor set pedido_paso_va = ${paso} where idrepartidor = ${idrepartidor};`;
-    await execSqlQueryNoReturn(read_query, res); 
+	// ✅ SEGURO: Prepared statement
+	// const read_query = `UPDATE repartidor SET pedido_paso_va = ? WHERE idrepartidor = ?`;
+	// try {
+	// 	await sequelize.query(read_query, {
+	// 		replacements: [paso, idrepartidor],
+	// 		type: sequelize.QueryTypes.UPDATE
+	// 	});
+	// 	return ReS(res, { data: true });
+	// } catch (err) {
+	// 	logger.error({ err }, 'error setPasoVaPedido');
+	// 	return ReE(res, err);
+	// }
+
+	const read_query = `UPDATE repartidor SET pedido_paso_va = ? WHERE idrepartidor = ?`;
+	await QueryServiceV1.ejecutarConsulta(read_query, [paso, idrepartidor], 'UPDATE', 'setPasoVaPedido');
+
+	// const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
+	// const paso = req.body.paso_va;
+    // const read_query = `update repartidor set pedido_paso_va = ${paso} where idrepartidor = ${idrepartidor};`;
+    // await execSqlQueryNoReturn(read_query, res); 
 }
 module.exports.setPasoVaPedido = setPasoVaPedido;
 
 
 /// desde el comercio
 const setUpdateEstadoPedido = async function (idpedido, estado, tiempo = null) {	
-	// const savePwaEstado = estado === 4 ? ", pwa_estado = 'E', estado=2 " : '';	 // estado = 2 => pagado
-	const savePwaEstado = estado === 4 ? ", pwa_estado = 'E' " : '';	 // estado = 2 => pagado // quitamos estado 2 para que no se desaparesca del control de pedidos
-    const read_query = `update pedido set pwa_delivery_status = '${estado}' ${savePwaEstado} where idpedido = ${idpedido};`;
-    await emitirRespuesta(read_query);        
+	const savePwaEstado = estado === 4 ? ", pwa_estado = 'E' " : '';
+	// ✅ SEGURO: Prepared statement
+	// const read_query = `UPDATE pedido SET pwa_delivery_status = ? ${savePwaEstado} WHERE idpedido = ?`;
+	// try {
+	// 	await sequelize.query(read_query, {
+	// 		replacements: [estado, idpedido],
+	// 		type: sequelize.QueryTypes.UPDATE
+	// 	});
+	// } catch (err) {
+	// 	logger.error({ err }, 'error setUpdateEstadoPedido');
+	// }
+
+	const read_query = `UPDATE pedido SET pwa_delivery_status = ? ${savePwaEstado} WHERE idpedido = ?`;
+	await QueryServiceV1.ejecutarConsulta(read_query, [estado, idpedido], 'UPDATE', 'setUpdateEstadoPedido');
+
+	// // const savePwaEstado = estado === 4 ? ", pwa_estado = 'E', estado=2 " : '';	 // estado = 2 => pagado
+	// const savePwaEstado = estado === 4 ? ", pwa_estado = 'E' " : '';	 // estado = 2 => pagado // quitamos estado 2 para que no se desaparesca del control de pedidos
+    // const read_query = `update pedido set pwa_delivery_status = '${estado}' ${savePwaEstado} where idpedido = ${idpedido};`;
+    // await emitirRespuesta(read_query);        
 }
 module.exports.setUpdateEstadoPedido = setUpdateEstadoPedido;
 
 const setUpdateRepartidorOcupado = async function (idrepartidor, estado) {  
-	// si no esta ocupado libera pedido_por_aceptar;
-	// logger.debug('==== CAMBIAMOS DE ESTADO OCUPADO ===', estado);
-	const clearPedidoPorAceptar = estado === 0 ?  `, pedido_por_aceptar = null, pedido_paso_va = 0` : '';
-    const read_query = `update repartidor set ocupado = ${estado} ${clearPedidoPorAceptar} where idrepartidor = ${idrepartidor};`;
-    await emitirRespuesta(read_query);        
+	const clearPedidoPorAceptar = estado === 0 ? `, pedido_por_aceptar = null, pedido_paso_va = 0` : '';
+	// ✅ SEGURO: Prepared statement
+	// const read_query = `UPDATE repartidor SET ocupado = ? ${clearPedidoPorAceptar} WHERE idrepartidor = ?`;
+	// try {
+	// 	await sequelize.query(read_query, {
+	// 		replacements: [estado, idrepartidor],
+	// 		type: sequelize.QueryTypes.UPDATE
+	// 	});
+	// } catch (err) {
+	// 	logger.error({ err }, 'error setUpdateRepartidorOcupado');
+	// }
+
+	const read_query = `UPDATE repartidor SET ocupado = ? ${clearPedidoPorAceptar} WHERE idrepartidor = ?`;
+	QueryServiceV1.ejecutarConsulta(read_query, [estado, idrepartidor], 'UPDATE', 'setUpdateRepartidorOcupado');
+	// // si no esta ocupado libera pedido_por_aceptar;
+	// // logger.debug('==== CAMBIAMOS DE ESTADO OCUPADO ===', estado);
+	// const clearPedidoPorAceptar = estado === 0 ?  `, pedido_por_aceptar = null, pedido_paso_va = 0` : '';
+    // const read_query = `update repartidor set ocupado = ${estado} ${clearPedidoPorAceptar} where idrepartidor = ${idrepartidor};`;
+    // await emitirRespuesta(read_query);        
 }
 module.exports.setUpdateRepartidorOcupado = setUpdateRepartidorOcupado;
 
 const setLiberarPedido = async function (idrepartidor) {  
-    const read_query = `update repartidor set ocupado = 0, pedido_por_aceptar = null, solicita_liberar_pedido=0, pedido_paso_va = 0 where idrepartidor = ${idrepartidor};`;
-    await emitirRespuesta(read_query);        
+	// ✅ SEGURO: Prepared statement
+    // const read_query = `UPDATE repartidor SET ocupado = 0, pedido_por_aceptar = null, solicita_liberar_pedido=0, pedido_paso_va = 0 WHERE idrepartidor = ?`;
+    // try {
+	// 	await sequelize.query(read_query, {
+	// 		replacements: [idrepartidor],
+	// 		type: sequelize.QueryTypes.UPDATE
+	// 	});
+	// } catch (err) {
+	// 	logger.error({ err }, 'error setLiberarPedido');
+	// }
+
+	const read_query = `UPDATE repartidor SET ocupado = 0, pedido_por_aceptar = null, solicita_liberar_pedido=0, pedido_paso_va = 0 WHERE idrepartidor = ?`;
+	QueryServiceV1.ejecutarConsulta(read_query, [idrepartidor], 'UPDATE', 'setLiberarPedido');
 }
 module.exports.setLiberarPedido = setLiberarPedido;
 
@@ -541,19 +844,63 @@ module.exports.setLiberarPedido = setLiberarPedido;
 
 const getSocketIdRepartidor = async function (listIdRepartidor) {
 	// const idcliente = dataCLiente.idcliente;
-    const read_query = `SELECT socketid, pwa_code_verification as key_suscripcion_push, ocupado from repartidor where idrepartidor in (${listIdRepartidor})`;
-    return await emitirRespuesta(read_query);        
+    // const read_query = `SELECT socketid, pwa_code_verification as key_suscripcion_push, ocupado from repartidor where idrepartidor in (${listIdRepartidor})`;
+    // return await emitirRespuesta(read_query);   
+	// ✅ SEGURO: Prepared statement
+    // const read_query = `SELECT socketid, pwa_code_verification as key_suscripcion_push, ocupado FROM repartidor WHERE idrepartidor IN (?)`;
+    // try {
+	// 	return await sequelize.query(read_query, {
+	// 		replacements: [listIdRepartidor],
+	// 		type: sequelize.QueryTypes.SELECT
+	// 	});
+	// } catch (err) {
+	// 	logger.error({ err }, 'error getSocketIdRepartidor');
+	// 	return [];
+	// }
+
+	const read_query = `SELECT socketid, pwa_code_verification as key_suscripcion_push, ocupado FROM repartidor WHERE idrepartidor IN (?)`;
+	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [listIdRepartidor], 'SELECT', 'getSocketIdRepartidor');
+	return rows || [];
 }
 module.exports.getSocketIdRepartidor = getSocketIdRepartidor;
 
 const getListPedidosPendientesComercio = async function(req, res) {
+// 	const idsede = managerFilter.getInfoToken(req,'idsede_suscrito');
+// 	const read_query = `select * from pedido p
+// 	inner join tipo_consumo tc on p.idtipo_consumo = tc.idtipo_consumo 
+// where cast(p.fecha_hora as date) >= date_add(curdate(), INTERVAL -1 day) and p.idsede = ${idsede} and IFNULL(p.idrepartidor, 0) = 0  
+// 	and tc.descripcion = 'DELIVERY'
+// order by p.idpedido desc`;
+// 	return await emitirRespuesta_RES(read_query, res);
+
 	const idsede = managerFilter.getInfoToken(req,'idsede_suscrito');
-	const read_query = `select * from pedido p
-	inner join tipo_consumo tc on p.idtipo_consumo = tc.idtipo_consumo 
-where cast(p.fecha_hora as date) >= date_add(curdate(), INTERVAL -1 day) and p.idsede = ${idsede} and IFNULL(p.idrepartidor, 0) = 0  
-	and tc.descripcion = 'DELIVERY'
-order by p.idpedido desc`;
-	return await emitirRespuesta_RES(read_query, res);
+	// ✅ SEGURO: Prepared statement
+	// const read_query = `SELECT * FROM pedido p
+	// INNER JOIN tipo_consumo tc ON p.idtipo_consumo = tc.idtipo_consumo 
+	// WHERE CAST(p.fecha_hora as date) >= date_add(curdate(), INTERVAL -1 day) 
+	// AND p.idsede = ? AND IFNULL(p.idrepartidor, 0) = 0  
+	// AND tc.descripcion = 'DELIVERY'
+	// ORDER BY p.idpedido desc`;
+	
+	// try {
+	// 	const rows = await sequelize.query(read_query, {
+	// 		replacements: [idsede],
+	// 		type: sequelize.QueryTypes.SELECT
+	// 	});
+	// 	return ReS(res, { data: rows });
+	// } catch (error) {
+	// 	logger.error({ error }, 'error getListPedidosPendientesComercio');
+	// 	return ReE(res, error);
+	// }
+
+	const read_query = `SELECT * FROM pedido p
+	INNER JOIN tipo_consumo tc ON p.idtipo_consumo = tc.idtipo_consumo 
+	WHERE CAST(p.fecha_hora as date) >= date_add(curdate(), INTERVAL -1 day) 
+	AND p.idsede = ? AND IFNULL(p.idrepartidor, 0) = 0  
+	AND tc.descripcion = 'DELIVERY'
+	ORDER BY p.idpedido desc`;
+	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idsede], 'SELECT', 'getListPedidosPendientesComercio');
+	return rows || [];
 }
 module.exports.getListPedidosPendientesComercio = getListPedidosPendientesComercio
 
@@ -561,9 +908,21 @@ module.exports.getListPedidosPendientesComercio = getListPedidosPendientesComerc
 const getEstadoPedido = async function (req, res) {	
     const idpedido = req.body.idpedido;
         
-    const read_query = `select pwa_delivery_status from pedido where idpedido=${idpedido}`;
-    // return emitirRespuestaSP(read_query);      
-    return await emitirRespuesta_RES(read_query, res);  
+    // const read_query = `SELECT pwa_delivery_status FROM pedido WHERE idpedido=?`;
+    // try {
+	// 	const rows = await sequelize.query(read_query, {
+	// 		replacements: [idpedido],
+	// 		type: sequelize.QueryTypes.SELECT
+	// 	});
+	// 	return ReS(res, { data: rows });
+	// } catch (error) {
+	// 	logger.error({ error }, 'error getEstadoPedido');
+	// 	return ReE(res, error);
+	// }
+
+	const read_query = `SELECT pwa_delivery_status FROM pedido WHERE idpedido=?`;
+	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idpedido], 'SELECT', 'getEstadoPedido');
+	return rows || [];
 }
 module.exports.getEstadoPedido = getEstadoPedido;
 
@@ -572,8 +931,26 @@ const setFinPedidoEntregado = async function (req, res) {
 	const obj = req.body;
 	// logger.debug(JSON.stringify(obj));
 
-    const read_query = `call procedure_pwa_delivery_pedido_entregado('${JSON.stringify(obj)}')`;
-    return await emitirRespuesta_RES(read_query, res);        
+    // const read_query = `call procedure_pwa_delivery_pedido_entregado('${JSON.stringify(obj)}')`;
+    // return await emitirRespuesta_RES(read_query, res);        
+
+	// ✅ SEGURO: Prepared statement
+	// const read_query = `CALL procedure_pwa_delivery_pedido_entregado(?)`;
+	// try {
+	// 	const rows = await sequelize.query(read_query, {
+	// 		replacements: [JSON.stringify(obj)],
+	// 		type: sequelize.QueryTypes.SELECT
+	// 	});
+	// 	return ReS(res, { data: rows });
+	// } catch (error) {
+	// 	logger.error({ error }, 'error setFinPedidoEntregado');
+	// 	return ReE(res, error);
+	// }
+
+	const read_query = `CALL procedure_pwa_delivery_pedido_entregado(?)`;
+	const rows = await QueryServiceV1.ejecutarProcedimiento(read_query, [JSON.stringify(obj)], 'setFinPedidoEntregado');
+	
+	return ReS(res, { data: rows });
 }
 module.exports.setFinPedidoEntregado = setFinPedidoEntregado;
 
@@ -585,45 +962,149 @@ const setFinPedidoExpressEntregado = async function (req, res) {
 	const tipo_pedido = req.body.tipo_pedido;
 
 
-	var read_query = '';
+	// var read_query = '';
 
-	if ( tipo_pedido === 'express' ) {
-		if ( num_quedan > 0 ) {
-			read_query = `update pedido_mandado set pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now()), pwa_estado='E' where idpedido_mandado = ${idpedido}; update repartidor set pedido_por_aceptar='${JSON.stringify(pedidos_quedan)}' where idrepartidor = ${idrepartidor}`;
-		}
-		else {
-			read_query = `update pedido_mandado set pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now()), pwa_estado='E' where idpedido_mandado = ${idpedido}; update repartidor set ocupado = 0, pedido_por_aceptar=null where idrepartidor = ${idrepartidor}`;
-		}
-	}	
+	// if ( tipo_pedido === 'express' ) {
+	// 	if ( num_quedan > 0 ) {
+	// 		read_query = `update pedido_mandado set pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now()), pwa_estado='E' where idpedido_mandado = ${idpedido}; update repartidor set pedido_por_aceptar='${JSON.stringify(pedidos_quedan)}' where idrepartidor = ${idrepartidor}`;
+	// 	}
+	// 	else {
+	// 		read_query = `update pedido_mandado set pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now()), pwa_estado='E' where idpedido_mandado = ${idpedido}; update repartidor set ocupado = 0, pedido_por_aceptar=null where idrepartidor = ${idrepartidor}`;
+	// 	}
+	// }	
 
-	if ( tipo_pedido === 'retiro_atm' ) {
-		read_query = `update atm_retiros set pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora_registro, now()), pwa_estado='E' where idatm_retiros = ${idpedido}; update repartidor set ocupado = 0, pedido_por_aceptar=null where idrepartidor = ${idrepartidor}`;
+	// if ( tipo_pedido === 'retiro_atm' ) {
+	// 	read_query = `update atm_retiros set pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora_registro, now()), pwa_estado='E' where idatm_retiros = ${idpedido}; update repartidor set ocupado = 0, pedido_por_aceptar=null where idrepartidor = ${idrepartidor}`;
+	// }
+    // await execSqlQueryNoReturn(read_query, res);
+	try {
+		if (tipo_pedido === 'express') {
+			// ✅ SEGURO: 2 queries separados con prepared statements
+			// await sequelize.query(
+			// 	`UPDATE pedido_mandado SET pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now()), pwa_estado='E' WHERE idpedido_mandado = ?`,
+			// 	{ replacements: [idpedido], type: sequelize.QueryTypes.UPDATE }
+			// );
+
+			let read_query = `UPDATE pedido_mandado SET pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now()), pwa_estado='E' WHERE idpedido_mandado = ?`;
+			await QueryServiceV1.ejecutarConsulta(read_query, [idpedido], 'UPDATE', 'setFinPedidoExpressEntregado');
+
+			let read_query2 = '';
+			if (num_quedan > 0) {
+				read_query2 = `UPDATE repartidor SET pedido_por_aceptar=? WHERE idrepartidor = ?`;
+				await QueryServiceV1.ejecutarConsulta(read_query2, [JSON.stringify(pedidos_quedan), idrepartidor], 'UPDATE', 'setFinPedidoExpressEntregado');
+			} else {
+				read_query2 = `UPDATE repartidor SET ocupado = 0, pedido_por_aceptar=null WHERE idrepartidor = ?`;
+				await QueryServiceV1.ejecutarConsulta(read_query2, [idrepartidor], 'UPDATE', 'setFinPedidoExpressEntregado');
+			}
+
+			// if (num_quedan > 0) {
+			// 	await sequelize.query(
+			// 		`UPDATE repartidor SET pedido_por_aceptar=? WHERE idrepartidor = ?`,
+			// 		{ replacements: [JSON.stringify(pedidos_quedan), idrepartidor], type: sequelize.QueryTypes.UPDATE }
+			// 	);
+			// } else {
+			// 	await sequelize.query(
+			// 		`UPDATE repartidor SET ocupado = 0, pedido_por_aceptar=null WHERE idrepartidor = ?`,
+			// 		{ replacements: [idrepartidor], type: sequelize.QueryTypes.UPDATE }
+			// 	);
+			// }
+		}
+
+		if (tipo_pedido === 'retiro_atm') {
+			// ✅ SEGURO: 2 queries separados con prepared statements
+			// await sequelize.query(
+			// 	`UPDATE atm_retiros SET pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora_registro, now()), pwa_estado='E' WHERE idatm_retiros = ?`,
+			// 	{ replacements: [idpedido], type: sequelize.QueryTypes.UPDATE }
+			// );
+
+			let read_query = `UPDATE atm_retiros SET pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora_registro, now()), pwa_estado='E' WHERE idatm_retiros = ?`;
+			await QueryServiceV1.ejecutarConsulta(read_query, [idpedido], 'UPDATE', 'setFinPedidoExpressEntregado');
+
+			// await sequelize.query(
+			// 	`UPDATE repartidor SET ocupado = 0, pedido_por_aceptar=null WHERE idrepartidor = ?`,
+			// 	{ replacements: [idrepartidor], type: sequelize.QueryTypes.UPDATE }
+			// );
+
+			let read_query2 = `UPDATE repartidor SET ocupado = 0, pedido_por_aceptar=null WHERE idrepartidor = ?`;
+			await QueryServiceV1.ejecutarConsulta(read_query2, [idrepartidor], 'UPDATE', 'setFinPedidoExpressEntregado');
+		}
+
+		return ReS(res, { data: true });
+	} catch (err) {
+		logger.error({ err }, 'error setFinPedidoExpressEntregado');
+		return ReE(res, err);
 	}
-    await execSqlQueryNoReturn(read_query, res);
 }
 module.exports.setFinPedidoExpressEntregado = setFinPedidoExpressEntregado;
 
 const getPedidosEntregadoDia = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	
-    const read_query = `call procedure_pwa_repartidor_pedido_entregado_dia(${idrepartidor})`;
-    return await emitirRespuesta_RES(read_query, res);        
+    // const read_query = `call procedure_pwa_repartidor_pedido_entregado_dia(${idrepartidor})`;
+    // return await emitirRespuesta_RES(read_query, res);        
+	
+	// ✅ SEGURO: Prepared statement
+    const read_query = `CALL procedure_pwa_repartidor_pedido_entregado_dia(?)`;
+    // try {
+	// 	const rows = await sequelize.query(read_query, {
+	// 		replacements: [idrepartidor],
+	// 		type: sequelize.QueryTypes.SELECT
+	// 	});
+	// 	return ReS(res, { data: rows });
+	// } catch (err) {
+	// 	logger.error({ err }, 'error getPedidosEntregadoDia');
+	// 	return ReE(res, err);
+	// }
+	
+	const rows = await QueryServiceV1.ejecutarProcedimiento(read_query, [idrepartidor], 'getPedidosEntregadoDia');
+	return ReS(res, { data: rows });
 }
 module.exports.getPedidosEntregadoDia = getPedidosEntregadoDia;
 
 const getPedidosResumenEntregadoDia = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor');
 	
-    const read_query = `call procedure_pwa_repartidor_resumen_entregado_dia(${idrepartidor})`;
-    return await emitirRespuesta_RES(read_query, res);        
+    // const read_query = `call procedure_pwa_repartidor_resumen_entregado_dia(${idrepartidor})`;
+    // return await emitirRespuesta_RES(read_query, res);        
+	
+	// ✅ SEGURO: Prepared statement
+    const read_query = `CALL procedure_pwa_repartidor_resumen_entregado_dia(?)`;
+    // try {
+	// 	const rows = await sequelize.query(read_query, {
+	// 		replacements: [idrepartidor],
+	// 		type: sequelize.QueryTypes.SELECT
+	// 	});
+	// 	return ReS(res, { data: rows });
+	// } catch (err) {
+	// 	logger.error({ err }, 'error getPedidosResumenEntregadoDia');
+	// 	return ReE(res, err);
+	// }
+
+	const rows = await QueryServiceV1.ejecutarProcedimiento(read_query, [idrepartidor], 'getPedidosResumenEntregadoDia');
+	return ReS(res, { data: rows });
 }
 module.exports.getPedidosResumenEntregadoDia = getPedidosResumenEntregadoDia;
 
 
 const getPedidoPendienteAceptar = async function (idrepartidor) {
 	// const idcliente = dataCLiente.idcliente;
-    const read_query = `SELECT pedido_por_aceptar, solicita_liberar_pedido, pedido_paso_va, socketid, pwa_code_verification as key_suscripcion_push from repartidor where idrepartidor = ${idrepartidor}`;
-    return await emitirRespuesta(read_query);        
+    // const read_query = `SELECT pedido_por_aceptar, solicita_liberar_pedido, pedido_paso_va, socketid, pwa_code_verification as key_suscripcion_push from repartidor where idrepartidor = ${idrepartidor}`;
+    // return await emitirRespuesta(read_query);        
+	
+	// ✅ SEGURO: Prepared statement
+    const read_query = `SELECT pedido_por_aceptar, solicita_liberar_pedido, pedido_paso_va, socketid, pwa_code_verification as key_suscripcion_push from repartidor where idrepartidor = ?`;
+    // try {
+	// 	return await sequelize.query(read_query, {
+	// 		replacements: [idrepartidor],
+	// 		type: sequelize.QueryTypes.SELECT
+	// 	});
+	// } catch (err) {
+	// 	logger.error({ err }, 'error getPedidoPendienteAceptar');
+	// 	return [];
+	// }
+
+	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idrepartidor], 'SELECT', 'getPedidoPendienteAceptar');
+	return rows || [];
 }
 module.exports.getPedidoPendienteAceptar = getPedidoPendienteAceptar;
 
@@ -632,24 +1113,71 @@ module.exports.getPedidoPendienteAceptar = getPedidoPendienteAceptar;
 
 const getPropioPedidos = async function (req, res) {
 	const idrepartidor = req.body.idrepartidor || managerFilter.getInfoToken(req,'idrepartidor');
-    const read_query = `SELECT * from  pedido where idrepartidor=${idrepartidor} and (fecha = DATE_FORMAT(now(), '%d/%m/%Y')  or cierre=0)`;
-    return await emitirRespuesta_RES(read_query, res);        
+    // const read_query = `SELECT * from  pedido where idrepartidor=${idrepartidor} and (fecha = DATE_FORMAT(now(), '%d/%m/%Y')  or cierre=0)`;
+    // return await emitirRespuesta_RES(read_query, res);        
+	
+	// ✅ SEGURO: Prepared statement
+    const read_query = `SELECT * from  pedido where idrepartidor=? and (fecha = DATE_FORMAT(now(), '%d/%m/%Y')  or cierre=0)`;
+    // try {
+	// 	return await sequelize.query(read_query, {
+	// 		replacements: [idrepartidor],
+	// 		type: sequelize.QueryTypes.SELECT
+	// 	});
+	// } catch (err) {
+	// 	logger.error({ err }, 'error getPropioPedidos');
+	// 	return [];
+	// }
+
+	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idrepartidor], 'SELECT', 'getPropioPedidos');
+	return rows || [];
 }
 module.exports.getPropioPedidos = getPropioPedidos;
 
 const getInfo = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor') || req.body.idrepartidor;
-    const read_query = `SELECT * from  repartidor where idrepartidor=${idrepartidor}`;
-    return await emitirRespuesta_RES(read_query, res);        
+    // const read_query = `SELECT * from  repartidor where idrepartidor=${idrepartidor}`;
+    // return await emitirRespuesta_RES(read_query, res);        
+	
+	// ✅ SEGURO: Prepared statement
+    const read_query = `SELECT * from  repartidor where idrepartidor=?`;
+    // try {
+	// 	return await sequelize.query(read_query, {
+	// 		replacements: [idrepartidor],
+	// 		type: sequelize.QueryTypes.SELECT
+	// 	});
+	// } catch (err) {
+	// 	logger.error({ err }, 'error getInfo');
+	// 	return [];
+	// }
+
+	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idrepartidor], 'SELECT', 'getInfo');
+	return rows || [];
 }
 module.exports.getInfo = getInfo;
 
 const getPedidosRecibidosGroup = async function (req, res) {
 	_ids = req.body.ids;
+    // const read_query = `SELECT p.*, ptle.time_line from  pedido p
+	// 						left join pedido_time_line_entrega ptle using(idpedido) 
+	// 					where p.idpedido in (${_ids}) GROUP by p.idpedido`;
+    // return await emitirRespuesta_RES(read_query, res);        
+	
+	// ✅ SEGURO: Prepared statement
     const read_query = `SELECT p.*, ptle.time_line from  pedido p
-							left join pedido_time_line_entrega ptle using(idpedido) 
-						where p.idpedido in (${_ids}) GROUP by p.idpedido`;
-    return await emitirRespuesta_RES(read_query, res);        
+						left join pedido_time_line_entrega ptle using(idpedido) 
+					where p.idpedido in (?) GROUP by p.idpedido`;
+    // try {
+	// 	return await sequelize.query(read_query, {
+	// 		replacements: [_ids],
+	// 		type: sequelize.QueryTypes.SELECT
+	// 	});
+	// } catch (err) {
+	// 	logger.error({ err }, 'error getPedidosRecibidosGroup');
+	// 	return [];
+	// }
+
+	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [_ids], 'SELECT', 'getPedidosRecibidosGroup');
+	return rows || [];
 }
 module.exports.getPedidosRecibidosGroup = getPedidosRecibidosGroup;
 
@@ -676,7 +1204,8 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 	// lista de idrepartidor a quitar pedido
 	// para solo quitar una vez
 	let listLastRepartidor = ''; 
-	listPedidos = JSON.parse(JSON.stringify(listPedidos));
+
+	listPedidos = Array.isArray(listPedidos) ? JSON.parse(JSON.stringify(listPedidos)) : [];
 	
 	// logger.debug ( 'listPedidos listPedidos.lenght', listPedidos.length );
 	// logger.debug (' == listPedidos ==', listPedidos)
@@ -1121,8 +1650,21 @@ module.exports.runLoopPrueba = runLoopPrueba;
 
 // a los pedidos que recoge el cliente lo asigna el repartidor 1 = Atencion al cliente
 const setAsignarRepartoAtencionCliente = async function (idpedido) {  	
-	const sql = `update pedido set idrepartidor = 1 where idpedido = ${idpedido};`;
-	await onlyUpdateQuery(sql);
+	// const sql = `update pedido set idrepartidor = 1 where idpedido = ${idpedido};`;
+	// await onlyUpdateQuery(sql);
+	
+	// ✅ SEGURO: Prepared statement
+	const sql = `UPDATE pedido SET idrepartidor = 1 WHERE idpedido = ?`;
+	// try {
+	// 	await sequelize.query(sql, {
+	// 		replacements: [idpedido],
+	// 		type: sequelize.QueryTypes.UPDATE
+	// 	});
+	// } catch (err) {
+	// 	logger.error({ err }, 'error setAsignarRepartoAtencionCliente');
+	// }
+
+	await QueryServiceV1.ejecutarConsulta(sql, [idpedido], 'UPDATE', 'setAsignarRepartoAtencionCliente');	
 }
 module.exports.setAsignarRepartoAtencionCliente = setAsignarRepartoAtencionCliente;
 

@@ -8,6 +8,8 @@ const socketIo = require('socket.io');
 var app = express();
 var bodyParser = require('body-parser');
 var cors=require('cors');
+const helmet = require('helmet');
+const logger = require('./utilitarios/logger');
 
 // // IMPORTANTE: Hacer que toda la aplicación use directamente la versión refactorizada
 // const originalHandler = require('./service/handle.stock');
@@ -19,7 +21,6 @@ var cors=require('cors');
 //     originalHandler[key] = v1Handler[key];
 // });
 
-// console.log('🔔 Sistema actualizado para usar directamente handle.stock.v1.js en toda la aplicación');
 
 // // Opcional: Activar además la implementación híbrida con Sequelize
 // const stockHybridService = require('./service/stock.hybrid');
@@ -28,16 +29,15 @@ var cors=require('cors');
 // const originalUpdateStock = v1Handler.updateStock;
 // v1Handler.updateStock = async (op, item, idsede) => {
 //     try {
-//         console.log('🌟 Usando implementación híbrida con Sequelize');
 //         return await stockHybridService.updateStock(op, item, idsede);
 //     } catch (error) {
 //         console.error('Error en implementación híbrida, usando v1:', error);
-//         console.log('🔄 Usando implementación v1');
 //         return await originalUpdateStock(op, item, idsede);
 //     }
 // };
 
 app.use(cors());
+app.use(helmet());
 
 // "socket.io": "^2.4.1",
 // "socket.io-client": "^2.4.0",
@@ -78,7 +78,7 @@ app.use(function(req, res, next) {
 // error handler
 app.use(function(err, req, res, next) {
     // render the error page
-    console.log(err);
+    logger.error(err);
     res.status(err.status || 500);
     res.json({
         status: 0,
@@ -121,14 +121,14 @@ const io = socketIo(server, {
     allowUpgrades: true, // Permite actualizar de polling a websocket
     // perMessageDeflate: false, // Deshabilita la compresión para mejor compatibilidad
     logger: {
-        debug: (msg) => console.log('Socket.IO debug:', msg),
-        info: (msg) => console.log('Socket.IO info:', msg),
-        error: (msg) => console.error('Socket.IO error:', msg)
+        debug: (msg) => logger.debug('Socket.IO debug:', msg),
+        info: (msg) => logger.info('Socket.IO info:', msg),
+        error: (msg) => logger.error('Socket.IO error:', msg)
     }
 }).listen(config.portSocket);
 
 server.listen(config.port, function () {
-    console.log('Server is running.. port '+ config.port, 'socket port', config.portSocket); 
+    logger.info('Server is running.. port '+ config.port, 'socket port', config.portSocket); 
 });
 
 // produccion
@@ -142,7 +142,6 @@ server.listen(config.port, function () {
 // });
 
 // server.listen(config.port, function () {
-//     console.log('Server is running.. port '+ config.port); 
 // });
 
 socketsController.socketsOn(io);

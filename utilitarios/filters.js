@@ -35,9 +35,6 @@ let filter = {
             const operadorCol = partCol[1];
             const valCol = partCol[2];
 
-            console.log('nomCol ', nomCol);
-
-            console.log('partCol.length: ', partCol.length);
 
             if ( partCol.length > 1) {            
 
@@ -90,15 +87,11 @@ let filter = {
                 logic = x;                
             }
         })
-
-        console.log('filtros :', arrRpt);
-
         return arrRpt;
     },
 
     getInfoToken: (req, key) => {        
         // obtiene los valores del token segun key: idorg=idorg => val a buscar idorg        
-        console.log('req.usuariotoken', req.usuariotoken);
         return req.usuariotoken[key] || null;
     },
     

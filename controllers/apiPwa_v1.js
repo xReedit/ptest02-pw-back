@@ -106,7 +106,7 @@ const setClienteConectado = async ({ idcliente, socketid }) => {
     const query = `INSERT INTO cliente_socketid (idcliente, socketid, conectado)
     VALUES (?, ?, '1')
     ON DUPLICATE KEY UPDATE socketid = ?, conectado = '1';`;
-    const rows = await QueryServiceV1.ejecutarConsulta(query, [idcliente, socketid], 'INSERT', 'setClienteConectado');
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [idcliente, socketid, '1'], 'INSERT', 'setClienteConectado');
     return rows;
 };
 module.exports.setClienteConectado = setClienteConectado;
@@ -838,7 +838,7 @@ const setRegisterClienteLogin = async function (req, res) {
 
     // return await emitirRespuestaSP_RES(read_query, res); 
 
-    const query = `call procedure_pwa_register_cliente_login(?, ?);`;
+    const query = `call procedure_pwa_register_cliente_login(?);`;
     const rows = await QueryServiceV1.ejecutarProcedimiento(query, [JSON.stringify(dataLogin)], 'setRegisterClienteLogin');
     return ReS(res, {data: rows || [] });
 }

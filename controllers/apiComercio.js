@@ -98,10 +98,10 @@ const setComercioConectado = function (dataCLiente) {
     const idsede = dataCLiente.idsede;
     const socketid = dataCLiente.socketid;
     if ( idsede ) {
-    	// const read_query = `insert into sede_socketid (idsede, socketid, conectado) values (${idsede}, '${socketid}', '1')  ON DUPLICATE KEY UPDATE socketid = '${socketid}', conectado='1';`;
-    	// return emitirRespuesta(read_query);
-		const read_query = `insert into sede_socketid (idsede, socketid, conectado) values (?, ?, '1')  ON DUPLICATE KEY UPDATE socketid = ?, conectado='1';`;		
-		que
+    	const read_query = `insert into sede_socketid (idsede, socketid, conectado) values (${idsede}, '${socketid}', '1')  ON DUPLICATE KEY UPDATE socketid = '${socketid}', conectado='1';`;
+    	return emitirRespuesta(read_query);
+		// const read_query = `insert into sede_socketid (idsede, socketid, conectado) values (?, ?, '1')  ON DUPLICATE KEY UPDATE socketid = ?, conectado='1';`;		
+		
     }    
 }
 module.exports.setComercioConectado = setComercioConectado;

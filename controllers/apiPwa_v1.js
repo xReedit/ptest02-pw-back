@@ -7,7 +7,7 @@ let handleStock = require('../service/handle.stock.v1');
 let logger = require('../utilitarios/logger');
 
 // ✅ IMPORTANTE: Usar instancia centralizada de Sequelize
-const sequelize = require('../config/database');
+const { sequelize } = require('../config/database');
 // const { Sequelize } = require('sequelize');
 const QueryServiceV1 = require('../service/query.service.v1');
 

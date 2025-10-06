@@ -1,12 +1,12 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
-let {Sequelize, QueryTypes} = require('sequelize');
+// let {Sequelize, QueryTypes} = require('sequelize');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 let logger = require('../utilitarios/logger');
 
 // let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
-const sequelize = require('../config/database');
+const { sequelize, QueryTypes } = require('../config/database');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);

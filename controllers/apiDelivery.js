@@ -6,7 +6,7 @@ let managerFilter = require('../utilitarios/filters');
 let logger = require('../utilitarios/logger');
 
 // ✅ SEGURO: Conexión centralizada
-const sequelize = require('../config/database');
+const { sequelize } = require('../config/database');
 const QueryServiceV1 = require('../service/query.service.v1');
 
 let mysql_clean = function (string) {

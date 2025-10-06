@@ -9,7 +9,7 @@
  * - Manejo automático de reconexiones
  */
 
-const { Sequelize } = require('sequelize');
+const { Sequelize, QueryTypes } = require('sequelize');
 const config = require('../_config');
 
 // ✅ Usar configuración centralizada de _config.js con pool optimizado
@@ -64,7 +64,9 @@ sequelize.authenticate()
   });
 
 // ⭐ Exportar SOLO esta instancia (no crear nuevas)
+// Incluir QueryTypes para evitar importaciones duplicadas de 'sequelize'
 module.exports = {
   sequelize,
-  Sequelize
+  Sequelize,
+  QueryTypes  // ✅ Exportar QueryTypes centralizado
 };

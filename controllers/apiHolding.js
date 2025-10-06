@@ -9,7 +9,7 @@ const holdingService = require('../service/holding.sevice');
 let logger = require('../utilitarios/logger');
 
 // let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
-const sequelize = require('../config/database');
+const { sequelize } = require('../config/database');
 
 const emitirRespuesta = async (xquery) => {    
     try {

@@ -6,11 +6,11 @@ const webpush = require('web-push');
 // let Sequelize = require('sequelize');
 const io = require("socket.io-client");
 const QueryServiceV1 = require('../service/query.service.v1');
-const sequelize = require('../config/database');
+const { sequelize } = require('../config/database');
 
 const nodemailer = require("nodemailer");
 
-const logger = require('../utilitarios/logger');
+
 
 
 // // create reusable transporter object using the default SMTP transport

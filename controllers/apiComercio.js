@@ -1,24 +1,28 @@
 const { to, ReE, ReS }  = require('../service/uitl.service');
 const sendMsjsService = require('./sendMsj.js');
-let Sequelize = require('sequelize');
+// let Sequelize = require('sequelize');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 let logger = require('../utilitarios/logger');
+const QueryServiceV1 = require('../service/query.service.v1');
 
 // let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
-const sequelize = require('../config/database');
+const { sequelize } = require('../config/database');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
 };
 
 
-const setOnline = function (req, res) {  
+const setOnline = async function (req, res) {  
 	const idsede = managerFilter.getInfoToken(req,'idsede');
 	const estado = req.body.estado;	
-    const read_query = `update sede set pwa_delivery_comercio_online = ${estado} where idsede = ${idsede}`;
-    emitirRespuestaSP_RES(read_query, res);        
+    // const read_query = `update sede set pwa_delivery_comercio_online = ${estado} where idsede = ${idsede}`;
+    // emitirRespuestaSP_RES(read_query, res);        
+	const read_query = `update sede set pwa_delivery_comercio_online = ? where idsede = ?`;
+    const rpt = await QueryServiceV1.ejecutarConsulta(read_query, [estado, idsede], 'UPDATE', 'setOnline');
+	return ReS(res, {data: rpt});
 }
 module.exports.setOnline = setOnline;
 
@@ -94,8 +98,10 @@ const setComercioConectado = function (dataCLiente) {
     const idsede = dataCLiente.idsede;
     const socketid = dataCLiente.socketid;
     if ( idsede ) {
-    	const read_query = `insert into sede_socketid (idsede, socketid, conectado) values (${idsede}, '${socketid}', '1')  ON DUPLICATE KEY UPDATE socketid = '${socketid}', conectado='1';`;
-    	return emitirRespuesta(read_query);
+    	// const read_query = `insert into sede_socketid (idsede, socketid, conectado) values (${idsede}, '${socketid}', '1')  ON DUPLICATE KEY UPDATE socketid = '${socketid}', conectado='1';`;
+    	// return emitirRespuesta(read_query);
+		const read_query = `insert into sede_socketid (idsede, socketid, conectado) values (?, ?, '1')  ON DUPLICATE KEY UPDATE socketid = ?, conectado='1';`;		
+		que
     }    
 }
 module.exports.setComercioConectado = setComercioConectado;

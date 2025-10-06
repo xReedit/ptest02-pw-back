@@ -9,7 +9,7 @@ let logger = require('../utilitarios/logger');
 const serviceTimerChangeCosto = require('./timerChangeCosto.js');
 
 // ✅ IMPORTANTE: Usar instancia centralizada de Sequelize
-const sequelize = require('../config/database');
+const { sequelize } = require('../config/database');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);

@@ -8,7 +8,7 @@ const logger = require('../utilitarios/logger');
 let intervalBucaRepartidor = null;
 
 // ✅ IMPORTANTE: Usar instancia centralizada de Sequelize
-const sequelize = require('../config/database');
+const { sequelize } = require('../config/database');
 // const { Sequelize } = require('sequelize');
 
 const QueryServiceV1 = require('../service/query.service.v1');

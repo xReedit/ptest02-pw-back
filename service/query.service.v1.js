@@ -7,6 +7,7 @@
 // Importar la instancia de Sequelize optimizada para alta concurrencia
 const { sequelize, Sequelize } = require('../config/database');
 const { QueryTypes } = require('sequelize');
+const logger = require('../utilitarios/logger');
 
 // Constantes para alta concurrencia (600+ negocios, 30 usuarios por negocio)
 const RETRY_CONFIG = {

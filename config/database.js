@@ -18,7 +18,8 @@ const sequelizeOptions = {
   dialectOptions: {
     timezone: '-05:00',      // GMT-5 para Perú/Colombia
     dateStrings: true,       // Evita conversiones automáticas
-    typeCast: true          // Mantiene tipos correctos
+    typeCast: true,          // Mantiene tipos correctos
+    multipleStatements: true // ⚠️ Permitir múltiples queries separadas por ;
   },
   // Pool optimizado para t3.2xlarge (8 vCPUs, 32GB RAM COMPARTIDA)
   // MySQL + Node.js + otros servicios en mismo servidor

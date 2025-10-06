@@ -1421,11 +1421,11 @@ module.exports.updatePermissionRemoveRegistroPago = updatePermissionRemoveRegist
 const calculateQuantity = (item) => {
 
     // si la cantidad es un string como una operacion matematica como '5-1' o '4+1' entonces resolverla
-    console.log('item.cantidad ====', item.cantidad);
+    // console.log('item.cantidad ====', item.cantidad);
     if (typeof item.cantidad === 'string' && item.cantidad.match(/[\+\-\*\/]/)) {
         item.cantidad = 1;
     }
-    console.log('item.cantidad ====', item.cantidad);
+    // console.log('item.cantidad ====', item.cantidad);
 
 
     if ( !item.cantidad && item.isporcion === 'SP' ) {
@@ -1440,8 +1440,7 @@ const calculateQuantity = (item) => {
     item.cantidad = isNaN(item.cantidad) || item.cantidad === null || item.cantidad === undefined ? 'ND' : item.cantidad;
     item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;    
 
-    handleStock.checkExistSubItemsWithCantidad(item);
-    console.log('item.isExistSubItemsWithCantidad calculateQuantity', item.isExistSubItemsWithCantidad);
+    handleStock.checkExistSubItemsWithCantidad(item);    
     
     let _cantSumar = item.venta_x_peso === 1 ? -item.cantidad : item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;
     if (item.cantidad != 'ND') {
@@ -1469,8 +1468,8 @@ const updateSubItems = (item, listSubItems) => {
                     }
                 });
             });
-        } catch (error) {
-            console.log(error);
+        } catch (error) {            
+            logger.error(error);
         }
     }
     return item;
@@ -1852,7 +1851,7 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
 
         // vemos si tiene subitems con cantidad distinta de ND
         // si los tiene entonces no se modifica el stock
-        console.log('item apiPwa processAndEmitItem', item);
+        // console.log('item apiPwa processAndEmitItem', item);
         // let _existSubItemsWithCantidadInND = false; 
 
         // _existSubItemsWithCantidadInND = handleStock.checkExistSubItemsWithCantidad(item);
@@ -1867,8 +1866,7 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
         // console.log('_existSubItemsWithCantidadInND apiPwa', _existSubItemsWithCantidadInND);
         
         if (item.cantidad !== 'ND' || item.isExistSubItemsWithCantidad) {
-            const rptCantidad = await setItemCarta(0, item, idsede);            
-            console.log('rptCantidad', rptCantidad);
+            const rptCantidad = await setItemCarta(0, item, idsede);                        
             item.cantidad = rptCantidad[0].cantidad;
             // item.cantidad = _existSubItemsWithCantidadInND ? 'ND' : rptCantidad[0].cantidad;
 

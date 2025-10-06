@@ -56,7 +56,7 @@ module.exports.setRegistrarPago = setRegistrarPago;
 
 
 function emitirRespuesta(xquery, res) {	
-	return sequelize.query(xquery, {type: QueryTypes3.SELECT})
+	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 	.then(function (rows) {
 		
 		// return ReS(res, {
@@ -70,26 +70,26 @@ function emitirRespuesta(xquery, res) {
 }
 
 
-function emitirRespuestaSP(xquery) {	
-	return sequelize.query(xquery, {		
-		type: QueryTypes3.SELECT
-	})
-	.then(function (rows) {
+// function emitirRespuestaSP(xquery) {	
+// 	return sequelize.query(xquery, {		
+// 		type: QueryTypes.SELECT
+// 	})
+// 	.then(function (rows) {
 
-		// convertimos en array ya que viene en object
-		var arr = [];
-		arr = Object.values(rows[0]);		
+// 		// convertimos en array ya que viene en object
+// 		var arr = [];
+// 		arr = Object.values(rows[0]);		
 		
-		return arr;
-	})
-	.catch((err) => {
-		return false;
-	});
-}
+// 		return arr;
+// 	})
+// 	.catch((err) => {
+// 		return false;
+// 	});
+// }
 
 
 function emitirRespuesta_RES(xquery, res) {	
-	return sequelize.query(xquery, {type: QueryTypes3.SELECT})
+	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 	.then(function (rows) {
 		
 		return ReS(res, {

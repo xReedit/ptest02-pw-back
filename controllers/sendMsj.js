@@ -9,6 +9,7 @@ const QueryServiceV1 = require('../service/query.service.v1');
 const { sequelize, QueryTypes } = require('../config/database');
 
 const nodemailer = require("nodemailer");
+const logger = require('../utilitarios/logger');
 
 
 

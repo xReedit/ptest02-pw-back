@@ -95,7 +95,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// guardamos codigo en bd
 			apiPwa.setCodigoVerificacionTelefonoCliente(data);
 
-			sendMsjSocketWsp(_sendServerMsj, dataSocket);
+			// sendMsjSocketWsp(_sendServerMsj, dataSocket);
+			sendMsjSocketWsp(_sendServerMsj);
 		});
 
 		// escucha respuesta del servidor de mensajeria
@@ -886,7 +887,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('restobar-send-comprobante-url-ws', async (payload) => {
 			payload.tipo = 3;			
 			logger.debug('restobar-send-comprobante-url-ws', payload);			
-			sendMsjSocketWsp(payload, dataSocket);
+			sendMsjSocketWsp(payload);
 			
 		});
 
@@ -1535,12 +1536,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 	// evniar mensajes al whatsapp 130621
-	function sendMsjSocketWsp(dataMsj, idorg, idsede) {
+	function sendMsjSocketWsp(dataMsj) {
 		// 0: nuevo pedido notifica comercio
 		// 1: verificar telefono
 		// 2: notifica al cliente el repartidor que acepto pedido
 		
-		apiMessageWsp.sendMsjSocketWsp(dataMsj, io, idorg, idsede);
+		apiMessageWsp.sendMsjSocketWsp(dataMsj, io, dataSocket);
 		
 		// dataMsj = typeof dataMsj !== 'object' ? JSON.parse(dataMsj) : dataMsj;
 		// const tipo = dataMsj.tipo;

@@ -190,8 +190,10 @@ function getRegisterNoPrint(data) {
 							INNER JOIN print_server_estructura as pse on pse.idprint_server_estructura = psd.idprint_server_estructura							
 					WHERE (psd.idsede=${data.idsede} and psd.impreso=0) 
 						and psd.estado=0 ${ultimoId}
-						and  TIMESTAMPDIFF(MINUTE, STR_TO_DATE(concat(psd.fecha, ' ', psd.hora), '%d/%m/%Y %H:%i:%s'),DATE_FORMAT(now(), '%Y-%m-%d %H:%i:%s')) < 20						
-						or (psd.isreserva = 1 and psd.impreso = 0)
+						AND (
+                (psd.impreso = 0 AND psd.fecha_hora_dt >= DATE_SUB(NOW(), INTERVAL 20 MINUTE))
+                OR (psd.isreserva = 1 AND psd.impreso = 0)
+            )
 					ORDER BY psd.idprint_server_detalle DESC limit 30`;
 	return emitirRespuesta(sql);
 }

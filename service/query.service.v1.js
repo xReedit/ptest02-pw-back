@@ -222,17 +222,20 @@ class QueryServiceV1 {
                 
                 // Log de performance para queries lentas
                 if (executionTime > RETRY_CONFIG.SLOW_THRESHOLD_OTHER) {
-                    console.warn(`⏱️ [${errorContext}] Procedimiento lento - tiempo:${executionTime}ms intento:${attempt}`);
+                    // console.warn(`⏱️ [${errorContext}] Procedimiento lento - tiempo:${executionTime}ms intento:${attempt}`);
+                    logger.warn(`⏱️ [${errorContext}] Procedimiento lento - tiempo:${executionTime}ms intento:${attempt}
+                        📝 Query: ${query}
+                        📊 Params: ${JSON.stringify(replacements)}`);
                 }
 
                 // Validar resultado
                 if (!result || !result[0] || typeof result[0] !== 'object') {
-                    console.debug(`⚠️ [${errorContext}] Sin datos válidos - intento:${attempt}`);
+                    logger.debug(`⚠️ [${errorContext}] Sin datos válidos - intento:${attempt}`);
                     return [];
                 }
 
                 if (attempt > 1) {
-                    console.info(`✅ [${errorContext}] Éxito tras ${attempt} intentos`);
+                    logger.info(`✅ [${errorContext}] Éxito tras ${attempt} intentos`);
                 }
 
                 return Object.values(result[0]);
@@ -242,20 +245,22 @@ class QueryServiceV1 {
                 
                 if (this.shouldRetryError(err, attempt)) {
                     const delay = this.calculateDelay(attempt);
-                    console.warn(`🔄 [${errorContext}] Reintento ${attempt}/${RETRY_CONFIG.MAX_RETRIES} - error:${err.message.substring(0, 80)} delay:${delay}ms`);
+                    logger.warn(`🔄 [${errorContext}] Reintento ${attempt}/${RETRY_CONFIG.MAX_RETRIES} - error:${err.message.substring(0, 80)} delay:${delay}ms`);
                     await new Promise(resolve => setTimeout(resolve, delay));
                     continue;
                 }
                 
-                console.error(`❌ [${errorContext}] Error final ${attempt}/${RETRY_CONFIG.MAX_RETRIES} - tiempo:${executionTime}ms`, {
-                    error: err.message,
-                    query: query.substring(0, 150)
-                });
+                logger.error(`❌ [${errorContext}] Error final ${attempt}/${RETRY_CONFIG.MAX_RETRIES} - tiempo:${executionTime}ms
+                    📝 Query: ${query}
+                    📊 Params: ${JSON.stringify(replacements)}
+                    ❗ Error: ${err.message}`);
+
+
                 return null;
             }
         }
         
-        console.error(`💥 [${errorContext}] Agotados ${RETRY_CONFIG.MAX_RETRIES} reintentos`);
+        logger.error(`💥 [${errorContext}] Agotados ${RETRY_CONFIG.MAX_RETRIES} reintentos`);
         return null;
     }
 
@@ -296,12 +301,12 @@ class QueryServiceV1 {
                 const slowThreshold = queryType === 'SELECT' ? RETRY_CONFIG.SLOW_THRESHOLD_SELECT : RETRY_CONFIG.SLOW_THRESHOLD_OTHER;
                 
                 if (executionTime > slowThreshold) {
-                    console.warn(`⏱️ [${errorContext}] Query lenta tipo:${queryType} tiempo:${executionTime}ms intento:${attempt}`);
+                    logger.warn(`⏱️ [${errorContext}] Query lenta tipo:${queryType} tiempo:${executionTime}ms intento:${attempt}`);
                 }
 
                 if (attempt > 1) {
                     const msg = queryType === 'SELECT' ? `registros:${result?.length || 0}` : 'ok';
-                    console.info(`✅ [${errorContext}] ${queryType} éxito tras ${attempt} intentos ${msg}`);
+                    logger.info(`✅ [${errorContext}] ${queryType} éxito tras ${attempt} intentos ${msg}`);
                 }
 
                 return queryType === 'SELECT' ? (result || []) : true;
@@ -311,15 +316,15 @@ class QueryServiceV1 {
                 
                 if (this.shouldRetryError(err, attempt)) {
                     const delay = this.calculateDelay(attempt);
-                    console.warn(`🔄 [${errorContext}] Reintento ${attempt}/${RETRY_CONFIG.MAX_RETRIES} tipo:${queryType} error:${err.message.substring(0, 80)} delay:${delay}ms`);
+                    logger.warn(`🔄 [${errorContext}] Reintento ${attempt}/${RETRY_CONFIG.MAX_RETRIES} tipo:${queryType} error:${err.message.substring(0, 80)} delay:${delay}ms`);
                     await new Promise(resolve => setTimeout(resolve, delay));
                     continue;
                 }
                 
-                console.error(`❌ [${errorContext}] Error final ${attempt}/${RETRY_CONFIG.MAX_RETRIES} tipo:${queryType} tiempo:${executionTime}ms`, {
-                    error: err.message,
-                    query: query.substring(0, 150)
-                });
+                logger.error(`❌ [${errorContext}] Error final ${attempt}/${RETRY_CONFIG.MAX_RETRIES} tipo:${queryType} tiempo:${executionTime}ms
+                    📝 Query: ${query}
+                    📊 Params: ${JSON.stringify(replacements)}
+                    ❗ Error: ${err.message}`);
                 return queryType === 'SELECT' ? [] : false;
             }
         }

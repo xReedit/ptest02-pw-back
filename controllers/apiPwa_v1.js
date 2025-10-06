@@ -839,7 +839,7 @@ const setRegisterClienteLogin = async function (req, res) {
     // return await emitirRespuestaSP_RES(read_query, res); 
 
     const query = `call procedure_pwa_register_cliente_login(?, ?);`;
-    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [JSON.stringify(dataLogin), ''], 'setRegisterClienteLogin');
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [JSON.stringify(dataLogin)], 'setRegisterClienteLogin');
     return ReS(res, {data: rows || [] });
 }
 module.exports.setRegisterClienteLogin = setRegisterClienteLogin;

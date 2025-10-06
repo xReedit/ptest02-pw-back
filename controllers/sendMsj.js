@@ -10,6 +10,8 @@ const sequelize = require('../config/database');
 
 const nodemailer = require("nodemailer");
 
+const logger = require('../utilitarios/logger');
+
 
 // // create reusable transporter object using the default SMTP transport
 // const transporter = nodemailer.createTransport({

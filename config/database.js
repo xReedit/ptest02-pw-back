@@ -28,7 +28,10 @@ const sequelizeOptions = {
     acquire: 30000,       // 30s para adquirir conexión
     idle: 20000,          // 20s de inactividad antes de liberar
     evict: 5000,          // Revisar conexiones inactivas cada 5s
-    handleDisconnects: true  // Reconexión automática
+    handleDisconnects: true,  // Reconexión automática,
+    connectTimeout: 60000,        // 60s para conectar
+    acquireTimeout: 60000,        // 60s para adquirir conexión
+    timeout: 60000                // 60s por query
   },
   // Reintentos automáticos en caso de deadlock
   retry: {

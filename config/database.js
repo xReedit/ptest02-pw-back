@@ -20,13 +20,14 @@ const sequelizeOptions = {
     dateStrings: true,       // Evita conversiones automáticas
     typeCast: true          // Mantiene tipos correctos
   },
-  // Pool optimizado para alta demanda (evita deadlocks)
+  // Pool optimizado para t3.2xlarge (8 vCPUs, 32GB RAM COMPARTIDA)
+  // MySQL + Node.js + otros servicios en mismo servidor
   pool: {
-    max: 20,              // Máximo 20 conexiones concurrentes
-    min: 5,               // Mínimo 5 conexiones activas
+    max: 100,             // Máximo 100 conexiones (conservador para servidor compartido)
+    min: 10,              // Mínimo 10 conexiones siempre activas
     acquire: 30000,       // 30s para adquirir conexión
-    idle: 10000,          // 10s de inactividad antes de liberar
-    evict: 1000,          // Revisar conexiones inactivas cada 1s
+    idle: 20000,          // 20s de inactividad antes de liberar
+    evict: 5000,          // Revisar conexiones inactivas cada 5s
     handleDisconnects: true  // Reconexión automática
   },
   // Reintentos automáticos en caso de deadlock

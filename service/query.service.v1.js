@@ -8,20 +8,61 @@
 const { sequelize, Sequelize } = require('../config/database');
 const { QueryTypes } = require('sequelize');
 
-// Opciones para reintentar transacciones en caso de deadlock
+// Constantes para alta concurrencia (600+ negocios, 30 usuarios por negocio)
+const RETRY_CONFIG = {
+    MAX_RETRIES: 3,
+    BASE_DELAY: 100,          // ms - delay inicial
+    TIMEOUT_PROCEDURE: 15000, // ms - timeout para procedimientos
+    TIMEOUT_SELECT: 20000,    // ms - timeout para SELECT
+    TIMEOUT_MODIFY: 15000,    // ms - timeout para INSERT/UPDATE/DELETE
+    SLOW_THRESHOLD_SELECT: 8000,  // ms - umbral para log de SELECT lentos
+    SLOW_THRESHOLD_OTHER: 5000    // ms - umbral para log de otros lentos
+};
+
+const ERROR_PATTERNS = {
+    DEADLOCK: /deadlock|lock wait timeout|connection lost/i,
+    TIMEOUT: /timeout|etimedout/i,
+    CONNECTION: /connection|connect|econnreset/i
+};
+
 const deadlockRetryOptions = {
-    max: 5,                   // Máximo número de reintentos
-    // match: [/Deadlock/i],     // Solo reintentar en caso de deadlocks
+    max: 5,
     match: [
-        /Deadlock found/i,          // Error de deadlock
-        /Lock wait timeout/i,       // Timeout esperando bloqueo
-        /ETIMEDOUT/i                // Timeout de conexión
+        /Deadlock found/i,
+        /Lock wait timeout/i,
+        /ETIMEDOUT/i
     ],
-    backoffBase: 100,         // Espera inicial en ms (100ms)
-    backoffExponent: 1.5      // Factor de crecimiento exponencial
+    backoffBase: 100,
+    backoffExponent: 1.5
 };
 
 class QueryServiceV1 {
+
+    // Ejecuta query con timeout usando Promise.race
+    static async executeWithTimeout(query, options, timeoutMs) {
+        return Promise.race([
+            sequelize.query(query, options),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Query timeout')), timeoutMs)
+            )
+        ]);
+    }
+
+    // Calcula delay con backoff exponencial
+    static calculateDelay(attempt) {
+        return RETRY_CONFIG.BASE_DELAY * Math.pow(2, attempt - 1);
+    }
+
+    // Determina si debe reintentar según el error
+    static shouldRetryError(err, attempt) {
+        if (attempt >= RETRY_CONFIG.MAX_RETRIES) return false;
+        
+        const isDeadlock = ERROR_PATTERNS.DEADLOCK.test(err.message);
+        const isTimeout = ERROR_PATTERNS.TIMEOUT.test(err.message);
+        const isConnectionError = ERROR_PATTERNS.CONNECTION.test(err.message);
+        
+        return isDeadlock || isTimeout || isConnectionError;
+    }
     /**
      * Ejecuta una consulta SELECT con manejo mejorado de errores
      * @param {String} query - Consulta SQL a ejecutar
@@ -164,85 +205,127 @@ class QueryServiceV1 {
 
     /**
      * Ejecuta un procedimiento almacenado y retorna Object.values(result[0])
-     * Patrón común usado en apiRepartidor.js
-     * @param {String} query - Llamada al procedimiento almacenado
-     * @param {Array} replacements - Parámetros para el procedimiento
-     * @param {String} errorContext - Contexto del error para logging
-     * @returns {Promise<Array|null>} - Resultado del procedimiento o null si hay error
+     * Optimizado para alta concurrencia: 600+ negocios, 30 usuarios por negocio
      */
     static async ejecutarProcedimiento(query, replacements = [], errorContext = 'procedimiento') {
-        try {
-            const result = await sequelize.query(query, {
-                replacements,
-                type: QueryTypes.SELECT
-            });
+        for (let attempt = 1; attempt <= RETRY_CONFIG.MAX_RETRIES; attempt++) {
+            const startTime = Date.now();
+            
+            try {
+                const result = await this.executeWithTimeout(
+                    query,
+                    { replacements, type: QueryTypes.SELECT, timeout: RETRY_CONFIG.TIMEOUT_PROCEDURE },
+                    RETRY_CONFIG.TIMEOUT_PROCEDURE
+                );
 
-            // 🆕 Validar que result[0] existe antes de hacer Object.values
-            if (!result || !result[0] || typeof result[0] !== 'object') {
-                console.debug(`⚠️ ${errorContext}: Procedimiento no retornó datos válidos`, { result });
-                return [];
-            } else {
+                const executionTime = Date.now() - startTime;
+                
+                // Log de performance para queries lentas
+                if (executionTime > RETRY_CONFIG.SLOW_THRESHOLD_OTHER) {
+                    console.warn(`⏱️ [${errorContext}] Procedimiento lento - tiempo:${executionTime}ms intento:${attempt}`);
+                }
+
+                // Validar resultado
+                if (!result || !result[0] || typeof result[0] !== 'object') {
+                    console.debug(`⚠️ [${errorContext}] Sin datos válidos - intento:${attempt}`);
+                    return [];
+                }
+
+                if (attempt > 1) {
+                    console.info(`✅ [${errorContext}] Éxito tras ${attempt} intentos`);
+                }
+
                 return Object.values(result[0]);
+
+            } catch (err) {
+                const executionTime = Date.now() - startTime;
+                
+                if (this.shouldRetryError(err, attempt)) {
+                    const delay = this.calculateDelay(attempt);
+                    console.warn(`🔄 [${errorContext}] Reintento ${attempt}/${RETRY_CONFIG.MAX_RETRIES} - error:${err.message.substring(0, 80)} delay:${delay}ms`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    continue;
+                }
+                
+                console.error(`❌ [${errorContext}] Error final ${attempt}/${RETRY_CONFIG.MAX_RETRIES} - tiempo:${executionTime}ms`, {
+                    error: err.message,
+                    query: query.substring(0, 150)
+                });
+                return null;
             }
-
-
-            // return Object.values(result[0]);
-        } catch (err) {
-            console.error(`❌ Error en ${errorContext}:`, err.message);
-            return null;
         }
+        
+        console.error(`💥 [${errorContext}] Agotados ${RETRY_CONFIG.MAX_RETRIES} reintentos`);
+        return null;
     }
 
     /**
-     * Ejecuta una consulta UPDATE/INSERT/DELETE con manejo de errores
-     * Patrón común usado en apiRepartidor.js
-     * @param {String} query - Consulta SQL a ejecutar
-     * @param {Array} replacements - Parámetros para la consulta
-     * @param {String} queryType - Tipo de consulta (UPDATE, INSERT, DELETE)
-     * @param {String} errorContext - Contexto del error para logging
-     * @returns {Promise<boolean>} - true si exitoso, false si hay error
+     * Ejecuta una consulta UPDATE/INSERT/DELETE/SELECT con manejo de errores
+     * Optimizado para alta concurrencia: 600+ negocios, 30 usuarios por negocio
      */
     static async ejecutarConsulta(query, replacements = [], queryType = 'UPDATE', errorContext = 'consulta') {
-        try {
-
-            if (!queryType) {
-                // detectamos egun el query
-                const queryUpper = query.trim().toUpperCase();
-                if (queryUpper.startsWith('UPDATE')) {
-                    queryType = 'UPDATE';
-                } else if (queryUpper.startsWith('INSERT')) {
-                    queryType = 'INSERT';
-                } else if (queryUpper.startsWith('DELETE')) {
-                    queryType = 'DELETE';
-                } else if (queryUpper.startsWith('SELECT')) {
-                    queryType = 'SELECT';
-                }
-            } 
-            
-            const typeMap = {
-                'UPDATE': QueryTypes.UPDATE,
-                'INSERT': QueryTypes.INSERT,
-                'DELETE': QueryTypes.DELETE,
-                'SELECT': QueryTypes.SELECT
-            };
-
-            if (queryType === 'SELECT') {
-                return await sequelize.query(query, {
-                    replacements,
-                    type: typeMap[queryType]
-                });
-            } else {
-                await sequelize.query(query, {
-                    replacements,
-                    type: typeMap[queryType]
-                });
-                return true;
-            }
-            
-        } catch (err) {
-            console.error(`❌ Error en ${errorContext}:`, err.message);
-            return queryType === 'SELECT' ? [] : false;
+        // Auto-detectar tipo de consulta si no se especifica
+        if (!queryType) {
+            const queryUpper = query.trim().toUpperCase();
+            if (queryUpper.startsWith('UPDATE')) queryType = 'UPDATE';
+            else if (queryUpper.startsWith('INSERT')) queryType = 'INSERT';
+            else if (queryUpper.startsWith('DELETE')) queryType = 'DELETE';
+            else if (queryUpper.startsWith('SELECT')) queryType = 'SELECT';
         }
+
+        const TYPE_MAP = {
+            'UPDATE': QueryTypes.UPDATE,
+            'INSERT': QueryTypes.INSERT,
+            'DELETE': QueryTypes.DELETE,
+            'SELECT': QueryTypes.SELECT
+        };
+        
+        for (let attempt = 1; attempt <= RETRY_CONFIG.MAX_RETRIES; attempt++) {
+            const startTime = Date.now();
+            
+            try {
+                const timeoutMs = queryType === 'SELECT' ? RETRY_CONFIG.TIMEOUT_SELECT : RETRY_CONFIG.TIMEOUT_MODIFY;
+                
+                const result = await this.executeWithTimeout(
+                    query,
+                    { replacements, type: TYPE_MAP[queryType], timeout: timeoutMs },
+                    timeoutMs
+                );
+
+                const executionTime = Date.now() - startTime;
+                const slowThreshold = queryType === 'SELECT' ? RETRY_CONFIG.SLOW_THRESHOLD_SELECT : RETRY_CONFIG.SLOW_THRESHOLD_OTHER;
+                
+                if (executionTime > slowThreshold) {
+                    console.warn(`⏱️ [${errorContext}] Query lenta tipo:${queryType} tiempo:${executionTime}ms intento:${attempt}`);
+                }
+
+                if (attempt > 1) {
+                    const msg = queryType === 'SELECT' ? `registros:${result?.length || 0}` : 'ok';
+                    console.info(`✅ [${errorContext}] ${queryType} éxito tras ${attempt} intentos ${msg}`);
+                }
+
+                return queryType === 'SELECT' ? (result || []) : true;
+
+            } catch (err) {
+                const executionTime = Date.now() - startTime;
+                
+                if (this.shouldRetryError(err, attempt)) {
+                    const delay = this.calculateDelay(attempt);
+                    console.warn(`🔄 [${errorContext}] Reintento ${attempt}/${RETRY_CONFIG.MAX_RETRIES} tipo:${queryType} error:${err.message.substring(0, 80)} delay:${delay}ms`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    continue;
+                }
+                
+                console.error(`❌ [${errorContext}] Error final ${attempt}/${RETRY_CONFIG.MAX_RETRIES} tipo:${queryType} tiempo:${executionTime}ms`, {
+                    error: err.message,
+                    query: query.substring(0, 150)
+                });
+                return queryType === 'SELECT' ? [] : false;
+            }
+        }
+        
+        console.error(`💥 [${errorContext}] Agotados ${RETRY_CONFIG.MAX_RETRIES} reintentos tipo:${queryType}`);
+        return queryType === 'SELECT' ? [] : false;
     }
 }
 

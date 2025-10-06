@@ -9,7 +9,7 @@ const QueryServiceV1 = require('./query.service.v1');
 const errorManager = require('./error.manager');
 const porcionMovementsService = require('./porcion.movements.service');
 const StockPorcionService = require('./stock.porcion.service');
-const { sequelize, Sequelize } = require('../config/database');
+const { sequelize, QueryTypes } = require('../config/database');
 const logger = require('../utilitarios/logger');
 
 // console.log('🟣 item.service.v1.js cargado - Versión refactorizada activa');
@@ -129,7 +129,7 @@ class ItemService {
                     
                     const listItemsPorcion = await sequelize.query(listItemsPorcionQuery, {
                         replacements: { iditem: _item.iditem },
-                        type: Sequelize.QueryTypes.SELECT,
+                        type: QueryTypes.SELECT,
                         transaction
                     });
                     
@@ -163,7 +163,7 @@ class ItemService {
                                     idporcion: porcion.idporcion,
                                     idproducto: porcion.idproducto
                                 },
-                                type: Sequelize.QueryTypes.SELECT,
+                                type: QueryTypes.SELECT,
                                 transaction
                             });
                             

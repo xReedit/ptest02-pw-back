@@ -64,9 +64,8 @@ sequelize.authenticate()
   });
 
 // ⭐ Exportar SOLO esta instancia (no crear nuevas)
-// Incluir QueryTypes para evitar importaciones duplicadas de 'sequelize'
 module.exports = {
   sequelize,
   Sequelize,
-  QueryTypes  // ✅ Exportar QueryTypes centralizado
+  QueryTypes
 };

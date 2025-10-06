@@ -8,7 +8,7 @@ const logger = require('../utilitarios/logger');
 let intervalBucaRepartidor = null;
 
 // ✅ IMPORTANTE: Usar instancia centralizada de Sequelize
-const { sequelize } = require('../config/database');
+const { sequelize, QueryTypes} = require('../config/database');
 // const { Sequelize } = require('sequelize');
 
 const QueryServiceV1 = require('../service/query.service.v1');
@@ -20,7 +20,7 @@ let mysql_clean = function (string) {
 const emitirRespuesta = async (xquery) => {    	
     try {
 		// evaluea si es update o inser
-		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
+		const queryType = xquery.trim().toLowerCase().startsWith('update') ? QueryTypes.UPDATE : QueryTypes.SELECT;
         return await sequelize.query(xquery, { type: queryType });
     } catch (err) {
         logger.error({ err }, 'error emitirRespuesta');
@@ -32,7 +32,7 @@ const emitirRespuesta_RES = async (xquery, res) => {
     // logger.debug(xquery);
 
     try {
-        const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+        const rows = await sequelize.query(xquery, { type: QueryTypes.SELECT });
         return ReS(res, {
             data: rows
         });
@@ -46,7 +46,7 @@ module.exports.emitirRespuesta_RES = emitirRespuesta_RES;
 const emitirRespuestaSP = async (xquery) => {
     // logger.debug(xquery);
     try {
-		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
+		const queryType = xquery.trim().toLowerCase().startsWith('update') ? QueryTypes.UPDATE : QueryTypes.SELECT;
         const rows = await sequelize.query(xquery, { type: queryType });		
         const arr = Object.values(rows[0]);
         return arr;
@@ -61,7 +61,7 @@ const emitirRespuestaSP = async (xquery) => {
 // function emitirRespuestaSP(xquery) {
 // 	logger.debug(xquery);
 // 	return sequelize.query(xquery, {		
-// 		type: sequelize.QueryTypes.SELECT
+// 		type: QueryTypes.SELECT
 // 	})
 // 	.then(function (rows) {
 
@@ -80,7 +80,7 @@ const emitirRespuestaSP = async (xquery) => {
 const emitirRespuestaSP_RES = async (xquery, res) => {
     // logger.debug(xquery);
     try {
-        const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+        const rows = await sequelize.query(xquery, { type: QueryTypes.SELECT });
 
         // Convertimos en array ya que viene en object
         const arr = Object.values(rows[0]);
@@ -96,7 +96,7 @@ const emitirRespuestaSP_RES = async (xquery, res) => {
 const execSqlQueryNoReturn = async (xquery, res) => {
 	// logger.debug(xquery);
 	try {
-		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
+		const queryType = xquery.trim().toLowerCase().startsWith('update') ? QueryTypes.UPDATE : QueryTypes.SELECT;
 		const results = await sequelize.query(xquery, { type: queryType });
 		return ReS(res, {
 			data: results
@@ -110,7 +110,7 @@ const execSqlQueryNoReturn = async (xquery, res) => {
 
 const onlyUpdateQuery = async (xquery, res) => {
 	// logger.debug(xquery);a
-	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 	.then(function (result) {
 		
 		return ReS(res, {
@@ -131,7 +131,7 @@ const setRepartidorConectado = async function (dataCLiente) {
     	const read_query = `UPDATE repartidor SET socketid = ? WHERE idrepartidor = ?`;
     	await sequelize.query(read_query, {
             replacements: [socketid, idrepartidor],
-            type: sequelize.QueryTypes.UPDATE
+            type: QueryTypes.UPDATE
         });
 
 		QueryServiceV1.ejecutarConsulta(read_query, [socketid, idrepartidor], 'UPDATE', 'setRepartidorConectado');
@@ -154,7 +154,7 @@ const setEfectivoMano = async function (req, res) {
     // const read_query = `UPDATE repartidor SET efectivo_mano = ?, online = ? WHERE idrepartidor = ?`;
     // await sequelize.query(read_query, {
     //     replacements: [efectivo, online, idrepartidor],
-    //     type: sequelize.QueryTypes.UPDATE
+    //     type: QueryTypes.UPDATE
     // });
     // return ReS(res, { data: true });
 
@@ -178,7 +178,7 @@ const pushSuscripcion = async function (req, res) {
 	// const read_query = `UPDATE repartidor SET pwa_code_verification = ? WHERE idrepartidor = ?`;
 	// const rows = await sequelize.query(read_query, {
     //     replacements: [suscripcion, idrepartidor],
-    //     type: sequelize.QueryTypes.UPDATE
+    //     type: QueryTypes.UPDATE
     // });
     // const arr = Object.values(rows[0] || []);
     // return ReS(res, { data: arr });
@@ -197,7 +197,7 @@ const setPositionNow = async function (req, res) {
     // const read_query = `UPDATE repartidor SET position_now = ? WHERE idrepartidor = ?`;
     // const rows = await sequelize.query(read_query, {
     //     replacements: [JSON.stringify(pos), idrepartidor],
-    //     type: sequelize.QueryTypes.UPDATE
+    //     type: QueryTypes.UPDATE
     // });
     // return ReS(res, { data: rows });
 
@@ -216,7 +216,7 @@ const setCambioPassRepartidor = async function (req, res) {
 	// const read_query = `UPDATE repartidor SET pass = ? WHERE idrepartidor = ?`;
     // await sequelize.query(read_query, {
     //     replacements: [p2, idrepartidor],
-    //     type: sequelize.QueryTypes.UPDATE
+    //     type: QueryTypes.UPDATE
     // });
     // return ReS(res, { data: true });
 
@@ -245,7 +245,7 @@ const getRepartidoreForPedido = async function (dataPedido) {
     // const read_query = `CALL procedure_delivery_get_repartidor(?, ?)`;
     // const rows = await sequelize.query(read_query, {
     //     replacements: [es_latitude, es_longitude],
-    //     type: sequelize.QueryTypes.SELECT
+    //     type: QueryTypes.SELECT
     // });
     // const arr = Object.values(rows[0]);
     // return arr;
@@ -262,7 +262,7 @@ const getRepartidoreForPedidoFromInterval = async function (es_latitude, es_long
     // const read_query = `CALL procedure_delivery_get_repartidor(?, ?, ?)`;
     // const rows = await sequelize.query(read_query, {
     //     replacements: [es_latitude, es_longitude, efectivoPagar],
-    //     type: sequelize.QueryTypes.SELECT
+    //     type: QueryTypes.SELECT
     // });
     // const arr = Object.values(rows[0]);
     // return arr;
@@ -306,7 +306,7 @@ const setAsignaTemporalPedidoARepartidor = async function (idpedido, idrepartido
 	// const read_query = `CALL procedure_delivery_set_pedido_repartidor(?, ?, ?)`;
 	// const result = await sequelize.query(read_query, {
 	// 	replacements: [idpedido, idrepartidor_va, JSON.stringify(pedido)],
-	// 	type: sequelize.QueryTypes.SELECT
+	// 	type: QueryTypes.SELECT
 	// });
 	// return Object.values(result[0]);
 
@@ -344,7 +344,7 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 		// try {
 		// 	await sequelize.query(read_query, {
 		// 		replacements: [dataPedido.idpedido],
-		// 		type: sequelize.QueryTypes.UPDATE
+		// 		type: QueryTypes.UPDATE
 		// 	});
 		// 	return true;
 		// } catch (err) {
@@ -360,7 +360,7 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 		const read_query = `CALL procedure_delivery_set_pedido_repartidor(?, ?, ?)`;
 		// const result = await sequelize.query(read_query, {
 		// 	replacements: [dataPedido.idpedido, firtsRepartidor.idrepartidor, JSON.stringify(dataPedido)],
-		// 	type: sequelize.QueryTypes.SELECT
+		// 	type: QueryTypes.SELECT
 		// });
 
 		QueryServiceV1.ejecutarProcedimiento(read_query, [dataPedido.idpedido, firtsRepartidor.idrepartidor, JSON.stringify(dataPedido)], 'setAsignaTemporalPedidoARepartidor');
@@ -383,7 +383,7 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 		// try {
 		// 	await sequelize.query(read_query, {
 		// 		replacements: [firtsRepartidor.idrepartidor],
-		// 		type: sequelize.QueryTypes.UPDATE
+		// 		type: QueryTypes.UPDATE
 		// 	});
 		// } catch (err) {
 		// 	logger.error({ err }, 'error update last_notification');
@@ -455,7 +455,7 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 		// try {
 		// 	await sequelize.query(sql, {
 		// 		replacements: [dataPedido.pedidos[0]],
-		// 		type: sequelize.QueryTypes.UPDATE
+		// 		type: QueryTypes.UPDATE
 		// 	});
 		// } catch (err) {
 		// 	logger.error({ err }, 'error sendPedidoRepartidorOp2');
@@ -471,7 +471,7 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 		// try {
 		// 	const result = await sequelize.query(read_query, {
 		// 		replacements: [dataPedido.pedidos[0], firtsRepartidor.idrepartidor, JSON.stringify(dataPedido)],
-		// 		type: sequelize.QueryTypes.SELECT
+		// 		type: QueryTypes.SELECT
 		// 	});
 		// 	const res_call = Object.values(result[0]);
 		// } catch (err) {
@@ -575,7 +575,7 @@ const setAsignarPedido2 = async function (req, res) {
 		// ✅ SEGURO: 3 queries separados con prepared statements
 		// await sequelize.query(
 		// 	`UPDATE pedido SET idrepartidor = ? WHERE idpedido IN (?)`,
-		// 	{ replacements: [idrepartidor, idpedido], type: sequelize.QueryTypes.UPDATE }
+		// 	{ replacements: [idrepartidor, idpedido], type: QueryTypes.UPDATE }
 		// );
 
 		const read_query = `UPDATE pedido SET idrepartidor = ? WHERE idpedido IN (?)`;
@@ -583,7 +583,7 @@ const setAsignarPedido2 = async function (req, res) {
 
 		// await sequelize.query(
 		// 	`UPDATE repartidor SET ocupado = 1, pedido_paso_va = 1, pedido_por_aceptar=null WHERE idrepartidor = ?`,
-		// 	{ replacements: [idrepartidor], type: sequelize.QueryTypes.UPDATE }
+		// 	{ replacements: [idrepartidor], type: QueryTypes.UPDATE }
 		// );
 
 		const read_query1 = `UPDATE repartidor SET ocupado = 1, pedido_paso_va = 1, pedido_por_aceptar=null WHERE idrepartidor = ?`;
@@ -591,7 +591,7 @@ const setAsignarPedido2 = async function (req, res) {
 
 		// await sequelize.query(
 		// 	`UPDATE repartidor SET flag_paso_pedido=0 WHERE flag_paso_pedido=?`,
-		// 	{ replacements: [firstPedido], type: sequelize.QueryTypes.UPDATE }
+		// 	{ replacements: [firstPedido], type: QueryTypes.UPDATE }
 		// );
 
 		const read_query2 = `UPDATE repartidor SET flag_paso_pedido=0 WHERE flag_paso_pedido=?`;
@@ -619,7 +619,7 @@ const setNullPedidosPorAceptar = async function (req, res) {
 	// try {
 	// 	await sequelize.query(read_query, {
 	// 		replacements: [idrepartidor],
-	// 		type: sequelize.QueryTypes.UPDATE
+	// 		type: QueryTypes.UPDATE
 	// 	});
 	// 	return ReS(res, { data: true });
 	// } catch (err) {
@@ -643,7 +643,7 @@ const setAsignarPedido = async function (req, res) {
 		// ✅ SEGURO: 3 queries separados con prepared statements
 		// await sequelize.query(
 		// 	`UPDATE pedido SET idrepartidor = ? WHERE idpedido IN (?)`,
-		// 	{ replacements: [idrepartidor, idpedido], type: sequelize.QueryTypes.UPDATE }
+		// 	{ replacements: [idrepartidor, idpedido], type: QueryTypes.UPDATE }
 		// );
 
 		let read_query = `UPDATE pedido SET idrepartidor = ? WHERE idpedido IN (?)`;
@@ -651,7 +651,7 @@ const setAsignarPedido = async function (req, res) {
 
 		// await sequelize.query(
 		// 	`UPDATE repartidor SET ocupado = 1, pedido_paso_va = 1 WHERE idrepartidor = ?`,
-		// 	{ replacements: [idrepartidor], type: sequelize.QueryTypes.UPDATE }
+		// 	{ replacements: [idrepartidor], type: QueryTypes.UPDATE }
 		// );
 
 
@@ -660,7 +660,7 @@ const setAsignarPedido = async function (req, res) {
 
 		// await sequelize.query(
 		// 	`UPDATE repartidor SET flag_paso_pedido=0 WHERE flag_paso_pedido=?`,
-		// 	{ replacements: [firstPedido], type: sequelize.QueryTypes.UPDATE }
+		// 	{ replacements: [firstPedido], type: QueryTypes.UPDATE }
 		// );
 
 		read_query = `UPDATE repartidor SET flag_paso_pedido=0 WHERE flag_paso_pedido=?`;
@@ -675,7 +675,7 @@ const setAsignarPedido = async function (req, res) {
 
 		// const rows = await sequelize.query(clientesQuery, {
 		// 	replacements: [idpedido],
-		// 	type: sequelize.QueryTypes.SELECT
+		// 	type: QueryTypes.SELECT
 		// });
 
 		const rows = await QueryServiceV1.ejecutarConsulta(clientesQuery, [idpedido], 'SELECT', 'setAsignarPedido');
@@ -757,7 +757,7 @@ const setPasoVaPedido = async function (req, res) {
 	// try {
 	// 	await sequelize.query(read_query, {
 	// 		replacements: [paso, idrepartidor],
-	// 		type: sequelize.QueryTypes.UPDATE
+	// 		type: QueryTypes.UPDATE
 	// 	});
 	// 	return ReS(res, { data: true });
 	// } catch (err) {
@@ -784,7 +784,7 @@ const setUpdateEstadoPedido = async function (idpedido, estado, tiempo = null) {
 	// try {
 	// 	await sequelize.query(read_query, {
 	// 		replacements: [estado, idpedido],
-	// 		type: sequelize.QueryTypes.UPDATE
+	// 		type: QueryTypes.UPDATE
 	// 	});
 	// } catch (err) {
 	// 	logger.error({ err }, 'error setUpdateEstadoPedido');
@@ -807,7 +807,7 @@ const setUpdateRepartidorOcupado = async function (idrepartidor, estado) {
 	// try {
 	// 	await sequelize.query(read_query, {
 	// 		replacements: [estado, idrepartidor],
-	// 		type: sequelize.QueryTypes.UPDATE
+	// 		type: QueryTypes.UPDATE
 	// 	});
 	// } catch (err) {
 	// 	logger.error({ err }, 'error setUpdateRepartidorOcupado');
@@ -829,7 +829,7 @@ const setLiberarPedido = async function (idrepartidor) {
     // try {
 	// 	await sequelize.query(read_query, {
 	// 		replacements: [idrepartidor],
-	// 		type: sequelize.QueryTypes.UPDATE
+	// 		type: QueryTypes.UPDATE
 	// 	});
 	// } catch (err) {
 	// 	logger.error({ err }, 'error setLiberarPedido');
@@ -851,7 +851,7 @@ const getSocketIdRepartidor = async function (listIdRepartidor) {
     // try {
 	// 	return await sequelize.query(read_query, {
 	// 		replacements: [listIdRepartidor],
-	// 		type: sequelize.QueryTypes.SELECT
+	// 		type: QueryTypes.SELECT
 	// 	});
 	// } catch (err) {
 	// 	logger.error({ err }, 'error getSocketIdRepartidor');
@@ -885,7 +885,7 @@ const getListPedidosPendientesComercio = async function(req, res) {
 	// try {
 	// 	const rows = await sequelize.query(read_query, {
 	// 		replacements: [idsede],
-	// 		type: sequelize.QueryTypes.SELECT
+	// 		type: QueryTypes.SELECT
 	// 	});
 	// 	return ReS(res, { data: rows });
 	// } catch (error) {
@@ -912,7 +912,7 @@ const getEstadoPedido = async function (req, res) {
     // try {
 	// 	const rows = await sequelize.query(read_query, {
 	// 		replacements: [idpedido],
-	// 		type: sequelize.QueryTypes.SELECT
+	// 		type: QueryTypes.SELECT
 	// 	});
 	// 	return ReS(res, { data: rows });
 	// } catch (error) {
@@ -939,7 +939,7 @@ const setFinPedidoEntregado = async function (req, res) {
 	// try {
 	// 	const rows = await sequelize.query(read_query, {
 	// 		replacements: [JSON.stringify(obj)],
-	// 		type: sequelize.QueryTypes.SELECT
+	// 		type: QueryTypes.SELECT
 	// 	});
 	// 	return ReS(res, { data: rows });
 	// } catch (error) {
@@ -982,7 +982,7 @@ const setFinPedidoExpressEntregado = async function (req, res) {
 			// ✅ SEGURO: 2 queries separados con prepared statements
 			// await sequelize.query(
 			// 	`UPDATE pedido_mandado SET pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now()), pwa_estado='E' WHERE idpedido_mandado = ?`,
-			// 	{ replacements: [idpedido], type: sequelize.QueryTypes.UPDATE }
+			// 	{ replacements: [idpedido], type: QueryTypes.UPDATE }
 			// );
 
 			let read_query = `UPDATE pedido_mandado SET pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now()), pwa_estado='E' WHERE idpedido_mandado = ?`;
@@ -1000,12 +1000,12 @@ const setFinPedidoExpressEntregado = async function (req, res) {
 			// if (num_quedan > 0) {
 			// 	await sequelize.query(
 			// 		`UPDATE repartidor SET pedido_por_aceptar=? WHERE idrepartidor = ?`,
-			// 		{ replacements: [JSON.stringify(pedidos_quedan), idrepartidor], type: sequelize.QueryTypes.UPDATE }
+			// 		{ replacements: [JSON.stringify(pedidos_quedan), idrepartidor], type: QueryTypes.UPDATE }
 			// 	);
 			// } else {
 			// 	await sequelize.query(
 			// 		`UPDATE repartidor SET ocupado = 0, pedido_por_aceptar=null WHERE idrepartidor = ?`,
-			// 		{ replacements: [idrepartidor], type: sequelize.QueryTypes.UPDATE }
+			// 		{ replacements: [idrepartidor], type: QueryTypes.UPDATE }
 			// 	);
 			// }
 		}
@@ -1014,7 +1014,7 @@ const setFinPedidoExpressEntregado = async function (req, res) {
 			// ✅ SEGURO: 2 queries separados con prepared statements
 			// await sequelize.query(
 			// 	`UPDATE atm_retiros SET pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora_registro, now()), pwa_estado='E' WHERE idatm_retiros = ?`,
-			// 	{ replacements: [idpedido], type: sequelize.QueryTypes.UPDATE }
+			// 	{ replacements: [idpedido], type: QueryTypes.UPDATE }
 			// );
 
 			let read_query = `UPDATE atm_retiros SET pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora_registro, now()), pwa_estado='E' WHERE idatm_retiros = ?`;
@@ -1022,7 +1022,7 @@ const setFinPedidoExpressEntregado = async function (req, res) {
 
 			// await sequelize.query(
 			// 	`UPDATE repartidor SET ocupado = 0, pedido_por_aceptar=null WHERE idrepartidor = ?`,
-			// 	{ replacements: [idrepartidor], type: sequelize.QueryTypes.UPDATE }
+			// 	{ replacements: [idrepartidor], type: QueryTypes.UPDATE }
 			// );
 
 			let read_query2 = `UPDATE repartidor SET ocupado = 0, pedido_por_aceptar=null WHERE idrepartidor = ?`;
@@ -1048,7 +1048,7 @@ const getPedidosEntregadoDia = async function (req, res) {
     // try {
 	// 	const rows = await sequelize.query(read_query, {
 	// 		replacements: [idrepartidor],
-	// 		type: sequelize.QueryTypes.SELECT
+	// 		type: QueryTypes.SELECT
 	// 	});
 	// 	return ReS(res, { data: rows });
 	// } catch (err) {
@@ -1072,7 +1072,7 @@ const getPedidosResumenEntregadoDia = async function (req, res) {
     // try {
 	// 	const rows = await sequelize.query(read_query, {
 	// 		replacements: [idrepartidor],
-	// 		type: sequelize.QueryTypes.SELECT
+	// 		type: QueryTypes.SELECT
 	// 	});
 	// 	return ReS(res, { data: rows });
 	// } catch (err) {
@@ -1096,7 +1096,7 @@ const getPedidoPendienteAceptar = async function (idrepartidor) {
     // try {
 	// 	return await sequelize.query(read_query, {
 	// 		replacements: [idrepartidor],
-	// 		type: sequelize.QueryTypes.SELECT
+	// 		type: QueryTypes.SELECT
 	// 	});
 	// } catch (err) {
 	// 	logger.error({ err }, 'error getPedidoPendienteAceptar');
@@ -1121,7 +1121,7 @@ const getPropioPedidos = async function (req, res) {
     // try {
 	// 	return await sequelize.query(read_query, {
 	// 		replacements: [idrepartidor],
-	// 		type: sequelize.QueryTypes.SELECT
+	// 		type: QueryTypes.SELECT
 	// 	});
 	// } catch (err) {
 	// 	logger.error({ err }, 'error getPropioPedidos');
@@ -1134,6 +1134,8 @@ const getPropioPedidos = async function (req, res) {
 module.exports.getPropioPedidos = getPropioPedidos;
 
 const getInfo = async function (req, res) {
+
+	logger.debug('getInfo repartidor');
 	const idrepartidor = managerFilter.getInfoToken(req,'idrepartidor') || req.body.idrepartidor;
     // const read_query = `SELECT * from  repartidor where idrepartidor=${idrepartidor}`;
     // return await emitirRespuesta_RES(read_query, res);        
@@ -1143,15 +1145,17 @@ const getInfo = async function (req, res) {
     // try {
 	// 	return await sequelize.query(read_query, {
 	// 		replacements: [idrepartidor],
-	// 		type: sequelize.QueryTypes.SELECT
+	// 		type: QueryTypes.SELECT
 	// 	});
 	// } catch (err) {
 	// 	logger.error({ err }, 'error getInfo');
 	// 	return [];
 	// }
 
+	logger.debug({ idrepartidor }, 'Login repartidor');
+
 	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idrepartidor], 'SELECT', 'getInfo');
-	return rows || [];
+	return ReS(res, { data: rows });
 }
 module.exports.getInfo = getInfo;
 
@@ -1169,7 +1173,7 @@ const getPedidosRecibidosGroup = async function (req, res) {
     // try {
 	// 	return await sequelize.query(read_query, {
 	// 		replacements: [_ids],
-	// 		type: sequelize.QueryTypes.SELECT
+	// 		type: QueryTypes.SELECT
 	// 	});
 	// } catch (err) {
 	// 	logger.error({ err }, 'error getPedidosRecibidosGroup');
@@ -1177,7 +1181,8 @@ const getPedidosRecibidosGroup = async function (req, res) {
 	// }
 
 	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [_ids], 'SELECT', 'getPedidosRecibidosGroup');
-	return rows || [];
+	
+	return ReS(res, { data: rows });
 }
 module.exports.getPedidosRecibidosGroup = getPedidosRecibidosGroup;
 
@@ -1658,7 +1663,7 @@ const setAsignarRepartoAtencionCliente = async function (idpedido) {
 	// try {
 	// 	await sequelize.query(sql, {
 	// 		replacements: [idpedido],
-	// 		type: sequelize.QueryTypes.UPDATE
+	// 		type: QueryTypes.UPDATE
 	// 	});
 	// } catch (err) {
 	// 	logger.error({ err }, 'error setAsignarRepartoAtencionCliente');
@@ -1677,7 +1682,7 @@ module.exports.setAsignarRepartoAtencionCliente = setAsignarRepartoAtencionClien
 // function emitirRespuestaSP(xquery) {
 // 	logger.debug(xquery);
 // 	return sequelize.query(xquery, {		
-// 		type: sequelize.QueryTypes.SELECT
+// 		type: QueryTypes.SELECT
 // 	})
 // 	.then(function (rows) {
 
@@ -1700,7 +1705,7 @@ module.exports.setAsignarRepartoAtencionCliente = setAsignarRepartoAtencionClien
 
 // function emitirRespuesta(xquery) {
 // 	logger.debug(xquery);
-// 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+// 	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 // 	.then(function (rows) {
 		
 // 		// return ReS(res, {
@@ -1715,7 +1720,7 @@ module.exports.setAsignarRepartoAtencionCliente = setAsignarRepartoAtencionClien
 
 function emitirRespuestaData(xquery) {
 	// logger.debug(xquery);
-	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 	.then(function (rows) {
 		
 		// return ReS(res, {
@@ -1732,7 +1737,7 @@ function emitirRespuestaData(xquery) {
 
 // function execSqlQueryNoReturn(xquery, res) {
 // 	logger.debug(xquery);
-// 	sequelize.query(xquery, {type: sequelize.QueryTypes.UPDATE}).spread(function(results, metadata) {
+// 	sequelize.query(xquery, {type: QueryTypes.UPDATE}).spread(function(results, metadata) {
 //   // Results will be an empty array and metadata will contain the number of affected rows.
 
 // 	  	return ReS(res, {
@@ -1748,7 +1753,7 @@ function emitirRespuestaData(xquery) {
 
 // function emitirRespuesta_RES(xquery, res) {
 // 	logger.debug(xquery);
-// 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+// 	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 // 	.then(function (rows) {
 		
 // 		return ReS(res, {
@@ -1765,7 +1770,7 @@ function emitirRespuestaData(xquery) {
 // function emitirRespuestaSP_RES(xquery, res) {
 // 	logger.debug(xquery);
 // 	sequelize.query(xquery, {		
-// 		type: sequelize.QueryTypes.SELECT
+// 		type: QueryTypes.SELECT
 // 	})
 // 	.then(function (rows) {
 

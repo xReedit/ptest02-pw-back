@@ -9,11 +9,11 @@ const holdingService = require('../service/holding.sevice');
 let logger = require('../utilitarios/logger');
 
 // let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
-const { sequelize } = require('../config/database');
+const { sequelize, QueryTypes } = require('../config/database');
 
 const emitirRespuesta = async (xquery) => {    
     try {
-        return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+        return await sequelize.query(xquery, { type: QueryTypes.SELECT });
     } catch (err) {        
         logger.error(err);
         return false;
@@ -22,7 +22,7 @@ const emitirRespuesta = async (xquery) => {
 
 const emitirRespuesta_RES = async (xquery, res) => {
     try {
-        const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+        const rows = await sequelize.query(xquery, { type: QueryTypes.SELECT });
         return ReS(res, {
             data: rows
         });

@@ -9,7 +9,7 @@ let logger = require('../utilitarios/logger');
 const serviceTimerChangeCosto = require('./timerChangeCosto.js');
 
 // ✅ IMPORTANTE: Usar instancia centralizada de Sequelize
-const { sequelize } = require('../config/database');
+const { sequelize, QueryTypes } = require('../config/database');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
@@ -22,7 +22,7 @@ const getFirtsIdPedidoDate = async function (req, res) {
     const read_query = `CALL procedure_monitor_min_pedido_day(?)`;
     const rows = await sequelize.query(read_query, {
         replacements: [fini],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     const arr = Object.values(rows[0]);
     return ReS(res, { data: arr });
@@ -39,7 +39,7 @@ const getPedidos = async function (req, res) {
     const read_query = `CALL procedure_pwa_delivery_monitor_pedidos(?, ?, 0, ?)`;
     const rows = await sequelize.query(read_query, {
         replacements: [fini, ffin, firtsIdPedidoDate],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     const arr = Object.values(rows[0]);
     return ReS(res, { data: arr });
@@ -54,7 +54,7 @@ const getPedidosAbono = async function (req, res) {
     const read_query = `CALL procedure_pwa_delivery_monitor_pedidos(?, ?, 1, ?)`;
     const rows = await sequelize.query(read_query, {
         replacements: [fini, ffin, firtsIdPedidoDate],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     const arr = Object.values(rows[0]);
     return ReS(res, { data: arr });
@@ -75,7 +75,7 @@ const getCientesScanQr = async function (req, res) {
     const read_query = `CALL procedure_pwa_delivery_monitor_get_scan_qr(?, ?, ?)`;
     const rows = await sequelize.query(read_query, {
         replacements: [fini, ffin, op],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     const arr = Object.values(rows[0]);
     return ReS(res, { data: arr });
@@ -94,7 +94,7 @@ const getRepartidoreCiudad = async function (req, res) {
     const read_query = `SELECT * FROM repartidor WHERE idrepartidor=1 OR codigo_postal = ? AND estado = 0 AND online = 1 AND COALESCE(idsede_suscrito, 0) = 0`;
     const rows = await sequelize.query(read_query, {
         replacements: [codigo_postal],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     return ReS(res, { data: rows });
 }
@@ -113,7 +113,7 @@ const setResetRepartidor = async function (req, res) {
 	const read_query = `UPDATE repartidor SET pedidos_reasignados = 0 WHERE idrepartidor = ?`;
     await sequelize.query(read_query, {
         replacements: [idrepartidor],
-        type: sequelize.QueryTypes.UPDATE
+        type: QueryTypes.UPDATE
     });
     return ReS(res, { data: true });
 }
@@ -126,7 +126,7 @@ const setLiberarRepartidor = async function (req, res) {
     const read_query = `UPDATE repartidor SET ocupado = 0, flag_paso_pedido = 0, pedido_por_aceptar = null, solicita_liberar_pedido=0 WHERE idrepartidor = ?`;
     await sequelize.query(read_query, {
         replacements: [idrepartidor],
-        type: sequelize.QueryTypes.UPDATE
+        type: QueryTypes.UPDATE
     });
     return ReS(res, { data: true });
 }
@@ -138,7 +138,7 @@ const setCheckLiquidado = async function (req, res) {
     const read_query = `UPDATE pedido SET check_liquidado = '1' WHERE idpedido = ?`;
     await sequelize.query(read_query, {
         replacements: [idpedido],
-        type: sequelize.QueryTypes.UPDATE
+        type: QueryTypes.UPDATE
     });
     return ReS(res, { data: true });
 }
@@ -150,11 +150,11 @@ const setCheckAbonado = async function (req, res) {
 	// ✅ SEGURO: 2 queries separados con prepared statements
     await sequelize.query(
         `UPDATE pedido SET check_pagado = '1', check_pago_fecha = now() WHERE idpedido = ?`,
-        { replacements: [idpedido], type: sequelize.QueryTypes.UPDATE }
+        { replacements: [idpedido], type: QueryTypes.UPDATE }
     );
     await sequelize.query(
         `UPDATE pwa_pago_transaction SET abonado = 1 WHERE idpwa_pago_transaction = ?`,
-        { replacements: [idtransaccion], type: sequelize.QueryTypes.UPDATE }
+        { replacements: [idtransaccion], type: QueryTypes.UPDATE }
     );
     return ReS(res, { data: true });
 }
@@ -166,7 +166,7 @@ const setCheckAbonadoRepartidor = async function (req, res) {
     const read_query = `UPDATE pedido SET check_pago_repartidor = '1' WHERE idpedido = ?`;
     await sequelize.query(read_query, {
         replacements: [idpedido],
-        type: sequelize.QueryTypes.UPDATE
+        type: QueryTypes.UPDATE
     });
     return ReS(res, { data: true });
 }
@@ -179,7 +179,7 @@ const setAsignarPedidoManual = async function (req, res) {
     const read_query = `CALL procedure_delivery_set_pedido_repartidor_manual(?)`;
     const rows = await sequelize.query(read_query, {
         replacements: [JSON.stringify(dataPedido)],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     
     // en firebase se actualiza el repartidor 0524
@@ -198,7 +198,7 @@ const setRegistraPagoComercio = async function (req, res) {
     const read_query = `CALL procedure_monitor_registro_pago_comercio(?)`;
     const rows = await sequelize.query(read_query, {
         replacements: [JSON.stringify(dataRegistro)],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     const arr = Object.values(rows[0]);
     return ReS(res, { data: arr });
@@ -220,7 +220,7 @@ const getComercioCalcularPago = async function (req, res) {
     const read_query = `CALL procedure_monitor_comercios_caluclar(?, ?, ?)`;
     const rows = await sequelize.query(read_query, {
         replacements: [desde, hasta, idsede],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     const arr = Object.values(rows[0]);
     return ReS(res, { data: arr });
@@ -233,7 +233,7 @@ const setHistorialPagoComercio = async function (req, res) {
     const read_query = `SELECT * FROM sede_detalle_pago WHERE idsede = ?`;
     const rows = await sequelize.query(read_query, {
         replacements: [idsede],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     return ReS(res, { data: rows });
 }
@@ -266,7 +266,7 @@ const setSedeInfo = async function (req, res) {
     const read_query = `UPDATE sede SET comsion_entrega = ?, costo_restobar_fijo_mensual=? WHERE idsede=?`;
     await sequelize.query(read_query, {
         replacements: [registro.comision, registro.restobar, registro.idsede],
-        type: sequelize.QueryTypes.UPDATE
+        type: QueryTypes.UPDATE
     });
     return ReS(res, { data: true });
 }
@@ -284,7 +284,7 @@ const getAllPedidosComercio = async function (req, res) {
 		WHERE p.idsede = ? AND STR_TO_DATE(p.fecha, '%d/%m/%Y') BETWEEN STR_TO_DATE(?, '%d/%m/%Y') AND STR_TO_DATE(?, '%d/%m/%Y') AND p.pwa_is_delivery = 1`;
     const rows = await sequelize.query(read_query, {
         replacements: [idsede, fdesde, fhasta],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     return ReS(res, { data: rows });
 }
@@ -303,7 +303,7 @@ const getAllDescuentosSede = async function (req, res) {
     const read_query = `SELECT idsede_descuento, descripcion, f_desde, f_fin, numero_pedidos, IF(STR_TO_DATE(f_fin, '%d/%m/%Y %H:%i:%s') > now(), 1, 0) activo FROM sede_descuento WHERE idsede = ? AND estado = 0`;
     const rows = await sequelize.query(read_query, {
         replacements: [idsede],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     return ReS(res, { data: rows });
 }
@@ -315,7 +315,7 @@ const getItemDescuentosSede = async function (req, res) {
     const read_query = `SELECT * FROM sede_descuento_detalle WHERE idsede_descuento = ?`;
     const rows = await sequelize.query(read_query, {
         replacements: [idsede_descuento],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     return ReS(res, { data: rows });
 }
@@ -327,7 +327,7 @@ const deleteItemDescuentosSede = async function (req, res) {
     const read_query = `UPDATE sede_descuento SET estado = 1 WHERE idsede_descuento = ?`;
     await sequelize.query(read_query, {
         replacements: [idsede_descuento],
-        type: sequelize.QueryTypes.UPDATE
+        type: QueryTypes.UPDATE
     });
     return ReS(res, { data: true });
 }
@@ -356,7 +356,7 @@ const setImporteComisionLluvia = async function (req, res) {
     const read_query = `UPDATE sede_config_service_delivery SET c_minimo = ?, c_km=?, is_rain=? WHERE idsede_config_service_delivery = ?`;
     await sequelize.query(read_query, {
         replacements: [costo_show, costo_x_km_adicional_show, isRain, idsede_config_service_delivery],
-        type: sequelize.QueryTypes.UPDATE
+        type: QueryTypes.UPDATE
     });
     return ReS(res, { data: true });
 }
@@ -372,7 +372,7 @@ const getDataSedeInfoFacById = async function (req, res) {
                 WHERE s.idsede=? AND s.estado=0`;
     const rows = await sequelize.query(read_query, {
         replacements: [idsede],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     return ReS(res, { data: rows });
 }
@@ -405,7 +405,7 @@ const getAplicaA = async function (req, res) {
     }
     const rows = await sequelize.query(read_query, {
         replacements: [idsede],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     return ReS(res, { data: rows });
 }
@@ -417,7 +417,7 @@ const setRegistrarDescuento = async function (req, res) {
     const read_query = `CALL procedure_app_descuentos(?)`;
     const rows = await sequelize.query(read_query, {
         replacements: [JSON.stringify(obj)],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     const arr = Object.values(rows[0]);
     return ReS(res, { data: arr });
@@ -430,7 +430,7 @@ const setOptionPlaza = async function (req, res) {
     const read_query = `CALL procedure_monitor_set_option_plaza(?)`;
     const rows = await sequelize.query(read_query, {
         replacements: [JSON.stringify(obj)],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     const arr = Object.values(rows[0]);
     return ReS(res, { data: arr });
@@ -451,7 +451,7 @@ const getPedidosMandados = async function (req, res) {
 			WHERE CAST(pm.fecha_hora as date) BETWEEN CAST(? as date) AND CAST(? as date)`;
     const rows = await sequelize.query(read_query, {
         replacements: [fini, ffin],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     return ReS(res, { data: rows });
 }
@@ -477,7 +477,7 @@ const setOnComercio = async function (req, res) {
     const read_query = `UPDATE sede SET pwa_delivery_comercio_online = ? WHERE idsede = ?`;
     await sequelize.query(read_query, {
         replacements: [estado, idsede],
-        type: sequelize.QueryTypes.UPDATE
+        type: QueryTypes.UPDATE
     });
     return ReS(res, { data: true });
 }
@@ -490,7 +490,7 @@ const getRetirosCashAtm = async function (req, res) {
     const read_query = `SELECT *, DATE_FORMAT(fecha_hora_registro, "%d/%m/%Y %H:%m:%i") fecha_hora, TIMESTAMPDIFF(MINUTE, fecha_hora_registro, now()) as min_transcurridos,r.nombre nom_repartidor FROM atm_retiros a LEFT JOIN repartidor r ON a.idrepartidor = r.idrepartidor WHERE CAST(fecha_hora_registro as date) BETWEEN CAST(? as date) AND CAST(? as date) ORDER BY idatm_retiros desc`;
     const rows = await sequelize.query(read_query, {
         replacements: [fini, ffin],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     return ReS(res, { data: rows });
 }
@@ -503,12 +503,12 @@ const setPedidoNoAntendido = async function (req, res) {
 	// ✅ SEGURO: 2 queries separados con prepared statements
     await sequelize.query(
         `UPDATE pedido SET pwa_delivery_atendido = 1 WHERE idpedido = ?`,
-        { replacements: [idpedido], type: sequelize.QueryTypes.UPDATE }
+        { replacements: [idpedido], type: QueryTypes.UPDATE }
     );
     if (idpwa_pago_transaction) {
         await sequelize.query(
             `UPDATE pwa_pago_transaction SET anulado = 1 WHERE idpwa_pago_transaction = ?`,
-            { replacements: [idpwa_pago_transaction], type: sequelize.QueryTypes.UPDATE }
+            { replacements: [idpwa_pago_transaction], type: QueryTypes.UPDATE }
         );
     }
     return ReS(res, { data: true });
@@ -558,7 +558,7 @@ const getInfoSedeFacturacionById = async function (req, res) {
     const read_query = `SELECT s.* FROM sede s INNER JOIN org o ON o.idorg = s.idorg WHERE o.ruc = ?`;
     const rows = await sequelize.query(read_query, {
         replacements: [ruc],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     return ReS(res, { data: rows });
 }
@@ -572,7 +572,7 @@ const setFacturaConfirmarPagoServicio = async function (req, res) {
     const read_query = `UPDATE sede_pago_confirmacion SET external_id = ?, confirmado=1 WHERE idsede_pago_confirmacion = ?`;
     await sequelize.query(read_query, {
         replacements: [external_id, idconfirmacion],
-        type: sequelize.QueryTypes.UPDATE
+        type: QueryTypes.UPDATE
     });
     return ReS(res, { data: true });
 }
@@ -585,11 +585,11 @@ const setAnularPagoServicio = async function (req, res) {
 	// ✅ SEGURO: 2 queries separados con prepared statements
     await sequelize.query(
         `UPDATE sede SET umf_pago = ? WHERE idsede = ?`,
-        { replacements: [umf_pago, idsede], type: sequelize.QueryTypes.UPDATE }
+        { replacements: [umf_pago, idsede], type: QueryTypes.UPDATE }
     );
     await sequelize.query(
         `UPDATE sede_pago_confirmacion SET no_confirmado = 1 WHERE idsede_pago_confirmacion = ?`,
-        { replacements: [idsede_pago_confirmacion], type: sequelize.QueryTypes.UPDATE }
+        { replacements: [idsede_pago_confirmacion], type: QueryTypes.UPDATE }
     );
     return ReS(res, { data: true });
 }
@@ -607,7 +607,7 @@ const getShowPedidosAsignadosRepartidor = async function (req, res) {
                         WHERE p1.idpedido IN (?)`;
     const rows = await sequelize.query(read_query, {
         replacements: [arrPedidos],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     return ReS(res, { data: rows });
 }
@@ -621,7 +621,7 @@ LEFT JOIN repartidor r ON p.idrepartidor = r.idrepartidor
 WHERE p.idpedido=?`;
     const rows = await sequelize.query(read_query, {
         replacements: [idpedido],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
     });
     return ReS(res, { data: rows });
 }
@@ -630,7 +630,7 @@ module.exports.getPedidoById = getPedidoById;
 
 
 function execSqlQueryNoReturn(xquery, res) {
-	sequelize.query(xquery, {type: sequelize.QueryTypes.UPDATE}).spread(function(results, metadata) {
+	sequelize.query(xquery, {type: QueryTypes.UPDATE}).spread(function(results, metadata) {
 	  	return ReS(res, {
 			data: results
 		});
@@ -644,10 +644,10 @@ function execSqlQueryNoReturn(xquery, res) {
 
 async function emitirRespuesta(xquery, res) {
     try {		
-		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
+		const queryType = xquery.trim().toLowerCase().startsWith('update') ? QueryTypes.UPDATE : QueryTypes.SELECT;
         const results = await sequelize.query(xquery, { type: queryType });
         //si es update retornar ok
-        if (queryType === sequelize.QueryTypes.UPDATE) {
+        if (queryType === QueryTypes.UPDATE) {
             return ReS(res, {
                 data: 'ok'
             });
@@ -660,7 +660,7 @@ async function emitirRespuesta(xquery, res) {
         logger.error(err);
         return ReE(res, err);
     }    
-	// return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+	// return sequelize.query(xquery, {type: QueryTypes.SELECT})
 	// .then(function (rows) {		
 	// 	return rows;
 	// })
@@ -671,7 +671,7 @@ async function emitirRespuesta(xquery, res) {
 
 
 function emitirRespuesta_RES(xquery, res) {
-	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 	.then(function (rows) {
 		
 		return ReS(res, {
@@ -688,7 +688,7 @@ function emitirRespuesta_RES(xquery, res) {
 
 function emitirRespuestaSP_RES(xquery, res) {
 	sequelize.query(xquery, {		
-		type: sequelize.QueryTypes.SELECT
+		type: QueryTypes.SELECT
 	})
 	.then(function (rows) {
 

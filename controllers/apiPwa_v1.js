@@ -7,7 +7,7 @@ let handleStock = require('../service/handle.stock.v1');
 let logger = require('../utilitarios/logger');
 
 // ✅ IMPORTANTE: Usar instancia centralizada de Sequelize
-const { sequelize } = require('../config/database');
+const { sequelize, QueryTypes } = require('../config/database');
 // const { Sequelize } = require('sequelize');
 const QueryServiceV1 = require('../service/query.service.v1');
 
@@ -18,15 +18,15 @@ let mysql_clean = function (string) {
 
 const emitirRespuesta = async (xquery) => {    
     try {
-        // return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+        // return await sequelize.query(xquery, { type: QueryTypes.SELECT });
         const trimmedQuery = xquery.trim().toLowerCase();
         let queryType;
         if (trimmedQuery.startsWith('update')) {
-            queryType = sequelize.QueryTypes.UPDATE;
+            queryType = QueryTypes.UPDATE;
         } else if (trimmedQuery.startsWith('insert')) {
-            queryType = sequelize.QueryTypes.INSERT;
+            queryType = QueryTypes.INSERT;
         } else {
-            queryType = sequelize.QueryTypes.SELECT;
+            queryType = QueryTypes.SELECT;
         }
         
         return await sequelize.query(xquery, { type: queryType });
@@ -38,7 +38,7 @@ const emitirRespuesta = async (xquery) => {
 
 const emitirRespuesta_RES = async (xquery, res) => {
     try {
-        const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+        const rows = await sequelize.query(xquery, { type: QueryTypes.SELECT });
         return ReS(res, {
             data: rows
         });
@@ -51,7 +51,7 @@ module.exports.emitirRespuesta_RES = emitirRespuesta_RES;
 
 const emitirRespuestaSP = async (xquery) => {
     try {
-        const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+        const rows = await sequelize.query(xquery, { type: QueryTypes.SELECT });
         const arr = Object.values(rows[0]);
         return arr;
     } catch (err) {
@@ -62,7 +62,7 @@ const emitirRespuestaSP = async (xquery) => {
 
 const emitirRespuestaSP_RES = async (xquery, res) => {
     try {
-        const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+        const rows = await sequelize.query(xquery, { type: QueryTypes.SELECT });
 
         // Convertimos en array ya que viene en object
         const arr = Object.values(rows[0]);
@@ -922,7 +922,7 @@ const getUsuarioClietenByDNI = async function (req, res) {
         // const read_query = `SELECT * FROM cliente WHERE ruc = ? AND estado = 0`;
     //     const rows = await sequelize.query(read_query, {
     //         replacements: [documento],
-    //         type: sequelize.QueryTypes.SELECT
+    //         type: QueryTypes.SELECT
     //     });
         
     //     return ReS(res, { data: rows });
@@ -947,7 +947,7 @@ const getClientePerfil = async function (req, res) {
     //     const read_query = `SELECT * FROM cliente WHERE idcliente = ? AND estado = 0`;
     //     const rows = await sequelize.query(read_query, {
     //         replacements: [idcliente],
-    //         type: sequelize.QueryTypes.SELECT
+    //         type: QueryTypes.SELECT
     //     });
         
     //     return ReS(res, { data: rows });
@@ -970,7 +970,7 @@ const setClientePerfil = async function (req, res) {
         // const read_query = `UPDATE cliente SET ruc = ?, email = ?, f_nac = ? WHERE idcliente = ?`;
         // const rows = await sequelize.query(read_query, {
         //     replacements: [ruc, email, f_nac, idcliente],
-        //     type: sequelize.QueryTypes.UPDATE
+        //     type: QueryTypes.UPDATE
         // });
         
         // return ReS(res, { data: rows });
@@ -993,7 +993,7 @@ const setClienteNewDireccion = async function (req, res) {
     // return await emitirRespuestaSP_RES(read_query, res); 
 
     const query = `call procedure_pwa_guardar_direccion_cliente(?)`;
-    const rows = await QueryServiceV1.ejecutarConsulta(query, [JSON.stringify(_data)], 'SELECT', 'setClienteNewDireccion');
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [JSON.stringify(_data)], 'setClienteNewDireccion');
     return ReS(res, {data: rows || [] });
 }
 module.exports.setClienteNewDireccion = setClienteNewDireccion;
@@ -1011,7 +1011,7 @@ const setHistoryError = async function (req, res) {
         // const read_query = `INSERT INTO historial_error(fecha, error, origen) VALUES (NOW(), ?, ?)`;
         // const rows = await sequelize.query(read_query, {
         //     replacements: [JSON.stringify(elerror), elorigen],
-        //     type: sequelize.QueryTypes.INSERT
+        //     type: QueryTypes.INSERT
         // });
         
         return ReS(res, { data: rows });
@@ -1067,7 +1067,7 @@ const getAllClienteBySearchName = async function (req, res) {
         
         // const rows = await sequelize.query(read_query, {
         //     replacements,
-        //     type: sequelize.QueryTypes.SELECT
+        //     type: QueryTypes.SELECT
         // });
         
         // return ReS(res, { data: rows });
@@ -1094,7 +1094,7 @@ const getLastComisionEntrega = async function (req, res) {
         
         // const rows = await sequelize.query(read_query, {
         //     replacements: [`%${codigo_postal}%`],
-        //     type: sequelize.QueryTypes.SELECT
+        //     type: QueryTypes.SELECT
         // });
         
         // return ReS(res, { data: rows });
@@ -1120,7 +1120,7 @@ const getCanalesConsumo = async function (req, res) {
         
         // const rows = await sequelize.query(read_query, {
         //     replacements: [idsede],
-        //     type: sequelize.QueryTypes.SELECT
+        //     type: QueryTypes.SELECT
         // });
         
         // return ReS(res, { data: rows });
@@ -1142,7 +1142,7 @@ const setRegisterScanQr = async function (req, res) {
         const read_query = `CALL procedure_register_scan_qr(?, ?, ?)`;
         // const rows = await sequelize.query(read_query, {
         //     replacements: [idsede, canal, idscan],
-        //     type: sequelize.QueryTypes.SELECT
+        //     type: QueryTypes.SELECT
         // });
         
         // const arr = Object.values(rows[0]);
@@ -1164,7 +1164,7 @@ const setFlagPrinter = async function (id) {
         const read_query = `UPDATE print_server_detalle SET impreso = 1 WHERE idprint_server_detalle = ?`;
         // return await sequelize.query(read_query, {
         //     replacements: [id],
-        //     type: sequelize.QueryTypes.UPDATE
+        //     type: QueryTypes.UPDATE
         // });
 
         QueryServiceV1.ejecutarConsulta(read_query, [id], 'UPDATE', 'setFlagPrinter');        
@@ -1181,7 +1181,7 @@ const setFlagPrinterChangeEstadoPedido = async function (id) {
         const read_query = `UPDATE pedido SET pwa_estado = 'A' WHERE idpedido = ?`;
         // return await sequelize.query(read_query, {
         //     replacements: [id],
-        //     type: sequelize.QueryTypes.UPDATE
+        //     type: QueryTypes.UPDATE
         // });
 
         QueryServiceV1.ejecutarConsulta(read_query, [id], 'UPDATE', 'setFlagPrinterChangeEstadoPedido');
@@ -1200,7 +1200,7 @@ const getSearchSubitemsItem = async function (iditem) {
         const read_query = `CALL porcedure_pwa_pedido_carta_get_subitens(?)`;
         // const rows = await sequelize.query(read_query, {
         //     replacements: [iditem],
-        //     type: sequelize.QueryTypes.SELECT
+        //     type: QueryTypes.SELECT
         // });
 
         return await QueryServiceV1.ejecutarProcedimiento(read_query, [iditem], 'getSearchSubitemsItem');
@@ -1220,7 +1220,7 @@ const setCodigoVerificacionTelefonoCliente =  async function (data) {
         const read_query = `CALL porcedure_pwa_update_phono_sms_cliente(?, ?, ?)`;
         // const rows = await sequelize.query(read_query, {
         //     replacements: [data.idcliente, numTelefono, data.cod],
-        //     type: sequelize.QueryTypes.SELECT
+        //     type: QueryTypes.SELECT
         // });
         
         // return Object.values(rows[0]);
@@ -1247,7 +1247,7 @@ const listCallClientMesa =  async function (data) {
         const read_query = `SELECT num_mesa FROM cliente_solicita_atencion_mesa WHERE idsede = ? AND atendido = 0`;
         // return await sequelize.query(read_query, {
         //     replacements: [data.idsede],
-        //     type: sequelize.QueryTypes.SELECT
+        //     type: QueryTypes.SELECT
         // });
         
         return await QueryServiceV1.ejecutarConsulta(read_query, [data.idsede], 'SELECT', 'listCallClientMesa');
@@ -1272,7 +1272,7 @@ const getComprobantesSede = async function (req, res) {
         
         // const rows = await sequelize.query(read_query, {
         //     replacements: [idsede],
-        //     type: sequelize.QueryTypes.SELECT
+        //     type: QueryTypes.SELECT
         // });
         
         const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idsede], 'SELECT', 'getComprobantesSede');
@@ -1565,7 +1565,7 @@ module.exports.getListCallMozoHolding = getListCallMozoHolding;
 //     //             WHERE idcarta_lista = :idcarta_lista
 //     //         `, {
 //     //             replacements: { cantidadUpdate, idcarta_lista: item.idcarta_lista },
-//     //             type: sequelize.QueryTypes.UPDATE,
+//     //             type: QueryTypes.UPDATE,
 //     //             transaction: t
 //     //         });
 
@@ -1579,7 +1579,7 @@ module.exports.getListCallMozoHolding = getListCallMozoHolding;
 //     //             WHERE idcarta_lista = :idcarta_lista
 //     //         `, {
 //     //             replacements: { idcarta_lista: item.idcarta_lista },
-//     //             type: sequelize.QueryTypes.SELECT,                
+//     //             type: QueryTypes.SELECT,                
 //     //         });            
             
 //     //         result[0].cantidad = updatedItem[0].cantidad;
@@ -1604,7 +1604,7 @@ module.exports.getListCallMozoHolding = getListCallMozoHolding;
 //     //                 error: JSON.stringify(errorObject), 
 //     //                 origen: 'processItem update cantidad carta_lista' 
 //     //             },
-//     //             type: sequelize.QueryTypes.INSERT,
+//     //             type: QueryTypes.INSERT,
 //     //             transaction: t
 //     //         });
 
@@ -1688,7 +1688,7 @@ module.exports.getListCallMozoHolding = getListCallMozoHolding;
 //     //         WHERE ii.iditem = :xIdItem
 //     //     `, {
 //     //         replacements: { cantidadUpdate, xIdItem: _idItemUpdate },
-//     //         type: sequelize.QueryTypes.UPDATE,
+//     //         type: QueryTypes.UPDATE,
 //     //         transaction: t
 //     //     })
 //     //     // Actualizar la cantidad en la tabla producto_stock si esta relacionados con productos
@@ -1699,7 +1699,7 @@ module.exports.getListCallMozoHolding = getListCallMozoHolding;
 //     //         WHERE ii.iditem = :xIdItem
 //     //     `, {
 //     //         replacements: { cantidadUpdate, xIdItem: _idItemUpdate },
-//     //         type: sequelize.QueryTypes.UPDATE,
+//     //         type: QueryTypes.UPDATE,
 //     //         transaction: t
 //     //     })
 
@@ -1726,7 +1726,7 @@ module.exports.getListCallMozoHolding = getListCallMozoHolding;
 //     //         LIMIT 1
 //     //         `, {
 //     //             replacements: { iditem: _idItemUpdate },
-//     //             type: sequelize.QueryTypes.SELECT,  
+//     //             type: QueryTypes.SELECT,  
 //     //             transaction: t_cantidad              
 //     //         });
 //     //         await t_cantidad.commit();
@@ -1737,7 +1737,7 @@ module.exports.getListCallMozoHolding = getListCallMozoHolding;
 //     //             WHERE idcarta_lista = :idcarta_lista
 //     //         `, {
 //     //             replacements: { idcarta_lista: item.idcarta_lista },
-//     //             type: sequelize.QueryTypes.SELECT,                
+//     //             type: QueryTypes.SELECT,                
 //     //         });
 //     //     }
 
@@ -1798,7 +1798,7 @@ module.exports.getListCallMozoHolding = getListCallMozoHolding;
 //                 WHERE idporcion = :idporcion
 //             `, {
 //                 replacements: { cantidad: cantidadSumar, idporcion: subitem_selected.idporcion },
-//                 type: sequelize.QueryTypes.UPDATE,
+//                 type: QueryTypes.UPDATE,
 //                 transaction: t
 //             });
 //         } catch (error) {
@@ -1814,7 +1814,7 @@ module.exports.getListCallMozoHolding = getListCallMozoHolding;
 //                 WHERE idproducto_stock = :idproducto
 //             `, {
 //                 replacements: { cantidad: cantidadSumar, idproducto: subitem_selected.idproducto },
-//                 type: sequelize.QueryTypes.UPDATE,
+//                 type: QueryTypes.UPDATE,
 //                 transaction: t
 //             });
 //         } catch (error) {
@@ -1831,7 +1831,7 @@ module.exports.getListCallMozoHolding = getListCallMozoHolding;
 //                 WHERE iditem_subitem = :iditem_subitem
 //             `, {
 //                 replacements: { cantidad: cantidadSumar, iditem_subitem: subitem_selected.iditem_subitem },
-//                 type: sequelize.QueryTypes.UPDATE,
+//                 type: QueryTypes.UPDATE,
 //                 transaction: t
 //             });
 //         } catch (error) {
@@ -1915,7 +1915,7 @@ const getVersionApp = async function (req, res) {
     const {name_app} = req.body;
     // const version = await sequelize.query(`SELECT version,properties FROM app_version WHERE name_app = :name_app`, {
     //     replacements: { name_app: name_app },
-    //     type: sequelize.QueryTypes.SELECT
+    //     type: QueryTypes.SELECT
     // });
 
     // res.json({ data: version });
@@ -1937,7 +1937,7 @@ module.exports.getVersionApp = getVersionApp;
 
 // function emitirRespuesta_RES(xquery, res) {
 // 	console.log(xquery);
-// 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+// 	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 // 	.then(function (rows) {
 		
 // 		return ReS(res, {
@@ -1955,7 +1955,7 @@ module.exports.getVersionApp = getVersionApp;
 
 // function emitirRespuesta(xquery, res) {
 // 	console.log(xquery);
-// 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+// 	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 // 	.then(function (rows) {
 		
 // 		// return ReS(res, {
@@ -1972,7 +1972,7 @@ module.exports.getVersionApp = getVersionApp;
 // function emitirRespuestaSP(xquery) {
 // 	console.log(xquery);
 // 	return sequelize.query(xquery, {		
-// 		type: sequelize.QueryTypes.SELECT
+// 		type: QueryTypes.SELECT
 // 	})
 // 	.then(function (rows) {
 
@@ -1992,7 +1992,7 @@ module.exports.getVersionApp = getVersionApp;
 // function emitirRespuestaSP_RES(xquery, res) {
 // 	console.log(xquery);
 // 	sequelize.query(xquery, {		
-// 		type: sequelize.QueryTypes.SELECT
+// 		type: QueryTypes.SELECT
 // 	})
 // 	.then(function (rows) {
 

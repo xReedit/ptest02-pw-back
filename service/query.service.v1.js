@@ -324,7 +324,7 @@ class QueryServiceV1 {
             }
         }
         
-        console.error(`💥 [${errorContext}] Agotados ${RETRY_CONFIG.MAX_RETRIES} reintentos tipo:${queryType}`);
+        logger.error(`💥 [${errorContext}] Agotados ${RETRY_CONFIG.MAX_RETRIES} reintentos tipo:${queryType}`);
         return queryType === 'SELECT' ? [] : false;
     }
 }

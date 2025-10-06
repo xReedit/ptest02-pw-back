@@ -8,7 +8,7 @@ let logger = require('../utilitarios/logger');
 const QueryServiceV1 = require('../service/query.service.v1');
 
 // let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
-const { sequelize } = require('../config/database');
+const { sequelize, QueryTypes } = require('../config/database');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
@@ -302,7 +302,7 @@ module.exports.setFlagSolicitaRepartidorPapaya = setFlagSolicitaRepartidorPapaya
 
 function emitirRespuesta(xquery, res) {
 	logger.debug(xquery);
-	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 	.then(function (rows) {
 		
 		// return ReS(res, {
@@ -319,7 +319,7 @@ function emitirRespuesta(xquery, res) {
 function emitirRespuestaSP(xquery) {
 	logger.debug(xquery);
 	return sequelize.query(xquery, {		
-		type: sequelize.QueryTypes.SELECT
+		type: QueryTypes.SELECT
 	})
 	.then(function (rows) {
 
@@ -337,7 +337,7 @@ function emitirRespuestaSP(xquery) {
 
 function emitirRespuesta_RES(xquery, res) {
 	logger.debug(xquery);
-	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 	.then(function (rows) {
 		
 		return ReS(res, {
@@ -354,7 +354,7 @@ function emitirRespuesta_RES(xquery, res) {
 function emitirRespuestaSP_RES(xquery, res) {
 	logger.debug(xquery);
 	sequelize.query(xquery, {		
-		type: sequelize.QueryTypes.SELECT
+		type: QueryTypes.SELECT
 	})
 	.then(function (rows) {
 

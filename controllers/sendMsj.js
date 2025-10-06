@@ -6,7 +6,7 @@ const webpush = require('web-push');
 // let Sequelize = require('sequelize');
 const io = require("socket.io-client");
 const QueryServiceV1 = require('../service/query.service.v1');
-const { sequelize } = require('../config/database');
+const { sequelize, QueryTypes } = require('../config/database');
 
 const nodemailer = require("nodemailer");
 
@@ -718,7 +718,7 @@ module.exports.sendPushWebTest = sendPushWebTest;
 
 
 function emitirRespuesta(xquery, res) {	
-	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 	.then(function (rows) {
 		
 		// return ReS(res, {

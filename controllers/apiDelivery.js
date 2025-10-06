@@ -6,7 +6,7 @@ let managerFilter = require('../utilitarios/filters');
 let logger = require('../utilitarios/logger');
 
 // ✅ SEGURO: Conexión centralizada
-const { sequelize } = require('../config/database');
+const { sequelize, QueryTypes } = require('../config/database');
 const QueryServiceV1 = require('../service/query.service.v1');
 
 let mysql_clean = function (string) {
@@ -15,7 +15,7 @@ let mysql_clean = function (string) {
 
 const emitirRespuesta = async (xquery) => {    
     try {
-        return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+        return await sequelize.query(xquery, { type: QueryTypes.SELECT });
     } catch (err) {        
         logger.error(err);
         return false;
@@ -25,7 +25,7 @@ const emitirRespuesta = async (xquery) => {
 const emitirRespuesta_RES = async (xquery, res) => {    
 
     try {
-        const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+        const rows = await sequelize.query(xquery, { type: QueryTypes.SELECT });
         return ReS(res, {
             data: rows
         });
@@ -38,7 +38,7 @@ module.exports.emitirRespuesta_RES = emitirRespuesta_RES;
 
 const emitirRespuestaSP = async (xquery) => {    
     try {
-        const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.RAW });
+        const rows = await sequelize.query(xquery, { type: QueryTypes.RAW });
         const arr = Object.values(rows[0]);
         return arr;
     } catch (err) {        
@@ -49,7 +49,7 @@ const emitirRespuestaSP = async (xquery) => {
 
 const emitirRespuestaSP_RES = async (xquery, res) => {    
     try {
-        const rows = await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
+        const rows = await sequelize.query(xquery, { type: QueryTypes.SELECT });
 
         // Convertimos en array ya que viene en object
         const arr = Object.values(rows[0]);
@@ -262,7 +262,7 @@ module.exports.getTelefonoClienteChatBot = getTelefonoClienteChatBot;
 
 
 // function emitirRespuesta(xquery, res) {
-// 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+// 	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 // 	.then(function (rows) {
 		
 // 		// return ReS(res, {
@@ -278,7 +278,7 @@ module.exports.getTelefonoClienteChatBot = getTelefonoClienteChatBot;
 
 // function emitirRespuestaSP(xquery) {
 // 	return sequelize.query(xquery, {		
-// 		type: sequelize.QueryTypes.SELECT
+// 		type: QueryTypes.SELECT
 // 	})
 // 	.then(function (rows) {
 
@@ -295,7 +295,7 @@ module.exports.getTelefonoClienteChatBot = getTelefonoClienteChatBot;
 
 
 // function emitirRespuesta_RES(xquery, res) {
-// 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+// 	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 // 	.then(function (rows) {
 		
 // 		return ReS(res, {
@@ -311,7 +311,7 @@ module.exports.getTelefonoClienteChatBot = getTelefonoClienteChatBot;
 
 // function emitirRespuestaSP_RES(xquery, res) {
 // 	sequelize.query(xquery, {		
-// 		type: sequelize.QueryTypes.SELECT
+// 		type: QueryTypes.SELECT
 // 	})
 // 	.then(function (rows) {
 

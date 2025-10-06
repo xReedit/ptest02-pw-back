@@ -40,13 +40,13 @@ const logger = async function (req, res) {
                 
                 // ✅ Validar que el usuario exista
                 if (!rows || rows.length === 0) {
-                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                        return ReE(res, 'Credenciales Incorrectas.');
                 }
 
                 // TODO: Activar bcrypt en siguiente paso
                 const result = pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
                 if (!result) {
-                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                        return ReE(res, 'Credenciales Incorrectas.');
                 }
 
                 rows[0].pass = ':)';
@@ -89,13 +89,13 @@ const loggerUsAutorizado = async function (req, res) {
                 
                 // ✅ Validar que el usuario exista
                 if (!rows || rows.length === 0) {
-                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                        return ReE(res, 'Credenciales Incorrectas.');
                 }
 
                 // TODO: Activar bcrypt en siguiente paso
                 const result = pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
                 if (!result) {
-                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                        return ReE(res, 'Credenciales Incorrectas.');
                 }
 
                 var p = rows[0].pass;
@@ -132,17 +132,21 @@ const loggerUsAutorizadoRepartidor = async function (req, res) {
                 //         type: sequelize.QueryTypes.SELECT 
                 // });
 
+                loggerPino.debug({ usuario }, 'Login repartidor');
+
                 const rows = await QueryServiceV1.ejecutarConsulta(read_query, [usuario], 'SELECT', 'loggerUsAutorizadoRepartidor');
+
+                loggerPino.debug({ rows }, 'respuesta Login repartidor');
                 
                 // ✅ Validar que el repartidor exista
                 if (!rows || rows.length === 0) {
-                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                        return ReE(res, 'Credenciales Incorrectas.');
                 }
 
                 // TODO: Activar bcrypt en siguiente paso
                 const result = pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
                 if (!result) {
-                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                        return ReE(res, 'Credenciales Incorrectas.');
                 }
 
                 var p = rows[0].pass;
@@ -184,13 +188,13 @@ const loggerUsAutorizadoPacman = async function (req, res) {
                 
                 // ✅ Validar que el usuario exista
                 if (!rows || rows.length === 0) {
-                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                        return ReE(res, 'Credenciales Incorrectas.');
                 }
 
                 // TODO: Activar bcrypt en siguiente paso
                 const result = pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
                 if (!result) {
-                        return ReE(res, 'Credenciales Incorrectas.', 401);
+                        return ReE(res, 'Credenciales Incorrectas.');
                 }
 
                 var p = rows[0].pass;

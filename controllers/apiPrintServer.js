@@ -6,7 +6,7 @@ let managerFilter = require('../utilitarios/filters');
 let logger = require('../utilitarios/logger');
 
 // let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
-const { sequelize, QueryTypes } = require('../config/database');
+const {sequelize, QueryTypes} = require('../config/database');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
@@ -218,7 +218,7 @@ const emitirRespuesta = async (xquery) => {
     try {
 		// evaluea si es update o inser
         // return await sequelize.query(xquery, { type: sequelize.QueryTypes.SELECT });
-		const queryType = xquery.trim().toLowerCase().startsWith('update') ? sequelize.QueryTypes.UPDATE : sequelize.QueryTypes.SELECT;
+		const queryType = xquery.trim().toLowerCase().startsWith('update') ? QueryTypes.UPDATE : QueryTypes.SELECT;
         return await sequelize.query(xquery, { type: queryType });
     } catch (err) {
         logger.error({ err }, 'error emitirRespuesta');
@@ -240,7 +240,7 @@ const emitirRespuesta = async (xquery) => {
 
 
 function emitirRespuesta_RES(xquery, res) {	
-	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
+	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 	.then(function (rows) {
 		
 		return ReS(res, {

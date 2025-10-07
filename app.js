@@ -5,42 +5,17 @@ const http = require('http');
 const express = require("express"); 
 const socketIo = require('socket.io');
 
+const {createAdapter} = require('@socket.io/redis-adapter');
+const {createClient} = require('redis');
+
 var app = express();
 var bodyParser = require('body-parser');
 var cors=require('cors');
 const helmet = require('helmet');
 const logger = require('./utilitarios/logger');
 
-// // IMPORTANTE: Hacer que toda la aplicación use directamente la versión refactorizada
-// const originalHandler = require('./service/handle.stock');
-// const v1Handler = require('./service/handle.stock.v1');
-// // const v1Handler = require('./service/stock.hybrid.js');
-
-// // Reemplazar todas las exportaciones de handle.stock.js con handle.stock.v1.js
-// Object.keys(v1Handler).forEach(key => {
-//     originalHandler[key] = v1Handler[key];
-// });
-
-
-// // Opcional: Activar además la implementación híbrida con Sequelize
-// const stockHybridService = require('./service/stock.hybrid');
-
-// // Modificar la implementación de v1 para usar híbrido primero
-// const originalUpdateStock = v1Handler.updateStock;
-// v1Handler.updateStock = async (op, item, idsede) => {
-//     try {
-//         return await stockHybridService.updateStock(op, item, idsede);
-//     } catch (error) {
-//         console.error('Error en implementación híbrida, usando v1:', error);
-//         return await originalUpdateStock(op, item, idsede);
-//     }
-// };
-
 app.use(cors());
 app.use(helmet());
-
-// "socket.io": "^2.4.1",
-// "socket.io-client": "^2.4.0",
 
 // var config = require('./config');
 var config = require('./_config'); 
@@ -114,7 +89,7 @@ const io = socketIo(server, {
     pingInterval: 25000,
     pingTimeout: 60000,
     allowEIO3: true,
-    // transports: ['polling', 'websocket'], // Polling primero para compatibilidad
+    transports: ['polling', 'websocket'], // Polling primero para compatibilidad // para adaptter redis
     cors: corsOptions,
     connectTimeout: 45000,
     maxHttpBufferSize: 1e8,
@@ -125,7 +100,30 @@ const io = socketIo(server, {
         info: (msg) => logger.info('Socket.IO info:', msg),
         error: (msg) => logger.error('Socket.IO error:', msg)
     }
-}).listen(config.portSocket);
+})
+//.listen(config.portSocket);
+
+// 07102025 ===== redis adapter para trabajar con cluster =====
+const redisHost = 'localhost';
+const redisPort = 6379;
+const redisUrl = `redis://${redisHost}:${redisPort}`;
+const pubClient = createClient({ url: redisUrl });
+const subClient = pubClient.duplicate();  // Solo duplica pubClient
+
+// Conectar y configurar adapter
+Promise.all([pubClient.connect(), subClient.connect()])
+    .then(() => {
+        io.adapter(createAdapter(pubClient, subClient));
+        logger.info({ redisHost, redisPort }, '✅ Socket.IO con Redis adapter configurado');
+    })
+    .catch((err) => {
+        logger.error({ err }, '❌ Error conectando Redis adapter');
+    });
+
+io.listen(config.portSocket);
+
+// ===== fin redis adapter =====
+
 
 server.listen(config.port, function () {
     logger.info('Server is running.. port '+ config.port, 'socket port', config.portSocket); 

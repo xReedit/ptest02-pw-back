@@ -988,13 +988,34 @@ module.exports.setClientePerfil = setClientePerfil;
 // guarda direccion de cliente pwa
 const setClienteNewDireccion = async function (req, res) {	
 	// const id = req.body.i;
-	const _data = req.body;
 	// const read_query = `call procedure_pwa_guardar_direccion_cliente('${JSON.stringify(_data)}')`;
     // return await emitirRespuestaSP_RES(read_query, res); 
+    
+	// const _data = req.body;
+    // const query = `call procedure_pwa_guardar_direccion_cliente(?)`;
+    // const rows = await QueryServiceV1.ejecutarProcedimiento(query, [JSON.stringify(_data)], 'setClienteNewDireccion');
+    // return ReS(res, {data: rows || [] });
 
-    const query = `call procedure_pwa_guardar_direccion_cliente(?)`;
-    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [JSON.stringify(_data)], 'setClienteNewDireccion');
-    return ReS(res, {data: rows || [] });
+    try {
+        const _data = req.body;
+
+        // Validar que idcliente existe
+        if (!_data.idcliente) {
+            return ReE(res, 'idcliente es requerido');
+        }
+
+        const query = `call procedure_pwa_guardar_direccion_cliente(?)`;
+        const rows = await QueryServiceV1.ejecutarProcedimiento(
+            query,
+            [JSON.stringify(_data)],
+            'setClienteNewDireccion'
+        );
+
+        return ReS(res, { data: rows || [] });
+    } catch (error) {
+        logger.error({ error }, 'Error en setClienteNewDireccion');
+        return ReE(res, error.message);
+    }
 }
 module.exports.setClienteNewDireccion = setClienteNewDireccion;
 

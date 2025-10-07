@@ -412,13 +412,13 @@ const processRegularItem = async (sanitizedItem, idsede) => {
     // console.log('ingresa processItem');
     
     logger.debug({ isporcion: sanitizedItem.isporcion }, '🟢 [handle.stock.v1] processRegularItem');
-    if (sanitizedItem.isporcion === 'ND' || sanitizedItem.isporcion !== 'SP') {
-        return [{
-            cantidad: sanitizedItem.cantidad,
-            listItemsPorcion: null,
-            listSubItems: null
-        }];
-    }
+    // if (sanitizedItem.isporcion === 'ND' || sanitizedItem.isporcion !== 'SP') {
+    //     return [{
+    //         cantidad: sanitizedItem.cantidad,
+    //         listItemsPorcion: null,
+    //         listSubItems: null
+    //     }];
+    // }
     
     logger.debug('Pasa al siguiente proceso processItem itemProcess');
     const itemProcess = {

@@ -97,10 +97,27 @@ module.exports.getEstablecimientosPromociones = getEstablecimientosPromociones;
 
 
 const getDireccionCliente = async function (req, res) {	
-	const idcliente = req.body.idcliente;
-    // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
-    const read_query = `SELECT cpd.*, sc.options from cliente_pwa_direccion cpd	left join sede_config_service_delivery sc on UPPER(sc.ciudad) = UPPER(cpd.ciudad) where cpd.idcliente = ${idcliente} and cpd.estado = 0`
-    return await emitirRespuesta_RES(read_query, res);        
+	// const idcliente = req.body.idcliente;
+    // // // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
+    // const read_query = `SELECT cpd.*, sc.options from cliente_pwa_direccion cpd	left join sede_config_service_delivery sc on UPPER(sc.ciudad) = UPPER(cpd.ciudad) where cpd.idcliente = ${idcliente} and cpd.estado = 0`
+    // return await emitirRespuesta_RES(read_query, res);        
+
+    const idcliente = req.body.idcliente;
+
+    // Validar que existe
+    if (!idcliente) {
+        return ReE(res, 'idcliente es requerido');
+    }
+
+    const read_query = `
+        SELECT cpd.*, sc.options 
+        FROM cliente_pwa_direccion cpd
+        LEFT JOIN sede_config_service_delivery sc ON UPPER(sc.ciudad) = UPPER(cpd.ciudad) 
+        WHERE cpd.idcliente = ? AND cpd.estado = 0
+    `;
+
+    const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idcliente], 'SELECT', 'getDireccionCliente');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.getDireccionCliente = getDireccionCliente;
 

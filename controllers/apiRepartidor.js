@@ -647,7 +647,7 @@ const setAsignarPedido = async function (req, res) {
 		// );
 
 		let read_query = `UPDATE pedido SET idrepartidor = ? WHERE idpedido IN (?)`;
-		await QueryServiceV1.ejecutarConsulta(read_query, [idpedido], 'UPDATE', 'setAsignarPedido');
+		await QueryServiceV1.ejecutarConsulta(read_query, [idrepartidor, idpedido], 'UPDATE', 'setAsignarPedido');
 
 		// await sequelize.query(
 		// 	`UPDATE repartidor SET ocupado = 1, pedido_paso_va = 1 WHERE idrepartidor = ?`,

@@ -491,8 +491,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			callback(rpt);
 		});
 
-		// 26/09/2023 lo colocamos arriba
-		apiPwaRepartidor.runLoopSearchRepartidor(io, 0);
+		// 26/09/2023 lo colocamos arriba // 06102025 lo eliminamos
+		// apiPwaRepartidor.runLoopSearchRepartidor(io, 0);
 
 		// hay un nuevo pedido - guardar
 		socket.on('nuevoPedido', async (dataSend, callback) => {
@@ -786,6 +786,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('disconnect', async (reason) => {
 			logger.debug('cliente desconectado', socket.id);
 						
+
+			// Limpiar todos los listeners
+			socket.removeAllListeners();
 
 			// registrar como cliente usuario desconectado
 			apiPwa.setClienteDesconectado(dataCliente);

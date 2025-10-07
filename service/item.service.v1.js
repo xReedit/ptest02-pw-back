@@ -72,31 +72,31 @@ class ItemService {
                 idsede
             ]);
 
-            // registrar movimiento
-            logger.info({
-                tipo_movimiento: 'resta',
-                cantidad: item.cantidadSumar,
-                idusuario: item.idusuario,
-                idporcion: item.idporcion,
-                idsede: item.idsede,
-                estado: item.estado,
-                stock_total: item.stock_total,
-                idtipo_movimiento_stock: item.idtipo_movimiento_stock,
-                idpedido: item.idpedido,
-                iditem: item.iditem
-            }, 'Registrando movimiento de stock');
-            porcionMovementsService.guardarMovimientoPorcion({
-                tipo_movimiento: 'resta',
-                cantidad: item.cantidadSumar,
-                idusuario: item.idusuario,
-                idporcion: item.idporcion,
-                idsede: item.idsede,
-                estado: item.estado,
-                stock_total: item.stock_total,
-                idtipo_movimiento_stock: item.idtipo_movimiento_stock,
-                idpedido: item.idpedido,
-                iditem: item.iditem
-            });
+            // // registrar movimiento
+            // logger.info({
+            //     tipo_movimiento: 'resta',
+            //     cantidad: item.cantidadSumar,
+            //     idusuario: item.idusuario,
+            //     idporcion: item.idporcion,
+            //     idsede: item.idsede,
+            //     estado: item.estado,
+            //     stock_total: item.stock_total,
+            //     idtipo_movimiento_stock: item.idtipo_movimiento_stock,
+            //     idpedido: item.idpedido,
+            //     iditem: item.iditem
+            // }, 'Registrando movimiento de stock');
+            // porcionMovementsService.guardarMovimientoPorcion({
+            //     tipo_movimiento: 'resta',
+            //     cantidad: item.cantidadSumar,
+            //     idusuario: item.idusuario,
+            //     idporcion: item.idporcion,
+            //     idsede: item.idsede,
+            //     estado: item.estado,
+            //     stock_total: item.stock_total,
+            //     idtipo_movimiento_stock: item.idtipo_movimiento_stock,
+            //     idpedido: item.idpedido,
+            //     iditem: item.iditem
+            // });
             
             // console.log('✅ [item.v1] procedure_stock_item completado exitosamente');
             

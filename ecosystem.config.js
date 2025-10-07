@@ -20,7 +20,7 @@ module.exports = {
     script: './app.js',
     
     // ⭐ CLUSTER MODE - Conservador para servidor compartido
-    instances: 5,              // 5 instancias (62.5% de 8 vCPUs)
+    instances: 4,              // 4 instancias (50 % de 8 vCPUs - SEGURO)
     exec_mode: 'cluster',      // Modo cluster (vs 'fork')
     
     // Gestión de memoria conservadora (12GB / 5 workers = 2.4GB por worker)
@@ -34,13 +34,11 @@ module.exports = {
     
     // Variables de entorno
     env: {
-      NODE_ENV: 'production',
-      PORT: 3000
+      NODE_ENV: 'production',      
     },
     
     env_development: {
-      NODE_ENV: 'development',
-      PORT: 3000
+      NODE_ENV: 'development',      
     },
     
     // Logging

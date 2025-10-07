@@ -6,7 +6,7 @@ const express = require("express");
 const socketIo = require('socket.io');
 
 const {createAdapter} = require('@socket.io/redis-adapter');
-const {createClient} = require('redis');
+const Redis = require('ioredis');
 
 var app = express();
 var bodyParser = require('body-parser');
@@ -89,7 +89,7 @@ const io = socketIo(server, {
     pingInterval: 25000,
     pingTimeout: 60000,
     allowEIO3: true,
-    transports: ['polling', 'websocket'], // Polling primero para compatibilidad // para adaptter redis
+    // transports: ['polling', 'websocket'], // Polling primero para compatibilidad // para adaptter redis
     cors: corsOptions,
     connectTimeout: 45000,
     maxHttpBufferSize: 1e8,
@@ -104,21 +104,11 @@ const io = socketIo(server, {
 //.listen(config.portSocket);
 
 // 07102025 ===== redis adapter para trabajar con cluster =====
-const redisHost = 'localhost';
-const redisPort = 6379;
-const redisUrl = `redis://${redisHost}:${redisPort}`;
-const pubClient = createClient({ url: redisUrl });
-const subClient = pubClient.duplicate();  // Solo duplica pubClient
+const pubClient = new Redis();
+const subClient = pubClient.duplicate();
 
-// Conectar y configurar adapter
-Promise.all([pubClient.connect(), subClient.connect()])
-    .then(() => {
-        io.adapter(createAdapter(pubClient, subClient));
-        logger.info({ redisHost, redisPort }, '✅ Socket.IO con Redis adapter configurado');
-    })
-    .catch((err) => {
-        logger.error({ err }, '❌ Error conectando Redis adapter');
-    });
+io.adapter(createAdapter(pubClient, subClient));
+logger.info('✅ Socket.IO con Redis adapter configurado');
 
 io.listen(config.portSocket);
 

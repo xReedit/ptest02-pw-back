@@ -20,16 +20,17 @@ module.exports = {
     script: './app.js',
     
     // ⭐ CLUSTER MODE - Conservador para servidor compartido
-    instances: 4,              // 4 instancias (50 % de 8 vCPUs - SEGURO)
-    exec_mode: 'cluster',      // Modo cluster (vs 'fork')
+    instances: 1,              // 4 instancias (50 % de 8 vCPUs - SEGURO)
+    exec_mode: 'fork',      // Modo cluster (vs 'fork')
     
     // Gestión de memoria conservadora (12GB / 5 workers = 2.4GB por worker)
-    max_memory_restart: '2400M',  // Reinicia si excede 2.4GB
+    // max_memory_restart: '2400M',  // Reinicia si excede 2.4GB
+    max_memory_restart: '4000M',
     
     // Node.js arguments
     node_args: [
-      '--max-old-space-size=2304',  // Heap de 2.25GB por worker (deja margen)
-      '--max-semi-space-size=128',  // Optimización GC
+      '--max-old-space-size=3840',
+      '--max-semi-space-size=128',
     ],
     
     // Variables de entorno

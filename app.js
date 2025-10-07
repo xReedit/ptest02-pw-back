@@ -5,8 +5,8 @@ const http = require('http');
 const express = require("express"); 
 const socketIo = require('socket.io');
 
-const {createAdapter} = require('@socket.io/redis-adapter');
-const Redis = require('ioredis');
+// const {createAdapter} = require('@socket.io/redis-adapter');
+// const Redis = require('ioredis');
 
 var app = express();
 var bodyParser = require('body-parser');
@@ -89,7 +89,7 @@ const io = socketIo(server, {
     pingInterval: 25000,
     pingTimeout: 60000,
     allowEIO3: true,
-    transports: ['polling', 'websocket'], // Polling primero para compatibilidad // para adaptter redis
+    // transports: ['polling', 'websocket'], // Polling primero para compatibilidad // para adaptter redis
     cors: corsOptions,
     connectTimeout: 45000,
     maxHttpBufferSize: 1e8,
@@ -100,17 +100,16 @@ const io = socketIo(server, {
         info: (msg) => logger.info('Socket.IO info:', msg),
         error: (msg) => logger.error('Socket.IO error:', msg)
     }
-})
-//.listen(config.portSocket);
+}).listen(config.portSocket);
 
-// 07102025 ===== redis adapter para trabajar con cluster =====
-const pubClient = new Redis();
-const subClient = pubClient.duplicate();
+// 07102025 ===== redis adapter para trabajar con cluster ===== no funciono
+// const pubClient = new Redis();
+// const subClient = pubClient.duplicate();
 
-io.adapter(createAdapter(pubClient, subClient));
-logger.info('✅ Socket.IO con Redis adapter configurado');
+// io.adapter(createAdapter(pubClient, subClient));
+// logger.info('✅ Socket.IO con Redis adapter configurado');
 
-io.listen(config.portSocket);
+// io.listen(config.portSocket);
 
 // ===== fin redis adapter =====
 

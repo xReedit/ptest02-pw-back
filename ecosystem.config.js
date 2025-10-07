@@ -58,7 +58,7 @@ module.exports = {
     
     // Graceful shutdown
     kill_timeout: 5000,         // Espera 5s antes de forzar cierre
-    wait_ready: true,           // Espera señal de "ready" de la app
+    // wait_ready: true,           // Espera señal de "ready" de la app
     listen_timeout: 10000,      // Timeout para escuchar puerto
     
     // Cluster específico

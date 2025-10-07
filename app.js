@@ -89,7 +89,7 @@ const io = socketIo(server, {
     pingInterval: 25000,
     pingTimeout: 60000,
     allowEIO3: true,
-    // transports: ['polling', 'websocket'], // Polling primero para compatibilidad // para adaptter redis
+    transports: ['polling', 'websocket'], // Polling primero para compatibilidad // para adaptter redis
     cors: corsOptions,
     connectTimeout: 45000,
     maxHttpBufferSize: 1e8,

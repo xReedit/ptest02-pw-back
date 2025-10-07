@@ -95,7 +95,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// guardamos codigo en bd
 			apiPwa.setCodigoVerificacionTelefonoCliente(data);
 
-			sendMsjSocketWsp(_sendServerMsj, dataSocket);
+			sendMsjSocketWsp(_sendServerMsj);
 		});
 
 		// escucha respuesta del servidor de mensajeria
@@ -613,7 +613,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					if ( telefonoComercio !== '' ) {
 						let _sendServerMsj = `{"tipo":0, "s": "${dataCliente.idorg}.${dataCliente.idsede}", "p": ${dataSend.dataPedido.idpedido}, "h": "${new Date().toISOString()}", "t":"${telefonoComercio}"}`;
 						_sendServerMsj = JSON.parse(_sendServerMsj);
-						sendMsjSocketWsp(_sendServerMsj, dataSocket);
+						sendMsjSocketWsp(_sendServerMsj);
 					}	
 				} catch(error){
 					logger.error({ error }, 'Error al enviar msj socket wsp');
@@ -684,7 +684,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				if ( telefonoComercio !== '' ) {
 					const _sendServerMsj = `{"tipo":0, "s": "${dataCliente.idorg}.${dataCliente.idsede}", "p": ${dataSend.dataPedido.idpedido}, "h": "${new Date().toISOString()}", "t":"${telefonoComercio}"}`;
 					// io.to('SERVERMSJ').emit('nuevoPedido', _sendServerMsj); // para enviar el url del pedido
-					sendMsjSocketWsp(_sendServerMsj, dataSocket);
+					sendMsjSocketWsp(_sendServerMsj);
 				}
 			}
 
@@ -894,7 +894,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('restobar-send-cupones-ws', async (payload) => {
 			payload.tipo = 7;			
 			logger.debug('restobar-send-cupones-ws', payload);
-			sendMsjSocketWsp(payload, dataSocket);
+			sendMsjSocketWsp(payload);
 			
 		});
 
@@ -994,7 +994,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 				// actualiza el time_line // hora_pedido_aceptado								
 				apiPwa.updateTimeLinePedido(c.idpedido, c.time_line);
-				sendMsjSocketWsp(c, dataSocket)
+				sendMsjSocketWsp(c)
 			});
 		});
 
@@ -1003,7 +1003,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('restobar-send-msj-ws-solicitud-permiso', async (payload) => {
 			payload.tipo = 6;			
 			logger.debug('restobar-send-msj-ws-solicitud-permiso', payload);
-			sendMsjSocketWsp(payload, dataSocket);
+			sendMsjSocketWsp(payload);
 			
 		});
 
@@ -1251,7 +1251,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			listClienteNotifica.map(c => {
 				c.tipo = 2;
-				sendMsjSocketWsp(c, dataSocket);
+				sendMsjSocketWsp(c);
 
 				// actualiza el time_line // hora_pedido_aceptado								
 				apiPwa.updateTimeLinePedido(c.idpedido, c.time_line);
@@ -1284,7 +1284,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 				logger.debug('mensaje === ', c)
-				sendMsjSocketWsp(c, dataSocket);
+				sendMsjSocketWsp(c);
 
 				// NOTIFICA a la central
 				io.to('MONITOR').emit('repartidor-notifica-cliente-time-line', c);
@@ -1484,7 +1484,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// notifica wsp cliente
 			listClienteNotifica.map(c => {
 				c.tipo = 2;
-				sendMsjSocketWsp(c, dataSocket)
+				sendMsjSocketWsp(c)
 
 				// actualiza el time_line // hora_pedido_aceptado								
 				apiPwa.updateTimeLinePedido(c.idpedido, c.time_line);
@@ -1535,7 +1535,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 	// evniar mensajes al whatsapp 130621
-	function sendMsjSocketWsp(dataMsj, dataSocket) {
+	function sendMsjSocketWsp(dataMsj, dataSocket = null) {
 		// 0: nuevo pedido notifica comercio
 		// 1: verificar telefono
 		// 2: notifica al cliente el repartidor que acepto pedido

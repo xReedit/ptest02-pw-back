@@ -157,9 +157,12 @@ function obtenerFechaHora() {
 const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 	// 0: nuevo pedido notifica comercio
 		// 1: verificar telefono
-		// 2: notifica al cliente el repartidor que acepto pedido		
+		// 2: notifica al cliente el repartidor que acepto pedido	
+		let roomNameMensajeria = '';
+		if (dataSocket != null) {			
+			roomNameMensajeria = `mensajeria_${dataSocket.idorg}${dataSocket.idsede}`;
+		}	
 
-		const roomNameMensajeria = `mensajeria_${dataSocket.idorg}${dataSocket.idsede}`;
 
 		logger.debug('dataMsj ===========> aa ==', dataMsj);
 		dataMsj = typeof dataMsj !== 'object' ? JSON.parse(dataMsj) : dataMsj;
@@ -296,6 +299,10 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 			];
 			_sendServerMsj.bodyParameters = [];
 
+			if (dataSocket === null) {
+				return;
+			}
+			
 			// mensaje para mensajeria propia
 			const _frasesComprobante = elegirAleatorio(frasesComprobante);
 			const msjMensajeria = `${saludo} desde ${dataMsj.comercio}, ${_frasesComprobante} número ${dataMsj.numero_comprobante}. También puedes consultarlo en: papaya.com.pe`;

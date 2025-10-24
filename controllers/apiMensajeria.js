@@ -7,8 +7,8 @@ const getLitsUrlMensajeria = async function (req, res) {
     const listUrlMensajeria = [        
         {
             servicio: 'Restobar',
-            // url: 'https://app.restobar.papaya.com.pe' //'http://192.168.1.47:5819' // #TODO: url socket restobar 'https://app.restobar.papaya.com.pe';
-            url: 'http://192.168.1.47:5819'
+            url: 'https://app.restobar.papaya.com.pe' //'http://192.168.1.47:5819' // #TODO: url socket restobar 'https://app.restobar.papaya.com.pe';
+            // url: 'http://192.168.1.47:5819'
         },
         // {
         //     servicio: 'Cobranza',

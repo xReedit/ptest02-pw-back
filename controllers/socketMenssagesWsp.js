@@ -335,8 +335,7 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 
 
 			logger.debug('enviado a mensajeria:', roomNameMensajeria, ' la lista de menesjaes: ', listMessages);
-			io.to(roomNameMensajeria).emit('send_message', listMessages);
-			return;
+			io.to(roomNameMensajeria).emit('send_message', listMessages);			
 		}
 
 		// 	const _user_id = dataMsj.user_id ? `/${dataMsj.user_id}` : '';
@@ -450,8 +449,10 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 
 		logger.debug('_sendServerMsj === ', _sendServerMsj);
 
-
+	if (tipo !== 3) { // no comprobantes
 		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
+	}
+
 }
 
 module.exports.sendMsjSocketWsp = sendMsjSocketWsp;

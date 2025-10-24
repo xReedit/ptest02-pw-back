@@ -125,9 +125,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			logger.debug({ roomMensajeria }, 'Connectando ping a roomMensajeria');
 			
 			socket.to(roomMensajeria).timeout(5000).emit('ping', { pingId }, (err, responses) => {
-				logger.debug({ responses }, 'Respuesta recibida de mensajeria');
+				logger.debug({ responses }, 'Respuesta recibida de mensajeria', responses);
 				if (responses && responses.length > 0 && responses[0].success){
-					socket.emit('pong-mensajeria', { pingId, success: true });
+					const isWspConectado = responses[0].whatsappConnected ? responses[0].whatsappConnected : true;
+					socket.emit('pong-mensajeria', { pingId, success: isWspConectado });
 				}
 			});
 		});

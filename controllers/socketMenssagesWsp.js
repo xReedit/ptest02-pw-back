@@ -259,49 +259,50 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 
 		// notifica url descarga pdf comprobante
 		if ( tipo === 3 ) {
-			// Notifica url descarga pdf comprobante, cordial y variado
-			const saludo = elegirAleatorio(saludos);
-			const cuerpo = elegirAleatorio(frasesComprobante);
-			const _user_id = dataMsj.user_id ? `/${dataMsj.user_id}` : '';
-			const _concat_external_id = dataMsj.external_id + _user_id;
-			const _ulrComprobante = `https://apifac.papaya.com.pe/downloads/document/pdf/${_concat_external_id}`;
-			const _adjuntaTelefonoComercio = dataMsj.comercio_telefono ? `\n\n${elegirAleatorio(advertenciasComercio).replace('{comercio}', dataMsj.comercio).replace('{comercio_telefono}', dataMsj.comercio_telefono)}` : '';
-			msj = `${saludo} por encargo de ${dataMsj.comercio}, ${cuerpo} número ${dataMsj.numero_comprobante}. También puedes consultarlo en: papaya.com.pe ${_adjuntaTelefonoComercio}\n\nEnviado el: ${obtenerFechaHora()}`;
-			_sendServerMsj.tipo = 3;
-			_sendServerMsj.telefono = dataMsj.telefono;
-			_sendServerMsj.msj = msj;
-			_sendServerMsj.url_comprobante = _ulrComprobante;
-			_sendServerMsj.url_comprobante_xml = _ulrComprobante.replace('/pdf/','/xml/');
-			_sendServerMsj.nombre_file = dataMsj.numero_comprobante;
-			_sendServerMsj.nombre_plantilla = 'envio_comprobante';
-			_sendServerMsj.components = [
-				{
-					"type": "header",
-					"parameters": [
-						{
-							"type": "document",
-							"document": {
-								"link": _ulrComprobante,
-								"filename": dataMsj.numero_comprobante
-							}
-						}
-					]
-				},
-				{
-					"type": "body",
-					"parameters": [
-						{ "type": "text", "text": dataMsj.comercio },       // {{1}} nombre del comercio
-						{ "type": "text", "text": dataMsj.numero_comprobante },   // {{2}} número del comprobante
-						{ "type": "text", "text": dataMsj.comercio },   // {{3}} nombre del comercio
-						{ "type": "text", "text": dataMsj.comercio_telefono } // {{4}} telefono del comercio
-					]
-				}
-			];
-			_sendServerMsj.bodyParameters = [];
+			// 231025 todo comprobante va por mensajeria propia
+			// // Notifica url descarga pdf comprobante, cordial y variado
+			// const saludo = elegirAleatorio(saludos);
+			// const cuerpo = elegirAleatorio(frasesComprobante);
+			// const _user_id = dataMsj.user_id ? `/${dataMsj.user_id}` : '';
+			// const _concat_external_id = dataMsj.external_id + _user_id;
+			// const _ulrComprobante = `https://apifac.papaya.com.pe/downloads/document/pdf/${_concat_external_id}`;
+			// const _adjuntaTelefonoComercio = dataMsj.comercio_telefono ? `\n\n${elegirAleatorio(advertenciasComercio).replace('{comercio}', dataMsj.comercio).replace('{comercio_telefono}', dataMsj.comercio_telefono)}` : '';
+			// msj = `${saludo} por encargo de ${dataMsj.comercio}, ${cuerpo} número ${dataMsj.numero_comprobante}. También puedes consultarlo en: papaya.com.pe ${_adjuntaTelefonoComercio}\n\nEnviado el: ${obtenerFechaHora()}`;
+			// _sendServerMsj.tipo = 3;
+			// _sendServerMsj.telefono = dataMsj.telefono;
+			// _sendServerMsj.msj = msj;
+			// _sendServerMsj.url_comprobante = _ulrComprobante;
+			// _sendServerMsj.url_comprobante_xml = _ulrComprobante.replace('/pdf/','/xml/');
+			// _sendServerMsj.nombre_file = dataMsj.numero_comprobante;
+			// _sendServerMsj.nombre_plantilla = 'envio_comprobante';
+			// _sendServerMsj.components = [
+			// 	{
+			// 		"type": "header",
+			// 		"parameters": [
+			// 			{
+			// 				"type": "document",
+			// 				"document": {
+			// 					"link": _ulrComprobante,
+			// 					"filename": dataMsj.numero_comprobante
+			// 				}
+			// 			}
+			// 		]
+			// 	},
+			// 	{
+			// 		"type": "body",
+			// 		"parameters": [
+			// 			{ "type": "text", "text": dataMsj.comercio },       // {{1}} nombre del comercio
+			// 			{ "type": "text", "text": dataMsj.numero_comprobante },   // {{2}} número del comprobante
+			// 			{ "type": "text", "text": dataMsj.comercio },   // {{3}} nombre del comercio
+			// 			{ "type": "text", "text": dataMsj.comercio_telefono } // {{4}} telefono del comercio
+			// 		]
+			// 	}
+			// ];
+			// _sendServerMsj.bodyParameters = [];
 
-			if (dataSocket === null) {
-				return;
-			}
+			// if (dataSocket === null) {
+			// 	return;
+			// }
 			
 			// mensaje para mensajeria propia
 			const _frasesComprobante = elegirAleatorio(frasesComprobante);

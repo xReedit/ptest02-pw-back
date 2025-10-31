@@ -273,7 +273,7 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 			_sendServerMsj.url_comprobante = _ulrComprobante;
 			_sendServerMsj.url_comprobante_xml = _ulrComprobante.replace('/pdf/','/xml/');
 			_sendServerMsj.nombre_file = dataMsj.numero_comprobante;
-			_sendServerMsj.nombre_plantilla = 'envio_comprobante';
+			_sendServerMsj.nombre_plantilla = 'copy_envio_comprobante';
 			_sendServerMsj.components = [
 				{
 					"type": "header",

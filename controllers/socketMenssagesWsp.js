@@ -295,6 +295,19 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 						{ "type": "text", "text": dataMsj.comercio },   // {{3}} nombre del comercio
 						{ "type": "text", "text": dataMsj.comercio_telefono } // {{4}} telefono del comercio
 					]
+				},
+				{
+					"type": "media",
+					"media": {
+						"link": _ulrComprobante,
+						"filename": dataMsj.numero_comprobante
+					},
+					"parameters": [
+						{
+							"type": "text",
+							"text": _concat_external_id
+						}
+					]
 				}
 			];
 			_sendServerMsj.bodyParameters = [];

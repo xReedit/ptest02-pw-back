@@ -296,7 +296,8 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 						{ "type": "text", "text": dataMsj.comercio_telefono } // {{4}} telefono del comercio
 					]
 				}
-				// ,
+				// para twilio
+				// , 
 				// {
 				// 	"type": "media",
 				// 	"media": {

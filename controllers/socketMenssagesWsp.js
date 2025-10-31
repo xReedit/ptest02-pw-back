@@ -347,8 +347,8 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 			];
 
 
-			// logger.debug('enviado a mensajeria:', roomNameMensajeria, ' la lista de menesjaes: ', listMessages);
-			// io.to(roomNameMensajeria).emit('send_message', listMessages);			
+			logger.debug('enviado a mensajeria:', roomNameMensajeria, ' la lista de menesjaes: ', listMessages);
+			io.to(roomNameMensajeria).emit('send_message', listMessages);			
 		}
 
 		// 	const _user_id = dataMsj.user_id ? `/${dataMsj.user_id}` : '';

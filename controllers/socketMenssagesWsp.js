@@ -312,9 +312,9 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 			];
 			_sendServerMsj.bodyParameters = [];
 
-			if (dataSocket === null) {
-				return;
-			}
+			// if (dataSocket === null) {
+			// 	return;
+			// }
 			
 			// mensaje para mensajeria propia
 			const _frasesComprobante = elegirAleatorio(frasesComprobante);

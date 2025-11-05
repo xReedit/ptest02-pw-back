@@ -464,9 +464,9 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 
 		logger.debug('_sendServerMsj === ', _sendServerMsj);
 
-	// if (tipo !== 3) { // no comprobantes
+	if (tipo !== 3 || tipo !== 7) { // no comprobantes
 		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
-	// }
+	}
 
 }
 

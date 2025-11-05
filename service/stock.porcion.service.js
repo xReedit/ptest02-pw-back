@@ -118,14 +118,20 @@ class StockPorcionService {
                 const porcionesIds = receta.map(r => r.idporcion).filter(id => id > 0);
                 const porcionesConLock = await this._lockPorciones(porcionesIds, idsede, transaction);
                 
-                // NOTA: NO validamos stock aquí porque el procedimiento almacenado ya lo hizo
-                // Si llegamos aquí es porque el procedimiento ejecutó correctamente
+                // 🆕 AHORA SÍ validamos y actualizamos stock porque los procedimientos NO funcionan
 
                 logger.debug({ porcionesConLock }, '📦 [stock.porcion.service] Porciones con lock obtenidas');
                 
-                // Paso 3: SOLO obtener el stock actual (NO actualizar, eso lo hace el procedimiento)
-                // El procedimiento almacenado YA actualizó el stock, solo necesitamos registrar el historial
-                const porcionesActualizadas = await this._obtenerStockActualPorciones(receta, transaction);
+                // Paso 3: ACTUALIZAR EL STOCK REAL (los procedimientos almacenados están fallando)
+                // Determinamos si es SALIDA (venta/descuento) o ENTRADA (reset/devolución)
+                const esSalida = tipoMovimiento === 'VENTA' || tipoMovimiento === 'SALIDA';
+                const porcionesActualizadas = await this._actualizarStockPorciones(
+                    receta, 
+                    cantidadProducto, 
+                    esReset,
+                    esSalida,
+                    transaction
+                );
 
                 logger.debug({ porcionesActualizadas }, '📦 [stock.porcion.service] Porciones actualizadas obtenidas');
                 
@@ -201,6 +207,87 @@ class StockPorcionService {
             error: 'Máximo de reintentos alcanzado',
             porcionesAfectadas: []
         };
+    }
+    
+    /**
+     * 🆕 SOLID: Registra SOLO el historial de porciones (NO actualiza stock)
+     * El stock ya fue actualizado por procedure_stock_item_porcion.js
+     * 
+     * Responsabilidad única: Solo registrar en porcion_historial
+     * 
+     * @param {Object} params - Parámetros del movimiento
+     * @param {number} params.iditem - ID del item
+     * @param {number} params.cantidadProducto - Cantidad del producto vendido/devuelto
+     * @param {number} params.idsede - ID de la sede
+     * @param {number} params.idusuario - ID del usuario
+     * @param {number|null} params.idpedido - ID del pedido (opcional)
+     * @param {string} params.tipoMovimiento - Tipo de movimiento (VENTA, VENTA_DEVOLUCION, etc)
+     * @param {boolean} params.esReset - Si es un reset de stock
+     * @returns {Promise<Object>} Resultado de la operación
+     */
+    static async registrarSoloHistorial(params) {
+        const startTime = Date.now();
+        const { iditem, cantidadProducto, idsede, idusuario, idpedido, tipoMovimiento, esReset } = params;
+        
+        try {
+            // Paso 1: Obtener receta del item
+            const receta = await this._obtenerRecetaItem(iditem, null);
+            
+            if (!receta || receta.length === 0) {
+                // No hay porciones en la receta, retornar success sin hacer nada
+                return {
+                    success: true,
+                    message: 'Item sin porciones en receta',
+                    porcionesAfectadas: [],
+                    ejecutionTime: Date.now() - startTime
+                };
+            }
+            
+            // Paso 2: Obtener stock ACTUAL de las porciones (SIN actualizar, solo consultar)
+            const porcionesActualizadas = await this._obtenerStockActualPorcionesParaHistorial(
+                receta, 
+                cantidadProducto, 
+                esReset,
+                tipoMovimiento === 'VENTA' || tipoMovimiento === 'SALIDA'
+            );
+            
+            // Paso 3: Registrar movimientos en historial
+            await this._registrarMovimientosHistorial(
+                porcionesActualizadas,
+                {
+                    iditem,
+                    cantidadProducto,
+                    idsede,
+                    idusuario,
+                    idpedido,
+                    tipoMovimiento
+                },
+                null // sin transaction porque no estamos actualizando stock
+            );
+            
+            return {
+                success: true,
+                message: 'Historial registrado correctamente',
+                porcionesAfectadas: porcionesActualizadas,
+                ejecutionTime: Date.now() - startTime
+            };
+            
+        } catch (error) {
+            errorManager.logError({
+                incidencia: {
+                    message: `Error registrando historial de porciones: ${error.message}`,
+                    data: { params, errorCode: error.code }
+                },
+                origen: 'StockPorcionService.registrarSoloHistorial'
+            });
+            
+            return {
+                success: false,
+                error: error.message,
+                errorCode: error.code,
+                porcionesAfectadas: []
+            };
+        }
     }
     
     /**
@@ -463,19 +550,59 @@ class StockPorcionService {
     }
     
     /**
-     * Actualiza el stock de las porciones (DEPRECADO - Ya no se usa)
-     * El stock lo actualiza el procedimiento almacenado
+     * 🆕 SOLID: Obtiene stock actual de porciones PARA REGISTRAR HISTORIAL
+     * Similar a _obtenerStockActualPorciones pero calcula cantidadAjustada correctamente para el historial
      * @private
-     * @deprecated
      */
-    static async _actualizarStockPorciones(receta, cantidadProducto, esReset, transaction) {
+    static async _obtenerStockActualPorcionesParaHistorial(receta, cantidadProducto, esReset, esSalida) {
         const porcionesActualizadas = [];
         
         for (const itemReceta of receta) {
             if (itemReceta.idporcion > 0) {
+                // Calcular cantidad ajustada según el tipo de operación
+                const cantidadAjustada = esReset 
+                    ? cantidadProducto
+                    : (esSalida ? -(itemReceta.cantidad_receta * cantidadProducto) : (itemReceta.cantidad_receta * cantidadProducto));
+                
+                // Obtener el stock actual (ya fue actualizado por procedure_stock_item_porcion.js)
+                const [stockActual] = await sequelize.query(
+                    'SELECT stock FROM porcion WHERE idporcion = :idporcion',
+                    {
+                        replacements: { idporcion: itemReceta.idporcion },
+                        type: Sequelize.QueryTypes.SELECT
+                    }
+                );
+                
+                porcionesActualizadas.push({
+                    idporcion: itemReceta.idporcion,
+                    descripcion: itemReceta.descripcion,
+                    cantidadAjustada: cantidadAjustada,
+                    stockAnterior: itemReceta.stock_actual,
+                    stockNuevo: stockActual ? parseFloat(stockActual.stock) : 0
+                });
+            }
+        }
+        
+        return porcionesActualizadas;
+    }
+    
+    /**
+     * Actualiza el stock de las porciones REALMENTE en la base de datos
+     * ACTIVADO porque los procedimientos almacenados están fallando
+     * @private
+     */
+    static async _actualizarStockPorciones(receta, cantidadProducto, esReset, esSalida, transaction) {
+        const porcionesActualizadas = [];
+        
+        for (const itemReceta of receta) {
+            if (itemReceta.idporcion > 0) {
+                // Calcular ajuste según el tipo de operación:
+                // - Reset: establece el valor exacto
+                // - Salida (VENTA): descuenta (negativo)
+                // - Entrada (DEVOLUCION/RECUPERA): suma (positivo)
                 const cantidadAjuste = esReset 
-                    ? cantidadProducto // Reset: establece el valor
-                    : -(itemReceta.cantidad_receta * cantidadProducto); // Venta: descuenta
+                    ? cantidadProducto
+                    : (esSalida ? -(itemReceta.cantidad_receta * cantidadProducto) : (itemReceta.cantidad_receta * cantidadProducto));
                 
                 const query = esReset
                     ? `UPDATE porcion SET stock = :cantidadAjuste WHERE idporcion = :idporcion`

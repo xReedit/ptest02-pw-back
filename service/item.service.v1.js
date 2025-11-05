@@ -12,6 +12,11 @@ const StockPorcionService = require('./stock.porcion.service');
 const { sequelize, QueryTypes } = require('../config/database');
 const logger = require('../utilitarios/logger');
 
+// 🆕 Importar reemplazos de procedimientos almacenados
+const { updateStockItem } = require('./procedure_stock_item');
+const { updateStockItemPorcion } = require('./procedure_stock_item_porcion');
+const { updateStockAllSubitems } = require('./procedure_stock_all_subitems');
+
 // console.log('🟣 item.service.v1.js cargado - Versión refactorizada activa');
 
 class ItemService {
@@ -63,14 +68,16 @@ class ItemService {
                 return result;
             }
             
-            // console.log('📦 [item.v1] Llamando a procedure_stock_item');
+            // console.log('📦 [item.v1] Llamando a procedure_stock_item.js');
             
-            // Usar la versión refactorizada de QueryService para llamar al procedimiento almacenado
-            // con manejo de transacciones y reintentos automáticos para deadlocks
-            updatedItem = await QueryServiceV1.emitirRespuestaSP('call procedure_stock_item(?, ?)', [
-                JSON.stringify(_item),
-                idsede
-            ]);
+            // 🆕 NUEVO: Usar función JavaScript que reemplaza el procedimiento almacenado
+            // Ejecutar dentro de una transacción para garantizar atomicidad
+            updatedItem = await QueryServiceV1.ejecutarTransaccion(async (transaction) => {
+                return await updateStockItem(_item, idsede, transaction);
+            });
+
+
+            logger.debug({ updatedItem }, '🟢 [item.v1] Item actualizado ?=?====');
 
             // // registrar movimiento
             // logger.info({
@@ -103,10 +110,12 @@ class ItemService {
             // Procesar el resultado
             if (updatedItem && updatedItem[0] && updatedItem[0].cantidad !== undefined && !isNaN(updatedItem[0].cantidad)) {
                 result[0].cantidad = parseFloat(updatedItem[0].cantidad);
-                // console.log('🟢 [item.v1] Cantidad actualizada:', result[0].cantidad);
+                console.log('🟢 [item.v1] Cantidad actualizada:', result[0].cantidad);
             } else {
-                // updatedItem[0].cantidad = 0;
-                // console.log('⚠️ [item.v1] No se pudo obtener la cantidad actualizada');
+                // updatedItem[0].cantidad = 0; 
+                result[0].cantidad = 'ND';
+                console.log('⚠️ [item.v1] No se pudo obtener la cantidad actualizada');
+                return result;
             }
             
             // Si es un item con porciones, obtener información adicional
@@ -315,22 +324,22 @@ class ItemService {
                 return result;
             }
             
-            // console.log('📦 [item.v1] Llamando a procedure_stock_item_porcion');
+            // console.log('📦 [item.v1] Llamando a procedure_stock_item_porcion.js');
             
-            // Usar la nueva implementación para manejar deadlocks y reintentos
-            const jsonParam = JSON.stringify(_itemProcessPorcion);
-            logger.info({ jsonParam }, '📦 [item.v1] Llamando a procedure_stock_item_porcion');
-            updatedItem = await QueryServiceV1.ejecutarProcedimiento('call procedure_stock_item_porcion(?)', [jsonParam], 'processItemPorcion');
+            // 🆕 NUEVO: Usar función JavaScript que reemplaza el procedimiento almacenado
+            logger.info({ item: _itemProcessPorcion }, '📦 [item.v1] Llamando a procedure_stock_item_porcion.js');
+            updatedItem = await QueryServiceV1.ejecutarTransaccion(async (transaction) => {
+                return await updateStockItemPorcion(_itemProcessPorcion, transaction);
+            });
             
-            // console.log('✅ [item.v1] procedure_stock_item_porcion exitoso');
+            // console.log('✅ [item.v1] procedure_stock_item_porcion.js exitoso');
             
-            // 🆕 NUEVO: Registrar movimiento de porciones en historial (stock.porcion.service.js)
-            // El procedimiento actualiza el stock, ahora registramos el historial atómicamente
+            // 🆕 SOLID: Registrar SOLO historial (el stock ya lo actualizó procedure_stock_item_porcion.js)
+            // Responsabilidad única: stock.porcion.service.js solo registra historial, no actualiza stock
             try {
                 // Determinar tipo de movimiento:
                 // - Si cantidadSumar < 0: VENTA (disminuye stock desde venta)
                 // - Si cantidad_reset > 0 o cantidadSumar > 0: VENTA_DEVOLUCION (devuelve/cancela venta, aumenta stock)
-                // Todo es movimiento de venta (salida o devolución)
                 const esSalida = (item.cantidadSumar || 0) < 0;
                 const esReset = (item.cantidad_reset || 0) > 0;
                 
@@ -344,14 +353,11 @@ class ItemService {
                 logger.debug({ 
                     iditem: item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem,
                     cantidadProducto: Math.abs(item.cantidadSumar || item.cantidad_reset || 1),
-                    idsede: item.idsede || 1,
-                    idusuario: item.idusuario || 1,
-                    idpedido: item.idpedido || null,
-                    tipoMovimiento: tipoMovimiento,
-                    esReset: esReset
-                }, '📦 [item.v1] Llamando a actualizarStockConHistorial');
+                    tipoMovimiento: tipoMovimiento
+                }, '📦 [item.v1] Llamando a registrarSoloHistorial (SOLID)');
                 
-                const resultadoPorciones = await StockPorcionService.actualizarStockConHistorial({
+                // SOLID: Solo registrar historial, NO actualizar stock (ya lo hizo procedure_stock_item_porcion.js)
+                const resultadoPorciones = await StockPorcionService.registrarSoloHistorial({
                     iditem: item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem,
                     cantidadProducto: Math.abs(item.cantidadSumar || item.cantidad_reset || 1),
                     idsede: item.idsede || 1,
@@ -362,11 +368,11 @@ class ItemService {
                 });
                 
                 if (!resultadoPorciones.success) {
-                    logger.warn({ error: resultadoPorciones.error }, '⚠️ [item.v1] No se pudo registrar movimiento de porciones');
+                    logger.warn({ error: resultadoPorciones.error }, '⚠️ [item.v1] No se pudo registrar historial de porciones');
                     // No lanzamos error para no romper el flujo, pero logueamos
                 }
             } catch (porcionError) {
-                logger.error({ error: porcionError, item }, '❌ [item.v1] Error al registrar movimiento de porciones');
+                logger.error({ error: porcionError, item }, '❌ [item.v1] Error al registrar historial de porciones');
                 // No lanzamos error para mantener compatibilidad
             }
 
@@ -487,12 +493,12 @@ class ItemService {
                 throw new Error('allItems es inválido o no es un objeto');
             }
             
-            // console.log('📦 [item.v1] Llamando a procedure_stock_all_subitems');
+            // console.log('📦 [item.v1] Llamando a procedure_stock_all_subitems.js');
             
-            // Usar la nueva implementación para manejar deadlocks y reintentos
-            updatedItem = await QueryServiceV1.emitirRespuestaSP('call procedure_stock_all_subitems(?)', [
-                JSON.stringify(allItems)
-            ]);
+            // 🆕 NUEVO: Usar función JavaScript que reemplaza el procedimiento almacenado
+            updatedItem = await QueryServiceV1.ejecutarTransaccion(async (transaction) => {
+                return await updateStockAllSubitems(allItems, transaction);
+            });
 
             // 🆕 NUEVO: Registrar movimiento SOLO si el subitem tiene idporcion directo
             // Esto cubre el caso de subitems con porciones que NO están en la receta del item principal

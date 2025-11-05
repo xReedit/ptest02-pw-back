@@ -317,7 +317,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('itemModificado', async function(item) {
 			item.idsede = dataCliente.idsede;
 			item.idusuario = dataCliente.idusuario;
-			logger.debug({ item }, 'Item modificado');			
+			logger.debug({ item }, 'Item modificado ==== aca');			
 			// Verificar si es del monitor
 			if (item?.from_monitor === true) {
 				socketItemModificadoAfter(item);
@@ -355,6 +355,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 				const rptCantidad = await apiPwa.setItemCartaAfter(0, item);
+
+				logger.debug({ rptCantidad }, 'RESPUESTA Rpt cantidad ====== ');
 
 				// if ( item.isporcion != 'SP' ) {
 				item.cantidad = rptCantidad[0].cantidad;

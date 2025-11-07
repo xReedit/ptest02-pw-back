@@ -99,7 +99,7 @@ async function updateStockItem(item, idsede, transaction = null) {
             // Reset: establece el valor exacto
             updateQuery = `
                 UPDATE carta_lista 
-                SET cantidad = ? 
+                SET cantidad = GREATEST(0, cantidad + ?)
                 WHERE idcarta_lista = ?
             `;
             updateParams = [cantidadAjuste, item.idcarta_lista];

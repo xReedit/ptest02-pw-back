@@ -214,6 +214,15 @@ const buildAllItemsFromSubitemsView = (subitem, sanitizedItem, cantSelected) => 
     const _idproducto = subitem.idproducto && subitem.idproducto !== 0 ? subitem.idproducto : '';
     const _iditem_subitem = subitem.iditem_subitem && subitem.iditem_subitem !== 0 ? subitem.iditem_subitem : '';
     
+    const _cantidad_decuenta = validateCantidadDecuenta(subitem?.descuenta);
+    
+    cantSelected *= _cantidad_decuenta;
+
+    logger.debug({
+        cantSelected,
+        _cantidad_decuenta
+    }, '📦 [handle.stock.v1] buildAllItemsFromSubitemsView');
+    
     // Cuando cantidad_reset > 0, usar cantSelected directamente (sin multiplicar)
     const cantSumar = cantSelected;
     const cantReset = cantSelected;
@@ -236,6 +245,23 @@ const buildAllItemsFromSubitemsView = (subitem, sanitizedItem, cantSelected) => 
     };
 };
 
+const validateCantidadDecuenta = (descuenta) => {
+    let _cantidad_decuenta = 1;
+    if (descuenta !== undefined && descuenta !== null && descuenta !== '') {
+        const parsed = parseFloat(descuenta);
+        if (!isNaN(parsed) && isFinite(parsed) && parsed > 0) {
+            _cantidad_decuenta = parsed;
+        } else {
+            logger.debug({ 
+                descuenta, 
+                parsed,
+                subitem 
+            }, '⚠️ [handle.stock.v1] Valor descuenta inválido en subitemsView, usando 1 por defecto');
+        }
+    }
+    return _cantidad_decuenta;
+};
+
 /**
  * Construye allItems desde subitems_selected_array
  */
@@ -244,10 +270,16 @@ const buildAllItemsFromSelectedArray = (subitemGroup, sanitizedItem) => {
     const _idproducto = subitemGroup.idproducto && subitemGroup.idproducto !== 0 ? subitemGroup.idproducto : '';
     const _iditem_subitem = subitemGroup.iditem_subitem && subitemGroup.iditem_subitem !== 0 ? subitemGroup.iditem_subitem : '';
     
+    const _cantidad_decuenta = validateCantidadDecuenta(subitemGroup?.descuenta);
+
+    logger.debug({
+        _cantidad_decuenta,
+    }, '📦 [handle.stock.v1] _cantidad_decuenta');
+
     const cantSelected = subitemGroup.cantidad_selected || 1;  
-    const cantSumar = sanitizedItem.cantidadSumar * cantSelected;
-    const cantReset = sanitizedItem.cantidad_reset * cantSelected;
-    
+    const cantSumar = sanitizedItem.cantidadSumar * cantSelected * _cantidad_decuenta;
+    const cantReset = sanitizedItem.cantidad_reset * cantSelected * _cantidad_decuenta;
+
     return {
         idporcion: _idporcion,
         idproducto: _idproducto,
@@ -289,6 +321,8 @@ const processSubitems = async (sanitizedItem, item) => {
         subitemsSource = sanitizedItem.subitems_selected_array;
     }
 
+    logger.debug({ subitemsSource }, 'subitemsSource');
+
     if (!subitemsSource || !Array.isArray(subitemsSource)) {
         return;
     }
@@ -307,7 +341,7 @@ const processSubitems = async (sanitizedItem, item) => {
                 const cantSelected = subitemGroup.cantidad_seleccionada || 1;
                 
                 if (subitemGroup.subitems && Array.isArray(subitemGroup.subitems)) {
-                    for (const subitem of subitemGroup.subitems) {
+                    for (const subitem of subitemGroup.subitems) {                        
                         if (!subitem) continue;
                         
                         const allItems = buildAllItemsFromSubitemsView(subitem, sanitizedItem, cantSelected);
@@ -462,6 +496,8 @@ const updateStock = async (op, item, idsede) => {
         }
         
         // Procesar subitems si existen
+        logger.debug({ sanitizedItem }, '🟢 [handle.stock.v1] Procesando subitems')
+        logger.debug({ item }, '🟢 [handle.stock.v1] Procesando subitems')
         await processSubitems(sanitizedItem, item);
         
 

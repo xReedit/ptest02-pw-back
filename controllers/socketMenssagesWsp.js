@@ -228,6 +228,17 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 							"text": dataMsj.cod  // el código de verificación real
 						}
 					]
+				},
+				{
+					"type": "button",
+					"sub_type": "url",
+					"index": "0",  // primer botón
+					"parameters": [
+						{
+							"type": "text",
+							"text": dataMsj.cod   // Este será el {{1}} del botón (el valor de ?key=...)
+						}
+					]
 				}
 			];
 			_sendServerMsj.bodyParameters = [];

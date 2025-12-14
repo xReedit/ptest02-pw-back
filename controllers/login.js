@@ -27,8 +27,7 @@ const logger = async function (req, res) {
                         WHERE u.usuario = ? 
                         AND POSITION('A2' IN u.acc) > 0 
                         AND u.estado = 0 
-                        AND se.is_bloqueado = 0 
-                        AND se.is_baja = 0 
+                        AND (se.idsede IS NULL OR (se.is_bloqueado = 0 AND se.is_baja = 0)) 
                         AND u.estadistica = 1`;
 
                 // const rows = await sequelize.query(read_query, { 
@@ -77,8 +76,7 @@ const loggerUsAutorizado = async function (req, res) {
                         WHERE u.usuario = ? 
                         AND POSITION('A2' IN u.acc) > 0 
                         AND u.estado = 0 
-                        AND se.is_bloqueado = 0 
-                        AND se.is_baja = 0`;
+                        AND (se.idsede IS NULL OR (se.is_bloqueado = 0 AND se.is_baja = 0))`;
 
                 // const rows = await sequelize.query(read_query, { 
                 //         replacements: [usuario],

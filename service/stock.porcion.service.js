@@ -433,6 +433,7 @@ class StockPorcionService {
             LEFT JOIN porcion p ON ii.idporcion = p.idporcion
             WHERE ii.iditem = :iditem
                 AND ii.estado = 0
+                AND ii.viene_de != '3'
                 AND (ii.idporcion > 0 OR ii.idproducto_stock > 0)
             ORDER BY ii.necesario DESC
         `;
@@ -442,8 +443,44 @@ class StockPorcionService {
             type: Sequelize.QueryTypes.SELECT,
             transaction
         });
+
+        // 2. Obtener ingredientes de SUBRECETAS (viene_de = '3')
+        // Expandimos las subrecetas a sus ingredientes individuales
+        const querySubrecetasExpandidas = `
+        SELECT 
+            ii.iditem_ingrediente,
+            ii.iditem,
+            si.idporcion,
+            si.idproducto_stock,
+            si.descripcion,
+            (ii.cantidad * si.cantidad) as cantidad_receta,
+            ii.necesario,
+            si.viene_de,
+            p.descripcion as porcion_descripcion,
+            p.stock as stock_actual
+        FROM item_ingrediente ii
+        INNER JOIN subreceta s ON ii.idsubreceta = s.idsubreceta
+        INNER JOIN subreceta_ingrediente si ON si.idsubreceta = s.idsubreceta
+        LEFT JOIN porcion p ON si.idporcion = p.idporcion
+        LEFT JOIN producto_stock ps ON si.idproducto_stock = ps.idproducto_stock
+        WHERE ii.iditem = :iditem
+            AND ii.estado = 0
+            AND ii.viene_de = '3'
+            AND ii.idsubreceta > 0
+            AND si.estado = 0
+            AND (si.idporcion > 0 OR si.idproducto_stock > 0)
+        ORDER BY ii.necesario DESC`;
+
+        const ingredientesSubrecetas = await sequelize.query(querySubrecetasExpandidas, {
+            replacements: { iditem },
+            type: Sequelize.QueryTypes.SELECT,
+            transaction
+        });
+
+        const recetaAll = [...receta, ...ingredientesSubrecetas];
+        logger.debug({ recetaAll }, 'Receta All --->>');
         
-        return receta;
+        return recetaAll;
     }
     
     /**

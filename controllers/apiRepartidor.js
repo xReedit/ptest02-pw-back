@@ -267,6 +267,8 @@ const getRepartidoreForPedidoFromInterval = async function (es_latitude, es_long
     // const arr = Object.values(rows[0]);
     // return arr;
 
+	logger.debug(`CALL procedure_delivery_get_repartidor(${es_latitude}, ${es_longitude}, ${efectivoPagar})`);
+
 	const read_query = `CALL procedure_delivery_get_repartidor(?, ?, ?)`;
 	const result = await QueryServiceV1.ejecutarProcedimiento(read_query, [es_latitude, es_longitude, efectivoPagar], 'getRepartidoreForPedidoFromInterval');
 	return result;
@@ -290,8 +292,8 @@ const getPedidosEsperaRepartidor = async function (idsede) {
  	// return response;
 
 	const read_query = `call procedure_delivery_pedidos_pendientes()`;
-	const response = await QueryServiceV1.ejecutarProcedimiento(read_query, [], 'getPedidosEsperaRepartidor');
-	logger.info({ response }, 'getPedidosEsperaRepartidor');
+	let response = await QueryServiceV1.ejecutarProcedimiento(read_query, [], 'getPedidosEsperaRepartidor');
+	// logger.debug({ response }, 'getPedidosEsperaRepartidor');
 	return (response === null || response === undefined) ? [] : response;
 
 
@@ -310,6 +312,8 @@ const setAsignaTemporalPedidoARepartidor = async function (idpedido, idrepartido
 	// });
 	// return Object.values(result[0]);
 
+	logger.debug(`CALL procedure_delivery_set_pedido_repartidor(${idpedido}, ${idrepartidor_va}, ${JSON.stringify(pedido)})`);
+
 	const read_query = `CALL procedure_delivery_set_pedido_repartidor(?, ?, ?)`;
 	const result = await QueryServiceV1.ejecutarProcedimiento(read_query, [idpedido, idrepartidor_va, JSON.stringify(pedido)], 'setAsignaTemporalPedidoARepartidor');
 	return result;
@@ -323,6 +327,8 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 	// agarramos el primer repartidor de la lista
 	const numIndex = 0; //dataPedido.num_reasignaciones;
 	let firtsRepartidor = listRepartidores[numIndex];
+
+	logger.debug({ firtsRepartidor }, 'firtsRepartidor');
 
 	// quitamos el pedido al repartidor anterior
 	if ( dataPedido.last_id_repartidor_reasigno ) {
@@ -414,6 +420,8 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 	const idsPedidos = dataPedido.pedidos.join(',');
 	let firtsRepartidor = listRepartidores[numIndex];
 
+	console.log('dataPedido ===== sendPedidoRepartidorOp2', dataPedido);
+
 	logger.debug('lista de repartidor ============ listRepartidores', listRepartidores);
 	logger.debug('repartidor ============ firtsRepartidor', firtsRepartidor);
 
@@ -423,11 +431,17 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 	if ( dataPedido.last_id_repartidor_reasigno ) {
 		// logger.debug('repartidor-notifica-server-quita-pedido --a');
 		const getSocketIdRepartidorReasigno = await getSocketIdRepartidor(dataPedido.last_id_repartidor_reasigno);
+
+		console.log('getSocketIdRepartidorReasigno', getSocketIdRepartidorReasigno);
 		
 
 
 		// si no esta ocupado quita
+		logger.debug('si no esta ocupado quita');
 		if ( getSocketIdRepartidorReasigno[0].ocupado === 0 ) {
+
+			logger.debug('si no esta ocupado quita el pedido al repartidor');
+
 			io.to(getSocketIdRepartidorReasigno[0].socketid).emit('repartidor-notifica-server-quita-pedido', null);
 
 			// NOTIFICA MONITOR quita  pedido a repartidor
@@ -466,6 +480,8 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 
 		// const read_query = `call procedure_delivery_set_pedido_repartidor(${dataPedido.pedidos[0]}, ${firtsRepartidor.idrepartidor}, '${JSON.stringify(dataPedido)}')`;
 		// const res_call = await emitirRespuestaSP(read_query);
+
+		logger.debug(`CALL procedure_delivery_set_pedido_repartidor(${dataPedido.pedidos[0]}, ${firtsRepartidor.idrepartidor}, '${JSON.stringify(dataPedido)}')`);
 
 		const read_query = `CALL procedure_delivery_set_pedido_repartidor(?, ?, ?)`;
 		// try {
@@ -1161,6 +1177,9 @@ module.exports.getInfo = getInfo;
 
 const getPedidosRecibidosGroup = async function (req, res) {
 	_ids = req.body.ids;
+
+	let idsArray = Array.isArray(_ids) ? _ids : _ids.split(',').map(id => id.trim());
+	
     // const read_query = `SELECT p.*, ptle.time_line from  pedido p
 	// 						left join pedido_time_line_entrega ptle using(idpedido) 
 	// 					where p.idpedido in (${_ids}) GROUP by p.idpedido`;
@@ -1180,7 +1199,7 @@ const getPedidosRecibidosGroup = async function (req, res) {
 	// 	return [];
 	// }
 
-	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [_ids], 'SELECT', 'getPedidosRecibidosGroup');
+	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idsArray], 'SELECT', 'getPedidosRecibidosGroup');
 	
 	return ReS(res, { data: rows });
 }
@@ -1206,6 +1225,9 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 	let listGroupPedidos = []; // lista agrupada
 	let listPedidos =  await getPedidosEsperaRepartidor(idsede);	
 
+	logger.debug('listPedidos listPedidos.length === ', listPedidos);
+	
+
 	// lista de idrepartidor a quitar pedido
 	// para solo quitar una vez
 	let listLastRepartidor = ''; 
@@ -1218,6 +1240,8 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 
 	//isshow indica los pedidos que ya llegaron a la hora de notificacion
 	//isshow_back inidica que llegaron a la hora notificacion - 6 minutos para agrupar y dar aun solo repartidor
+
+	
 
 	if ( listPedidos.length > 0 ) {
 
@@ -1445,8 +1469,8 @@ const runLoopSearchRepartidor = async function (io, idsede) {
 	logger.debug('xxxxxxxxxxx-----------runLoopSearchRepartidor', intervalBucaRepartidor)
 	if ( intervalBucaRepartidor === null ) {		
 		colocarPedidoEnRepartidor(io, idsede);
-		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
-		// intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 30000); //desarrollo
+		// intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
+		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 10000); //desarrollo
 	}
 }
 module.exports.runLoopSearchRepartidor = runLoopSearchRepartidor;
@@ -1676,7 +1700,12 @@ module.exports.setAsignarRepartoAtencionCliente = setAsignarRepartoAtencionClien
 
 
 
-
+const getListPedidosAsignados = async function (req, res) {
+	const idrepartidor = req.query.id;
+	const sql = `select idpedidos from repartidor_pedido_asignado where idrepartidor = ?`;
+	return await QueryServiceV1.ejecutarConsulta(sql, [idrepartidor], 'SELECT', 'getListPedidosAsignados');
+}
+module.exports.getListPedidosAsignados = getListPedidosAsignados;
 
 
 // function emitirRespuestaSP(xquery) {

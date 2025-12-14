@@ -27,6 +27,7 @@ const { sequelize, Sequelize } = require('../config/database');
 const { QueryTypes } = Sequelize;
 const logger = require('../utilitarios/logger');
 const errorManager = require('./error.manager');
+const StockPorcionService = require('./stock.porcion.service');
 
 /**
  * Actualiza el stock de subitems (porciones, productos o items)
@@ -59,6 +60,7 @@ async function updateStockAllSubitems(allItems, transaction = null) {
             idporcion: allItems.idporcion,
             idproducto: allItems.idproducto,
             iditem_subitem: allItems.iditem_subitem,
+            idsubreceta: allItems.idsubreceta,
             esReset,
             cantidadAjuste
         }, '📦 [procedure_stock_all_subitems.js] Actualizando stock subitem');
@@ -68,7 +70,7 @@ async function updateStockAllSubitems(allItems, transaction = null) {
         // CASO 1: Es una porción
         if (allItems.idporcion && allItems.idporcion > 0) {
             const updateQuery = esReset
-                ? 'UPDATE porcion SET stock = ? WHERE idporcion = ? AND idsede = ?'
+                ? 'UPDATE porcion SET stock = GREATEST(0, stock + ?) WHERE idporcion = ? AND idsede = ?' //'UPDATE porcion SET stock = ? WHERE idporcion = ? AND idsede = ?'
                 : 'UPDATE porcion SET stock = GREATEST(0, stock + ?) WHERE idporcion = ? AND idsede = ?';
             
             await sequelize.query(updateQuery, {
@@ -94,6 +96,93 @@ async function updateStockAllSubitems(allItems, transaction = null) {
             }, '✅ [procedure_stock_all_subitems.js] Stock porción actualizado');
             
             return [result || { cantidad: 0 }];
+        }
+
+        // CASO 2: Es una subreceta (tiene idsubreceta > 0)
+        else if (allItems.idsubreceta && allItems.idsubreceta > 0) {
+            logger.debug({
+                idsubreceta: allItems.idsubreceta,
+                cantidadAjuste
+            }, '📦 [procedure_stock_all_subitems.js] Procesando subreceta');
+
+            // Obtener ingredientes de la subreceta
+            const ingredientesSubreceta = await sequelize.query(`
+                    SELECT 
+                        si.idporcion,
+                        si.idproducto_stock,
+                        si.cantidad,
+                        si.viene_de
+                    FROM subreceta_ingrediente si
+                    WHERE si.idsubreceta = ?
+                        AND si.estado = 0
+                        AND (si.idporcion > 0 OR si.idproducto_stock > 0)
+                `, {
+                replacements: [allItems.idsubreceta],
+                type: QueryTypes.SELECT,
+                transaction
+            });
+
+            // Procesar cada ingrediente de la subreceta
+            for (const ingrediente of ingredientesSubreceta) {
+                const cantidadIngrediente = cantidadAjuste * ingrediente.cantidad;
+
+                // Si es porción
+                if (ingrediente.idporcion && ingrediente.idporcion > 0) {
+                    const updateQuery = esReset
+                        ? 'UPDATE porcion SET stock = GREATEST(0, stock + ?) WHERE idporcion = ? AND idsede = ?' // 'UPDATE porcion SET stock = ? WHERE idporcion = ? AND idsede = ?'
+                        : 'UPDATE porcion SET stock = GREATEST(0, stock + ?) WHERE idporcion = ? AND idsede = ?';
+
+                    await sequelize.query(updateQuery, {
+                        replacements: [cantidadIngrediente, ingrediente.idporcion, idsede],
+                        type: QueryTypes.UPDATE,
+                        transaction
+                    });
+
+                    // 🆕 Registrar en porcion_historial
+                    const esSalida = cantidadAjuste < 0;
+                    const tipoMovimiento = esSalida ? 'VENTA' : 'VENTA_DEVOLUCION';
+
+                    await StockPorcionService.registrarMovimientoPorcionDirecta({
+                        idporcion: ingrediente.idporcion,
+                        iditem: allItems.iditem || 0,
+                        cantidad: Math.abs(cantidadIngrediente),
+                        idsede: idsede,
+                        idusuario: allItems.idusuario || 1,
+                        idpedido: allItems.idpedido || null,
+                        tipoMovimiento: tipoMovimiento
+                    });
+
+                    logger.debug({
+                        idporcion: ingrediente.idporcion,
+                        cantidadIngrediente
+                    }, '✅ [subreceta] Porción actualizada');
+                }
+                // Si es producto
+                else if (ingrediente.idproducto_stock && ingrediente.idproducto_stock > 0) {
+                    const updateQuery = esReset
+                        ? 'UPDATE producto_stock SET stock = ? WHERE idproducto_stock = ?'
+                        : 'UPDATE producto_stock SET stock = GREATEST(0, stock + ?) WHERE idproducto_stock = ?';
+
+                    await sequelize.query(updateQuery, {
+                        replacements: [cantidadIngrediente, ingrediente.idproducto_stock],
+                        type: QueryTypes.UPDATE,
+                        transaction
+                    });
+
+                    logger.debug({
+                        idproducto_stock: ingrediente.idproducto_stock,
+                        cantidadIngrediente
+                    }, '✅ [subreceta] Producto actualizado');
+                }
+            }
+
+            logger.debug({
+                idsubreceta: allItems.idsubreceta,
+                ingredientesProcesados: ingredientesSubreceta.length,
+                executionTime: `${Date.now() - startTime}ms`
+            }, '✅ [procedure_stock_all_subitems.js] Subreceta procesada');
+
+            return [{ cantidad: 0, subrecetaProcesada: true }];
         }
         
         // CASO 2: Es un producto

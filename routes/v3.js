@@ -205,6 +205,7 @@ routerV3.get('/repartidor/get-repartidor-propio-mis-pedidos', auth.verificarToke
 routerV3.post('/repartidor/get-pedidos-recibidos-group', auth.verificarToken, apiPwaAppRepartidor.getPedidosRecibidosGroup);
 routerV3.post('/repartidor/set-cambio-pass-repartidor', auth.verificarToken, apiPwaAppRepartidor.setCambioPassRepartidor);
 routerV3.get('/repartidor/get-list-pedidos-pendientes-comercio', auth.verificarToken, apiPwaAppRepartidor.getListPedidosPendientesComercio);
+routerV3.get('/repartidor/get-list-pedidos-asignados', auth.verificarToken, apiPwaAppRepartidor.getListPedidosAsignados);
 // routerV3.get('/repartidor/get-view-event-new-pedido', apiPwaAppRepartidor.getIfPedidoNuevo);
 
 

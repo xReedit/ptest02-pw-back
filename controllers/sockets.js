@@ -292,6 +292,15 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 				// Agregar todos los items a la cola en lugar de procesarlos en paralelo
 				const processPromises = items.map(item => {
+					// Asignar idsede e idusuario desde dataCliente
+					try {
+						item.idsede = dataCliente.idsede;
+						item.idusuario = dataCliente.idusuario;
+					} catch (error) {
+						logger.debug(error);
+					}
+					
+
 					return new Promise((resolve, reject) => {
 						queue.push(item, (err) => {
 							if (err) reject(err);
@@ -1300,6 +1309,33 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// socket.to(_chanelNotifica).emit('repartidor-notifica-cliente-time-line', c);				
 			});
 		});
+
+		socket.on('repartidor-notifica-cliente-time-line-one', async (dataClienteNotifica) => {
+			logger.debug('repartidor-notifica-cliente-time-line-one =========== repartidor', dataClienteNotifica)
+			let c = dataClienteNotifica;
+			c.tipo = 5;
+			c.tipo_msj = c.tipo_msj ? c.tipo_msj : 1;
+			switch (c.tipo_msj) {
+				case 1: // llegue al comercio						
+					c.msj = `🤖 Hola, el repartidor a cargo de su pedido *${c.repartidor_nom}* ya llegó a ${c.establecimiento}, y esta esperando su pedido. Puede comunicarse con él si tiene alguna indicación adicional. 📞 ${c.repartidor_telefono}`
+					break;
+				case 2: // estoy en camino a entregar el pedido
+					c.msj = `🤖 El repartidor esta camino a entregarle su pedido, por favor este alerta a su teléfono le llamará cuando este cerca.`
+					break;
+			}
+
+			// actualiza time_line_pedido
+			apiPwa.updateTimeLinePedido(c.idpedido, c.time_line);
+
+
+
+			logger.debug('mensaje === ', c)
+			sendMsjSocketWsp(c);
+
+			// NOTIFICA a la central
+			io.to('MONITOR').emit('repartidor-notifica-cliente-time-line', c);
+			
+		})
 
 
 		// repartidor propio

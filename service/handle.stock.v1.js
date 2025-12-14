@@ -255,7 +255,7 @@ const validateCantidadDecuenta = (descuenta) => {
             logger.debug({ 
                 descuenta, 
                 parsed,
-                subitem 
+                // subitem 
             }, '⚠️ [handle.stock.v1] Valor descuenta inválido en subitemsView, usando 1 por defecto');
         }
     }
@@ -269,6 +269,7 @@ const buildAllItemsFromSelectedArray = (subitemGroup, sanitizedItem) => {
     const _idporcion = subitemGroup.idporcion && subitemGroup.idporcion !== 0 ? subitemGroup.idporcion : '';
     const _idproducto = subitemGroup.idproducto && subitemGroup.idproducto !== 0 ? subitemGroup.idproducto : '';
     const _iditem_subitem = subitemGroup.iditem_subitem && subitemGroup.iditem_subitem !== 0 ? subitemGroup.iditem_subitem : '';
+    const _idsubreceta = subitemGroup.idsubreceta && subitemGroup.idsubreceta !== 0 ? subitemGroup.idsubreceta : '';  // 🆕 NUEVO
     
     const _cantidad_decuenta = validateCantidadDecuenta(subitemGroup?.descuenta);
 
@@ -284,6 +285,7 @@ const buildAllItemsFromSelectedArray = (subitemGroup, sanitizedItem) => {
         idporcion: _idporcion,
         idproducto: _idproducto,
         iditem_subitem: _iditem_subitem,
+        idsubreceta: _idsubreceta,  // 🆕 NUEVO
         iditem: sanitizedItem.iditem,
         idcarta_lista: sanitizedItem.idcarta_lista,
         cantidad_reset: cantReset,

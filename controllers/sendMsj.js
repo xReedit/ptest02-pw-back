@@ -367,7 +367,17 @@ const sendPushNotificactionComercio = function (key_suscripcion_push, tipo_msj) 
 			logger.debug('mensaje enviado con exito')
 		)
         .catch(err => {
-           	logger.error("Error sending notification, reason: ", err);
+           	logger.error("Error sending notification, reason: ", {
+				statusCode: err.statusCode,
+				body: err.body,
+				message: err.message,
+				stack: err.stack
+			});
+			
+			// Si es 404 o 410, la suscripción ya no es válida
+			if (err.statusCode === 404 || err.statusCode === 410) {
+				logger.warn('Suscripción push inválida o expirada. Se debe limpiar de la BD.');
+			}
            	// res.sendStatus(500);
         });
 
@@ -386,7 +396,7 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 		// para version web
 		let payload = {
 			"notification": {		        
-			        "title": "🎉 Nuevo Pedido",
+			        "title": " Nuevo Pedido",
 			        "body": `Acepta el pedido, tiene un minuto para aceptarlo.`,
 			        "icon": "./favicon.ico",
 			        "lang": "es",
@@ -401,7 +411,18 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 				logger.debug('ok')
 			)
 	        .catch(err => {
-	           	logger.error("Error sending notification, reason: ", err);
+	           	logger.error("Error sending notification to repartidor: ", {
+				statusCode: err.statusCode,
+				body: err.body,
+				message: err.message,
+				headers: err.headers
+			});
+			
+			// Si es 404 o 410, la suscripción ya no es válida
+			if (err.statusCode === 404 || err.statusCode === 410) {
+				logger.warn(' Suscripción push del repartidor inválida o expirada (statusCode: ' + err.statusCode + '). Se debe actualizar/limpiar en la BD.');
+				// TODO: Marcar key_suscripcion_push como inválido en la tabla repartidor
+			}
 	           	// res.sendStatus(500);
 	        });
 
@@ -416,7 +437,7 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 	switch (tipo_msj) {
       case 0: // notifica a repartidor nuevo pedido
       payloadNotification = {
-			title: "🎉 Nuevo Pedido",
+			title: " Nuevo Pedido",
 			icon: "./favicon.ico",
 			body: "Acepta el pedido, tiene un minuto para aceptarlo.",
 			vibrate: [200, 100, 200],
@@ -449,7 +470,7 @@ const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_
 	
 	// lo ultimo para firebase flutterflow 30042024
 	const _bodyFlutter = {
-		titulo: '🎉 Nuevo Pedido',
+		titulo: ' Nuevo Pedido',
 		body: 'Acepta el pedido, tiene un minuto para aceptarlo.'
 	}
 	// apiFireBase.sendPushNotification(key_suscripcion_push, _bodyFlutter);
@@ -501,7 +522,16 @@ const sendPushNotificactionRepartidorAceptaPedido = function (_dataMsjs) {
 			res.status(200).json({message: 'mensaje enviado con exito'})
 		)
         .catch(err => {
-           	console.error("Error sending notification, reason: ", err);
+           	console.error("Error sending notification, reason: ", {
+				statusCode: err.statusCode,
+				body: err.body,
+				message: err.message
+			});
+			
+			// Si es 404 o 410, la suscripción ya no es válida
+			if (err.statusCode === 404 || err.statusCode === 410) {
+				logger.warn(' Suscripción push inválida (statusCode: ' + err.statusCode + ')');
+			}
            	res.sendStatus(500);
         });
 
@@ -568,12 +598,21 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 	// 		res.status(200).json({message: 'mensaje enviado con exito'})
 	// 	)
     //     .catch(err => {
-    //        	console.error("Error sending notification, reason: ", err);
-    //        	res.sendStatus(500);
+    //        	console.error("Error sending notification, reason: ", {
+	// 			statusCode: err.statusCode,
+	// 			body: err.body,
+	// 			message: err.message
+	// 		});
+			
+	// 		// Si es 404 o 410, la suscripción ya no es válida
+	// 		if (err.statusCode === 404 || err.statusCode === 410) {
+	// 			logger.warn(' Suscripción push inválida (statusCode: ' + err.statusCode + ')');
+	// 		}
+   //     	res.sendStatus(500);
     //     });
 
 	const payloadNotification = {
-			title: "🪂 Nuevo Pedido",
+			title: " Nuevo Pedido",
 			icon: "./favicon.ico",
 			body: "Acepta el pedido, tiene un minuto para aceptarlo.",
 			vibrate: [200, 100, 200],
@@ -607,7 +646,7 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 	// web
 	let payload = {
 		"notification": {		        
-		        "title": "🎉 Nuevo Pedido",
+		        "title": " Nuevo Pedido",
 		        "body": `Nuevo Pedido Papaya Expres.`,
 		        "icon": "./favicon.ico",
 		        "lang": "es",
@@ -622,14 +661,23 @@ const sendPushNotificactionOneRepartidorTEST = function (req, res) {
 			logger.debug('ok')
 		)
         .catch(err => {
-           	logger.error("Error sending notification, reason: ", err);
+           	logger.error("Error sending notification, reason: ", {
+				statusCode: err.statusCode,
+				body: err.body,
+				message: err.message
+			});
+			
+			// Si es 404 o 410, la suscripción ya no es válida
+			if (err.statusCode === 404 || err.statusCode === 410) {
+				logger.warn(' Suscripción push inválida (statusCode: ' + err.statusCode + ')');
+			}
            	// res.sendStatus(500);
         });
 
 
 	// lo ultimo para firebase flutterflow 30042024
 	const _bodyFlutter = {
-		titulo: '🎉 Nuevo Pedido',
+		titulo: ' Nuevo Pedido',
 		body: 'Acepta el pedido, tiene un minuto para aceptarlo.'
 	}
 

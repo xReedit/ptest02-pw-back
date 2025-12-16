@@ -56,6 +56,17 @@ async function updateStockAllSubitems(allItems, transaction = null) {
         const cantidadAjuste = esReset ? allItems.cantidad_reset : (allItems.cantidadSumar || 0);
         const idsede = allItems.idsede || 1;
         
+        // 🔍 DEBUG: Log para diagnosticar bug stock=0
+        logger.warn({
+            idproducto: allItems.idproducto,
+            idporcion: allItems.idporcion,
+            cantidad_reset_original: allItems.cantidad_reset,
+            cantidadSumar_original: allItems.cantidadSumar,
+            esReset,
+            cantidadAjuste,
+            query_sera: esReset ? 'SET stock = GREATEST(0, stock + cantidadAjuste)' : 'SET stock = GREATEST(0, stock + cantidadAjuste)'
+        }, '🔍 [DEBUG-STOCK] procedure_stock_all_subitems - Valores para UPDATE');
+        
         logger.debug({
             idporcion: allItems.idporcion,
             idproducto: allItems.idproducto,
@@ -160,7 +171,7 @@ async function updateStockAllSubitems(allItems, transaction = null) {
                 // Si es producto
                 else if (ingrediente.idproducto_stock && ingrediente.idproducto_stock > 0) {
                     const updateQuery = esReset
-                        ? 'UPDATE producto_stock SET stock = ? WHERE idproducto_stock = ?'
+                        ? 'UPDATE producto_stock SET stock = GREATEST(0, stock + ?) WHERE idproducto_stock = ?'
                         : 'UPDATE producto_stock SET stock = GREATEST(0, stock + ?) WHERE idproducto_stock = ?';
 
                     await sequelize.query(updateQuery, {
@@ -187,11 +198,15 @@ async function updateStockAllSubitems(allItems, transaction = null) {
         
         // CASO 2: Es un producto
         else if (allItems.idproducto && allItems.idproducto > 0) {
-            // ✅ CORREGIDO: Actualizar en producto_stock, no en carta_lista
-            // La tabla correcta es producto_stock y la columna es idproducto_stock
-            const updateQuery = esReset
-                ? 'UPDATE producto_stock SET stock = ? WHERE idproducto_stock = ?'
-                : 'UPDATE producto_stock SET stock = GREATEST(0, stock + ?) WHERE idproducto_stock = ?';
+            // ✅ CORREGIDO: Siempre usar stock + ? para sumar/restar
+            // El valor de cantidadAjuste debe ser negativo para restar
+            const updateQuery = 'UPDATE producto_stock SET stock = GREATEST(0, stock + ?) WHERE idproducto_stock = ?';
+            
+            logger.debug({
+                idproducto: allItems.idproducto,
+                cantidadAjuste,
+                query: 'stock + cantidadAjuste'
+            }, '📦 [procedure_stock_all_subitems.js] Actualizando producto_stock');
             
             await sequelize.query(updateQuery, {
                 replacements: [cantidadAjuste, allItems.idproducto],

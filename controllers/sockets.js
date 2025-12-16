@@ -379,7 +379,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					try {
 						rptCantidad[0].listSubItems.map(subitem => {
 
-							if ( !item.subitems ) {
+							if ( item.subitems ) {
 								item.subitems.map(s => {							
 									let itemFind = s.opciones.filter(_subItem => parseInt(_subItem.iditem_subitem) === parseInt(subitem.iditem_subitem))[0];
 

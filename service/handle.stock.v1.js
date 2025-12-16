@@ -213,24 +213,37 @@ const buildAllItemsFromSubitemsView = (subitem, sanitizedItem, cantSelected) => 
     const _idporcion = subitem.idporcion && subitem.idporcion !== 0 ? subitem.idporcion : '';
     const _idproducto = subitem.idproducto && subitem.idproducto !== 0 ? subitem.idproducto : '';
     const _iditem_subitem = subitem.iditem_subitem && subitem.iditem_subitem !== 0 ? subitem.iditem_subitem : '';
+    const _idsubreceta = subitem.idsubreceta && subitem.idsubreceta !== 0 ? subitem.idsubreceta : '';  // 🆕 Soporte subrecetas
     
     const _cantidad_decuenta = validateCantidadDecuenta(subitem?.descuenta);
     
     cantSelected *= _cantidad_decuenta;
 
+    // Detectar si es VENTA (cantidadSumar < 0) o RESET/RECUPERA (cantidadSumar >= 0)
+    const esVenta = sanitizedItem.cantidadSumar < 0;
+    
+    // Para VENTAS: aplicar signo negativo para restar del stock
+    // Para RESET/RECUPERA: mantener positivo para sumar/establecer stock
+    const cantidadFinal = esVenta ? -cantSelected : cantSelected;
+    
     logger.debug({
         cantSelected,
-        _cantidad_decuenta
+        _cantidad_decuenta,
+        esVenta,
+        cantidadSumarOriginal: sanitizedItem.cantidadSumar,
+        cantidadFinal
     }, '📦 [handle.stock.v1] buildAllItemsFromSubitemsView');
     
-    // Cuando cantidad_reset > 0, usar cantSelected directamente (sin multiplicar)
-    const cantSumar = cantSelected;
-    const cantReset = cantSelected;
+    // Para VENTAS: usar cantidadFinal negativo, cantidad_reset = 0 (no resetear)
+    // Para RESET: usar cantSelected positivo para ambos
+    const cantSumar = esVenta ? cantidadFinal : cantSelected;
+    const cantReset = esVenta ? 0 : cantSelected;
     
     return {
         idporcion: _idporcion,
         idproducto: _idproducto,
         iditem_subitem: _iditem_subitem,
+        idsubreceta: _idsubreceta,  // 🆕 Soporte subrecetas
         iditem: sanitizedItem.iditem,
         idcarta_lista: sanitizedItem.idcarta_lista,
         cantidad_reset: cantReset,
@@ -254,7 +267,7 @@ const validateCantidadDecuenta = (descuenta) => {
         } else {
             logger.debug({ 
                 descuenta, 
-                parsed,
+                parsed
                 // subitem 
             }, '⚠️ [handle.stock.v1] Valor descuenta inválido en subitemsView, usando 1 por defecto');
         }
@@ -342,12 +355,52 @@ const processSubitems = async (sanitizedItem, item) => {
                 // Procesar subitems_view (estructura diferente)
                 const cantSelected = subitemGroup.cantidad_seleccionada || 1;
                 
-                if (subitemGroup.subitems && Array.isArray(subitemGroup.subitems)) {
-                    for (const subitem of subitemGroup.subitems) {                        
+                // Soportar ambas estructuras: "subitems" o "opciones"
+                const opcionesArray = subitemGroup.subitems || subitemGroup.opciones || [];
+                
+                // 🔍 DEBUG: Logging para diagnosticar bug stock=0
+                logger.warn({
+                    grupo_des: subitemGroup.des,
+                    cantidad_seleccionada: subitemGroup.cantidad_seleccionada,
+                    cantSelected,
+                    tiene_subitems: !!subitemGroup.subitems,
+                    tiene_opciones: !!subitemGroup.opciones,
+                    total_opciones: opcionesArray.length,
+                    opciones_selected_count: opcionesArray.filter(s => s?.selected)?.length || 0
+                }, '🔍 [DEBUG-STOCK] processSubitems - Grupo subitems_view');
+                
+                if (opcionesArray && Array.isArray(opcionesArray)) {
+                    for (const subitem of opcionesArray) {                        
                         if (!subitem) continue;
                         
+                        // Solo procesar opciones que tienen producto, porcion o subreceta
+                        const tieneStock = subitem.idproducto || subitem.idporcion || subitem.idsubreceta;
+                        if (!tieneStock) {
+                            logger.debug({ subitem_des: subitem.des }, '⏭️ Subitem sin producto/porcion/subreceta, omitiendo');
+                            continue;
+                        }
+                        
+                        // 🔍 DEBUG: Log cada subitem procesado
+                        logger.warn({
+                            subitem_des: subitem.des,
+                            selected: subitem.selected,
+                            idproducto: subitem.idproducto,
+                            idporcion: subitem.idporcion,
+                            idsubreceta: subitem.idsubreceta,  // 🆕 Log subreceta
+                            cantidad_selected: subitem.cantidad_selected,
+                            descuenta: subitem.descuenta
+                        }, '🔍 [DEBUG-STOCK] Procesando subitem');
+                        
                         const allItems = buildAllItemsFromSubitemsView(subitem, sanitizedItem, cantSelected);
-                        // console.log('allItems construido desde subitems_view:', allItems);
+                        
+                        // 🔍 DEBUG: Log allItems construido
+                        logger.warn({
+                            idproducto: allItems.idproducto,
+                            idporcion: allItems.idporcion,
+                            idsubreceta: allItems.idsubreceta,  // 🆕 Log subreceta
+                            cantidadSumar: allItems.cantidadSumar,
+                            cantidad_reset: allItems.cantidad_reset
+                        }, '🔍 [DEBUG-STOCK] allItems construido');
                         
                         const result = await retryOperation(() => ItemService.processAllItemSubitemSeleted(allItems));
                         results.push(result);

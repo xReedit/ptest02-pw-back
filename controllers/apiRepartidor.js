@@ -890,6 +890,7 @@ const getListPedidosPendientesComercio = async function(req, res) {
 // 	return await emitirRespuesta_RES(read_query, res);
 
 	const idsede = managerFilter.getInfoToken(req,'idsede_suscrito');
+	console.log('idsede_suscrito', idsede)
 	// ✅ SEGURO: Prepared statement
 	// const read_query = `SELECT * FROM pedido p
 	// INNER JOIN tipo_consumo tc ON p.idtipo_consumo = tc.idtipo_consumo 
@@ -916,7 +917,11 @@ const getListPedidosPendientesComercio = async function(req, res) {
 	AND tc.descripcion = 'DELIVERY'
 	ORDER BY p.idpedido desc`;
 	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idsede], 'SELECT', 'getListPedidosPendientesComercio');
-	return rows || [];
+
+	// console.log('rows', rows)
+
+	// return rows || [];
+	return ReS(res, { data: rows });
 }
 module.exports.getListPedidosPendientesComercio = getListPedidosPendientesComercio
 
@@ -938,7 +943,8 @@ const getEstadoPedido = async function (req, res) {
 
 	const read_query = `SELECT pwa_delivery_status FROM pedido WHERE idpedido=?`;
 	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idpedido], 'SELECT', 'getEstadoPedido');
-	return rows || [];
+	// return rows || [];
+	return ReS(res, { data: rows });
 }
 module.exports.getEstadoPedido = getEstadoPedido;
 
@@ -1469,8 +1475,8 @@ const runLoopSearchRepartidor = async function (io, idsede) {
 	logger.debug('xxxxxxxxxxx-----------runLoopSearchRepartidor', intervalBucaRepartidor)
 	if ( intervalBucaRepartidor === null ) {		
 		colocarPedidoEnRepartidor(io, idsede);
-		// intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
-		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 10000); //desarrollo
+		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
+		// intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 10000); //desarrollo
 	}
 }
 module.exports.runLoopSearchRepartidor = runLoopSearchRepartidor;

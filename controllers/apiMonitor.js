@@ -175,8 +175,9 @@ module.exports.setCheckAbonadoRepartidor = setCheckAbonadoRepartidor;
 const setAsignarPedidoManual = async function (req, res) {
 	const dataPedido = req.body.pedido;
     
+    
 	// ✅ SEGURO: Prepared statement
-    console.log('query', `CALL procedure_delivery_set_pedido_repartidor_manual(${JSON.stringify(dataPedido)})`);
+    // console.log('query', `CALL procedure_delivery_set_pedido_repartidor_manual(${JSON.stringify(dataPedido)})`);
     const read_query = `CALL procedure_delivery_set_pedido_repartidor_manual(?)`;
     const rows = await sequelize.query(read_query, {
         replacements: [JSON.stringify(dataPedido)],

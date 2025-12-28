@@ -1143,13 +1143,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// io.to('MONITOR').emit('notifica-repartidor-online', dataCliente);
 
 		// ver si tenemos un pedido pendiente de aceptar // ver si solicito libear pedido
-		const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataCliente.idrepartidor);
-		
+		const pedioPendienteAceptar = await apiPwaRepartidor.getPedidoPendienteAceptar(dataCliente.idrepartidor);		
+
 		try {
 			if ( pedioPendienteAceptar ) {
 				if ( pedioPendienteAceptar[0].solicita_liberar_pedido === 1 ) {
 					apiPwaRepartidor.setLiberarPedido(dataCliente.idrepartidor);
-				} else {					
+				} else {						
 					socket.emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
 				}	
 			}		

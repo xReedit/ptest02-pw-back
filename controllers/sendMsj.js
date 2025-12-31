@@ -386,99 +386,233 @@ const sendPushNotificactionComercio = function (key_suscripcion_push, tipo_msj) 
 module.exports.sendPushNotificactionComercio = sendPushNotificactionComercio;
 
 // envia notificacion push a repartidor de que tiene un pedido
-const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_msj) {	
-	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
+// const sendPushNotificactionOneRepartidor = function (key_suscripcion_push, tipo_msj, user_repartidor=null) {
+// 	let fcm_token = null;
+// 	if (user_repartidor) {
+// 		key_suscripcion_push = user_repartidor.key_suscripcion_push;
+// 		fcm_token = user_repartidor.fcm_token;
+// 	}
+// 	if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
 
-	// if (typeof key_suscripcion_push === "object") { // es web
 
-		// key_suscripcion_push = JSON.parse(key_suscripcion_push);
-
-		// para version web
-		let payload = {
-			"notification": {		        
-			        "title": " Nuevo Pedido",
-			        "body": `Acepta el pedido, tiene un minuto para aceptarlo.`,
-			        "icon": "./favicon.ico",
-			        "lang": "es",
-			        "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]		        
-			    }
-			} 
-		// para web
-	    webpush.sendNotification(
-	    	key_suscripcion_push, JSON.stringify(payload) )
-			.then(() => 
-				// res.status(200).json({message: 'mensaje enviado con exito'})
-				logger.debug('ok')
-			)
-	        .catch(err => {
-	           	logger.error("Error sending notification to repartidor: ", {
-				statusCode: err.statusCode,
-				body: err.body,
-				message: err.message,
-				headers: err.headers
-			});
+// 		// para version web
+// 		let payload = {
+// 			"notification": {		        
+// 			        "title": " Nuevo Pedido",
+// 			        "body": `Acepta el pedido, tiene un minuto para aceptarlo.`,
+// 			        "icon": "./favicon.ico",
+// 			        "lang": "es",
+// 			        "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]		        
+// 			    }
+// 			} 
+// 		// para web
+// 	    webpush.sendNotification(
+// 	    	key_suscripcion_push, JSON.stringify(payload) )
+// 			.then(() => 
+// 				// res.status(200).json({message: 'mensaje enviado con exito'})
+// 				logger.debug('ok')
+// 			)
+// 	        .catch(err => {
+// 	           	logger.error("Error sending notification to repartidor: ", {
+// 				statusCode: err.statusCode,
+// 				body: err.body,
+// 				message: err.message,
+// 				headers: err.headers
+// 			});
 			
-			// Si es 404 o 410, la suscripción ya no es válida
-			if (err.statusCode === 404 || err.statusCode === 410) {
-				logger.warn(' Suscripción push del repartidor inválida o expirada (statusCode: ' + err.statusCode + '). Se debe actualizar/limpiar en la BD.');
-				// TODO: Marcar key_suscripcion_push como inválido en la tabla repartidor
-			}
-	           	// res.sendStatus(500);
-	        });
+// 			// Si es 404 o 410, la suscripción ya no es válida
+// 			if (err.statusCode === 404 || err.statusCode === 410) {
+// 				logger.warn(' Suscripción push del repartidor inválida o expirada (statusCode: ' + err.statusCode + '). Se debe actualizar/limpiar en la BD.');
+// 				// TODO: Marcar key_suscripcion_push como inválido en la tabla repartidor
+// 			}
+// 	           	// res.sendStatus(500);
+// 	        });
 
-		// res.json(payload)
-	//     return;
+
+
+// 	// notificacion ios android
+
+// 	let payloadNotification = '';
+// 	switch (tipo_msj) {
+//       case 0: // notifica a repartidor nuevo pedido
+//       payloadNotification = {
+// 			title: " Nuevo Pedido",
+// 			icon: "./favicon.ico",
+// 			body: "Acepta el pedido, tiene un minuto para aceptarlo.",
+// 			vibrate: [200, 100, 200],
+//         	sound: "default"
+// 		}       
+//         break;
+//     }	
+
+		
+//     //081222 firebase
+//     var message = new gcm.Message({
+// 		collapseKey: 'demo',
+// 		priority: 'high',
+// 		contentAvailable: true,
+// 		delayWhileIdle: true,
+// 		timeToLive: 3,					
+// 		notification: payloadNotification
+// 	});
+
+// 	const registrationIds = [key_suscripcion_push];
+
+// 	sender.send(message, { registrationIds: registrationIds }, (err, response) => {
+// 	  if (err) {
+// 	    logger.error(err);
+// 	  } else {
+// 	    logger.debug(response);
+// 	  }
+// 	});
+
+	
+// 	// lo ultimo para firebase flutterflow 30042024
+// 	const _bodyFlutter = {
+// 		titulo: ' Nuevo Pedido',
+// 		body: 'Acepta el pedido, tiene un minuto para aceptarlo.'
+// 	}
+	
+// }
+// module.exports.sendPushNotificactionOneRepartidor = sendPushNotificactionOneRepartidor;
+
+// notificacion repartidor 311225
+const buildWebPayload = (tipo_msj) => {
+	// switch (tipo_msj) {
+	// 	case 0:
+	// 	default:
+	// 		return {
+	// 			notification: {
+	// 				title: 'Nuevo Pedido',
+	// 				body: 'Acepta el pedido, tiene un minuto para aceptarlo.',
+	// 				icon: './favicon.ico',
+	// 				lang: 'es',
+	// 				vibrate: [200, 100, 200]
+	// 			}
+	// 		};
 	// }
 
 
-	// notificacion ios android
+	return {
+		notification: {
+			title: 'Nuevo Pedido',
+			body: tipo_msj === 0 ? 'Acepta el pedido, tiene un minuto para aceptarlo.' : tipo_msj,
+			icon: './favicon.ico',
+			lang: 'es',
+			vibrate: [200, 100, 200]
+		}
+	};
+};
 
-	let payloadNotification = '';
-	switch (tipo_msj) {
-      case 0: // notifica a repartidor nuevo pedido
-      payloadNotification = {
-			title: " Nuevo Pedido",
-			icon: "./favicon.ico",
-			body: "Acepta el pedido, tiene un minuto para aceptarlo.",
-			vibrate: [200, 100, 200],
-        	sound: "default"
-		}       
-        break;
-    }	
+const buildFcmNotification = (tipo_msj) => {
+	// switch (tipo_msj) {
+	// 	case 0:
+	// 	default:
+	// 		return {
+	// 			title: 'Nuevo Pedido',
+	// 			icon: './favicon.ico',
+	// 			body: 'Acepta el pedido, tiene un minuto para aceptarlo.',
+	// 			vibrate: [200, 100, 200],
+	// 			sound: 'default'
+	// 		};
+	// }
 
-		
-    //081222 firebase
-    var message = new gcm.Message({
-		collapseKey: 'demo',
-		priority: 'high',
-		contentAvailable: true,
-		delayWhileIdle: true,
-		timeToLive: 3,					
-		notification: payloadNotification
-	});
+	return {
+		title: 'Nuevo Pedido',
+		icon: './favicon.ico',
+		body: tipo_msj === 0 ? 'Acepta el pedido, tiene un minuto para aceptarlo.' : tipo_msj,
+		vibrate: [200, 100, 200],
+		sound: 'default'
+	};
+};
 
-	const registrationIds = [key_suscripcion_push];
+const parseWebSubscription = (pwa_code_verification) => {
+	if (!pwa_code_verification) return null;
 
-	sender.send(message, { registrationIds: registrationIds }, (err, response) => {
-	  if (err) {
-	    logger.error(err);
-	  } else {
-	    logger.debug(response);
-	  }
-	});
-
-	
-	// lo ultimo para firebase flutterflow 30042024
-	const _bodyFlutter = {
-		titulo: ' Nuevo Pedido',
-		body: 'Acepta el pedido, tiene un minuto para aceptarlo.'
+	// Puede llegar como objeto o string JSON
+	if (typeof pwa_code_verification === 'object') {
+		return pwa_code_verification?.endpoint && pwa_code_verification?.keys
+			? pwa_code_verification
+			: null;
 	}
-	// apiFireBase.sendPushNotification(key_suscripcion_push, _bodyFlutter);
 
+	if (typeof pwa_code_verification === 'string') {
+		try {
+			const sub = JSON.parse(pwa_code_verification);
+			return sub?.endpoint && sub?.keys ? sub : null;
+		} catch (e) {
+			return null;
+		}
+	}
 
+	return null;
+};
 
-	
-}
+const sendPushNotificactionOneRepartidor = async function (
+	key_suscripcion_push, // compat (ya no se usa como fuente principal)
+	tipo_msj,
+	user_repartidor = null
+) {
+	// Fuente real ahora: user_repartidor
+	const pwa_code_verification = user_repartidor?.pwa_code_verification || null;
+	const fcm_token = user_repartidor?.fcm_token || null;
+
+	// 1) WEB PUSH
+	const subscription = parseWebSubscription(pwa_code_verification);
+	if (subscription) {
+		const payload = buildWebPayload(tipo_msj);
+
+		try {
+			await webpush.sendNotification(subscription, JSON.stringify(payload));
+			logger.debug('WEB PUSH OK');
+			return;
+		} catch (err) {
+			logger.error('Error sending WEB PUSH to repartidor: ', {
+				statusCode: err?.statusCode,
+				body: err?.body,
+				message: err?.message,
+				headers: err?.headers
+			});
+
+			// Si es 404 o 410, la suscripción ya no es válida
+			if (err?.statusCode === 404 || err?.statusCode === 410) {
+				logger.warn(
+					'Suscripción WEB PUSH inválida/expirada (statusCode: ' +
+					err.statusCode +
+					'). Se debe limpiar pwa_code_verification en BD.'
+				);
+				// TODO: limpiar pwa_code_verification en BD para user_repartidor.idrepartidor
+			}
+			return;
+		}
+	}
+
+	// 2) FCM / GCM (Nativo)
+	if (typeof fcm_token === 'string' && fcm_token.length > 0) {
+		const notification = buildFcmNotification(tipo_msj);
+
+		const message = new gcm.Message({
+			collapseKey: 'nuevo_pedido',
+			priority: 'high',
+			contentAvailable: true,
+			delayWhileIdle: true,
+			timeToLive: 60,
+			notification
+		});
+
+		return sender.send(message, { registrationIds: [fcm_token] }, (err, response) => {
+			if (err) {
+				logger.error('Error sending FCM to repartidor:', err);
+			} else {
+				logger.debug('FCM response:', response);
+			}
+		});
+	}
+
+	// 3) No hay data de push
+	logger.log('Repartidor sin pwa_code_verification ni fcm_token, no se envía push.');
+};
+
 module.exports.sendPushNotificactionOneRepartidor = sendPushNotificactionOneRepartidor;
 
 // TEST
@@ -542,151 +676,125 @@ const sendPushNotificactionRepartidorAceptaPedido = function (_dataMsjs) {
 module.exports.sendPushNotificactionRepartidorAceptaPedido = sendPushNotificactionRepartidorAceptaPedido;
 
 
+// test 311225
+const sendPushNotificactionOneRepartidorTEST = async function (req, res) {
+	logger.debug('push test');
+	const user_repartidor = req.body.user_repartidor || null;
+	const tipo_msj = Number(req.body.tipo_msj ?? 0);
+	if (!user_repartidor) {
+		return res.status(400).json({
+			success: false,
+			message: 'Falta req.body.user_repartidor'
+		});
+	}
+	try {
+		// Llamas a tu función refactorizada (la que decide webpush vs fcm)
+		await sendPushNotificactionOneRepartidor(
+			user_repartidor?.pwa_code_verification || user_repartidor?.fcm_token || '',
+			tipo_msj,
+			user_repartidor
+		);
+		return res.status(200).json({
+			success: true,
+			message: 'Push enviado (según canal disponible)',
+			tipo_msj
+		});
+	} catch (err) {
+		logger.error('Error en push test', { err });
+		return res.status(500).json({
+			success: false,
+			message: 'Error enviando push test'
+		});
+	}
+};
+module.exports.sendPushNotificactionOneRepartidorTEST = sendPushNotificactionOneRepartidorTEST;
+
+
 // TEST
 // envia notificacion push a repartidor de que tiene un pedido
-const sendPushNotificactionOneRepartidorTEST = function (req, res) {
-	logger.debug('push test');
-	const key_suscripcion_push = req.body.key_suscripcion_push;
-	const _payload = req.body.payload || null;
-	const tipo_msj = 0;	
+// const sendPushNotificactionOneRepartidorTEST = function (req, res) {
+// 	logger.debug('push test');
+// 	const key_suscripcion_push = req.body.key_suscripcion_push;
+// 	const _payload = req.body.payload || null;
+// 	const tipo_msj = 0;	
 
-	// console.log('push key_push', key_suscripcion_push);
-	// // const key_suscripcion_push = Repartidor.key_suscripcion_push;	
-	// // const notificationPayload = payload;
-	// let payload;	
-	// if ( !_payload ) {
-	// 	switch (tipo_msj) {
-	//       case 0: // notifica a repartidor nuevo pedido
-	//       payload = {
-	// 		"notification": {
-	// 		        // "notification": {
-	// 		            "title": "Nuevo Pedido",
-	// 		            "body": `Te llego un pedido.`,
-	// 		            "icon": "./favicon.ico",
-	// 		            "lang": "es",
-	// 		            "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50],
-	// 		            "actions": [
-    //                         {"action": "foo", "title": "Enviar Mensaje"},
-    //                         {"action": "foo2", "title": "Llamar"}
-    //                     ],
-    //                     "data": {
-    //                         "onActionClick": {
-    //                             "foo": {"operation": "openWindow", "url": "https://api.whatsapp.com/send?phone=51934746830"},
-    //                             "foo2": {"operation": "openWindow", "url": "tel:934746830"}      
-    //                         }
-	// 		            }
-			       		
-	// 		        }
-	// 		    // }
-	// 		}       
-	//         break;
-	//     }
-	// } else {
-	// 	payload = _payload;
-	// }
 
-	
+// 	const payloadNotification = {
+// 			title: " Nuevo Pedido",
+// 			icon: "./favicon.ico",
+// 			body: "Acepta el pedido, tiene un minuto para aceptarlo.",
+// 			vibrate: [200, 100, 200],
+//         	sound: "default"
+// 		} 
 
-	// if ( !key_suscripcion_push || key_suscripcion_push.length === 0 ) {return ;}
+//     //081222 firebase
+//     var message = new gcm.Message({
+// 		collapseKey: 'demo',
+// 		priority: 'high',
+// 		contentAvailable: true,
+// 		delayWhileIdle: true,
+// 		timeToLive: 3,					
+// 		notification: payloadNotification
+// 	});
 
-	// console.log('notificationPayload', payload);
-	
-    // // Promise.all(
-    // webpush.sendNotification(
-    // 	key_suscripcion_push, JSON.stringify(payload) )
-	// 	.then(() => 
-	// 		res.status(200).json({message: 'mensaje enviado con exito'})
-	// 	)
-    //     .catch(err => {
-    //        	console.error("Error sending notification, reason: ", {
-	// 			statusCode: err.statusCode,
-	// 			body: err.body,
-	// 			message: err.message
-	// 		});
+// 	const registrationIds = [key_suscripcion_push];
+
+// 	sender.send(message, { registrationIds: registrationIds }, (err, response) => {
+// 	  if (err) {
+// 	  	res.sendStatus(500);
+// 	    logger.error(err);
+// 	  } else {
+// 	  	res.status(200).json({message: 'mensaje enviado con exito'})
+// 	    logger.debug(response);
+// 	  }
+// 	});
+
+
+
+// 	// web
+// 	let payload = {
+// 		"notification": {		        
+// 		        "title": " Nuevo Pedido",
+// 		        "body": `Nuevo Pedido Papaya Expres.`,
+// 		        "icon": "./favicon.ico",
+// 		        "lang": "es",
+// 		        "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]		        
+// 		    }
+// 		} 
+// 	// para web
+//     webpush.sendNotification(
+//     	key_suscripcion_push, JSON.stringify(payload) )
+// 		.then(() => 
+// 			// res.status(200).json({message: 'mensaje enviado con exito'})
+// 			logger.debug('ok')
+// 		)
+//         .catch(err => {
+//            	logger.error("Error sending notification, reason: ", {
+// 				statusCode: err.statusCode,
+// 				body: err.body,
+// 				message: err.message
+// 			});
 			
-	// 		// Si es 404 o 410, la suscripción ya no es válida
-	// 		if (err.statusCode === 404 || err.statusCode === 410) {
-	// 			logger.warn(' Suscripción push inválida (statusCode: ' + err.statusCode + ')');
-	// 		}
-   //     	res.sendStatus(500);
-    //     });
+// 			// Si es 404 o 410, la suscripción ya no es válida
+// 			if (err.statusCode === 404 || err.statusCode === 410) {
+// 				logger.warn(' Suscripción push inválida (statusCode: ' + err.statusCode + ')');
+// 			}
+//            	// res.sendStatus(500);
+//         });
 
-	const payloadNotification = {
-			title: " Nuevo Pedido",
-			icon: "./favicon.ico",
-			body: "Acepta el pedido, tiene un minuto para aceptarlo.",
-			vibrate: [200, 100, 200],
-        	sound: "default"
-		} 
 
-    //081222 firebase
-    var message = new gcm.Message({
-		collapseKey: 'demo',
-		priority: 'high',
-		contentAvailable: true,
-		delayWhileIdle: true,
-		timeToLive: 3,					
-		notification: payloadNotification
-	});
+// 	// lo ultimo para firebase flutterflow 30042024
+// 	const _bodyFlutter = {
+// 		titulo: ' Nuevo Pedido',
+// 		body: 'Acepta el pedido, tiene un minuto para aceptarlo.'
+// 	}
 
-	const registrationIds = [key_suscripcion_push];
-
-	sender.send(message, { registrationIds: registrationIds }, (err, response) => {
-	  if (err) {
-	  	res.sendStatus(500);
-	    logger.error(err);
-	  } else {
-	  	res.status(200).json({message: 'mensaje enviado con exito'})
-	    logger.debug(response);
-	  }
-	});
+// 	// apiFireBase.sendPushNotification(key_suscripcion_push, _bodyFlutter);
 
 
 
-	// web
-	let payload = {
-		"notification": {		        
-		        "title": " Nuevo Pedido",
-		        "body": `Nuevo Pedido Papaya Expres.`,
-		        "icon": "./favicon.ico",
-		        "lang": "es",
-		        "vibrate": [100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50, 100, 50, 100, 100, 100, 50 , 50]		        
-		    }
-		} 
-	// para web
-    webpush.sendNotification(
-    	key_suscripcion_push, JSON.stringify(payload) )
-		.then(() => 
-			// res.status(200).json({message: 'mensaje enviado con exito'})
-			logger.debug('ok')
-		)
-        .catch(err => {
-           	logger.error("Error sending notification, reason: ", {
-				statusCode: err.statusCode,
-				body: err.body,
-				message: err.message
-			});
-			
-			// Si es 404 o 410, la suscripción ya no es válida
-			if (err.statusCode === 404 || err.statusCode === 410) {
-				logger.warn(' Suscripción push inválida (statusCode: ' + err.statusCode + ')');
-			}
-           	// res.sendStatus(500);
-        });
-
-
-	// lo ultimo para firebase flutterflow 30042024
-	const _bodyFlutter = {
-		titulo: ' Nuevo Pedido',
-		body: 'Acepta el pedido, tiene un minuto para aceptarlo.'
-	}
-
-	// apiFireBase.sendPushNotification(key_suscripcion_push, _bodyFlutter);
-
-
-
-}
-module.exports.sendPushNotificactionOneRepartidorTEST = sendPushNotificactionOneRepartidorTEST;
+// }
+// module.exports.sendPushNotificactionOneRepartidorTEST = sendPushNotificactionOneRepartidorTEST;
 
 
 const sendPushWebTest = async function (req, res) {

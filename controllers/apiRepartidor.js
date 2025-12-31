@@ -145,7 +145,7 @@ const setEfectivoMano = async function (req, res) {
 	// logger.debug('llego a funcion setEfectivoMano req usuariotoken', req.usuariotoken);
 
 	const idrepartidor = req.body.idrepartidor;      
-	const efectivo = req.body.efectivo;      
+	const efectivo = req.body.efectivo || 0;      
 	const online = req.body.online;     
 
 	// logger.debug('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
@@ -398,7 +398,7 @@ const sendPedidoRepartidor = async function (listRepartidores, dataPedido, io) {
 		QueryServiceV1.ejecutarConsulta(read_query, [firtsRepartidor.idrepartidor], 'UPDATE', 'updateLastNotification');
 	}
 
-	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0);
+	sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0, firtsRepartidor);
 
 	// enviamos el socket
 	logger.debug('socket enviado a repartidor', firtsRepartidor);
@@ -794,7 +794,7 @@ module.exports.setPasoVaPedido = setPasoVaPedido;
 
 /// desde el comercio
 const setUpdateEstadoPedido = async function (idpedido, estado, tiempo = null) {	
-	const savePwaEstado = estado === 4 ? ", pwa_estado = 'E' " : '';
+	let savePwaEstado = estado === 4 ? ", pwa_estado = 'E' " : '';
 	// ✅ SEGURO: Prepared statement
 	// const read_query = `UPDATE pedido SET pwa_delivery_status = ? ${savePwaEstado} WHERE idpedido = ?`;
 	// try {
@@ -1712,6 +1712,25 @@ const getListPedidosAsignados = async function (req, res) {
 	return await QueryServiceV1.ejecutarConsulta(sql, [idrepartidor], 'SELECT', 'getListPedidosAsignados');
 }
 module.exports.getListPedidosAsignados = getListPedidosAsignados;
+
+const setPedidoCanceladoRepartidor = async function (dataPedido) {
+	const { idpedido, idsede, idrepartidor, motivo } = dataPedido;
+	const fechaHora = new Date();
+	const sql = `insert into pedido_delivery_cancelado_repartidor (idpedido, idsede, idrepartidor, fecha, motivo) values (?, ?, ?, ?, ?)`;	
+	QueryServiceV1.ejecutarConsulta(sql, [idpedido, idsede, idrepartidor, fechaHora, motivo], 'INSERT', 'setPedidoCanceladoRepartidor');	
+	
+	// marca como que el repartidor marco cancelado
+	const read_query = `UPDATE pedido SET pwa_delivery_status = 5 pwa_estado='C'  WHERE idpedido = ?`;
+	await QueryServiceV1.ejecutarConsulta(read_query, [idpedido], 'UPDATE', 'setUpdateEstadoPedido');
+}
+module.exports.setPedidoCanceladoRepartidor = setPedidoCanceladoRepartidor;
+
+const setSuscriptionNotificationPush = async function(dataSuscription){
+	const { idrepartidor, pwa_code_verification, fcm_token } = dataSuscription;
+	const sql = `update repartidor set pwa_code_verification=?, fcm_token=? where idrepartidor=?`;	
+	QueryServiceV1.ejecutarConsulta(sql, [pwa_code_verification, fcm_token, idrepartidor], 'UPDATE', 'setSuscriptionNotificationPush');
+}
+module.exports.setSuscriptionNotificationPush = setSuscriptionNotificationPush;
 
 
 // function emitirRespuestaSP(xquery) {

@@ -22,3 +22,5 @@ find-sql-injection.js
 
 # Logs
 logs/*.log
+
+serviceAccountKey.json

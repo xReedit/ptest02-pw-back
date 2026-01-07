@@ -8,8 +8,19 @@ const io = require("socket.io-client");
 const QueryServiceV1 = require('../service/query.service.v1');
 const { sequelize, QueryTypes } = require('../config/database');
 
+
 const nodemailer = require("nodemailer");
 const logger = require('../utilitarios/logger');
+
+const adminFirebase = require("firebase-admin");
+
+// Inicializar Firebase Admin (solo una vez)
+if (!adminFirebase.apps.length) {
+	const serviceAccount = require('./../serviceAccountKey.json'); // Ajusta la ruta
+	adminFirebase.initializeApp({
+		credential: admin.credential.cert(serviceAccount)
+	});
+}
 
 
 
@@ -591,26 +602,42 @@ const sendPushNotificactionOneRepartidor = async function (
 	if (typeof fcm_token === 'string' && fcm_token.length > 0) {
 		const notification = buildFcmNotification(tipo_msj);
 
-		const message = new gcm.Message({
-			collapseKey: 'nuevo_pedido',
-			priority: 'high',
-			contentAvailable: true,
-			delayWhileIdle: true,
-			timeToLive: 60,
-			notification
-		});
-
-		sender.send(message, { registrationIds: [fcm_token] }, (err, response) => {
-			if (err) {
-				console.log('Error sending FCM to repartidor: ===>', err);
-				logger.error('Error sending FCM to repartidor:', err);
-			} else {
-				console.log("FCM response:", response);
-				logger.debug('FCM response:', response);
+		const message = {
+			token: fcm_token,
+			notification: {
+				title: notification.title,
+				body: notification.body
+			},
+			android: {
+				priority: 'high',
+				notification: {
+					sound: 'default',
+					channelId: 'fcm_default_channel',
+					priority: 'high'
+				}
+			},
+			apns: {
+				payload: {
+					aps: {
+						sound: 'default',
+						contentAvailable: true
+					}
+				}
 			}
-		});
+		};
 
-		return;
+		try {
+			const response = await admin.messaging().send(message);
+			logger.debug('FCM OK:', response);
+			return;
+		} catch (err) {
+			logger.error('Error enviando FCM:', {
+				code: err.code,
+				message: err.message
+			});
+
+			return;	
+		}
 	}
 
 	// 3) No hay data de push

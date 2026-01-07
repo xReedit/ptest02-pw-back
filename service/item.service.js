@@ -5,6 +5,7 @@ const errorManager = require('../service/error.manager');
 const porcionMovementsService = require('./porcion.movements.service');
 let Sequelize = require('sequelize');
 const config = require('../_config');
+const logger = require('../utilitarios/logger');
 const sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
 
@@ -25,8 +26,7 @@ class ItemService {
             iditem2: item.iditem2        
         }
         
-        console.log('_item', _item);
-
+        
         let updatedItem;    
         let transaction;
         
@@ -50,7 +50,7 @@ class ItemService {
             result[0].cantidad = parseFloat(updatedItem[0].cantidad);
 
             // registrar movimiento
-            console.log('registrando movimiento', {
+            logger.debug('registrando movimiento', {
                 tipo_movimiento: 'resta',
                 cantidad: item.cantidadSumar,
                 idusuario: item.idusuario,
@@ -169,8 +169,7 @@ class ItemService {
 
     static async processAllItemSubitemSeleted(allItems) {
         let updatedItem;
-        try {        
-            console.log(`call procedure_stock_all_subitems('${JSON.stringify(allItems)}')`);
+        try {                    
             updatedItem = await QueryService.emitirRespuestaSP_RAW('call procedure_stock_all_subitems(?)', [
                 JSON.stringify(allItems)
             ]);

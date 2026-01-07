@@ -1900,9 +1900,6 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
                 listSubItems: listSubItems                
             }
 
-            console.log('item apiPwa processAndEmitItem === ', item);
-            console.log('rpt apiPwa processAndEmitItem === ', rpt);
-
             // console.log('rpt =>>>>', rpt);
             if ( notificar ) {
                 io.to(chanelConect).emit('itemModificado-pwa', rpt);

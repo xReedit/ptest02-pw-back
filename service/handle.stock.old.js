@@ -9,7 +9,7 @@ let errorManager = require('./error.manager');
  * @returns {Boolean} - true si existen subitems con cantidad, false en caso contrario
  */
 const checkExistSubItemsWithCantidad = (item) => {        
-    console.log('checkExistSubItemsWithCantidad original ===');
+    logger.debug('checkExistSubItemsWithCantidad original ===');
     const isCheck = !item.subitems ? false :
         Array.isArray(item.subitems) ?
             item.subitems.some(subitem => 
@@ -22,7 +22,7 @@ const checkExistSubItemsWithCantidad = (item) => {
 
 const updateStock = async (op, item, idsede) => {    
     if (item.isalmacen === 1) {
-        console.log('es de almacen');
+        logger.debug('es de almacen');
         const _item = {
             cantidadSumar: item.cantidadSumar,
             idcarta_lista: item.idcarta_lista,
@@ -46,7 +46,7 @@ const updateStock = async (op, item, idsede) => {
                 // console.log('el item ==> ', item);
 
                 item.subitems_view.forEach(subitem => {      
-                    console.log('subitem ==> ', subitem);    
+                    logger.debug('subitem ==> ', subitem);    
                     // if (subitem.idporcion !== 0) { _idporcion.push(subitem.idporcion) }
                     // if (subitem.idproducto !== 0) { _idproducto.push(subitem.idproducto); }                
                     // _iditem_subitem.push(subitem.iditem_subitem);
@@ -76,7 +76,7 @@ const updateStock = async (op, item, idsede) => {
                             cantidad: item.cantidad,  
                         };
 
-                        console.log('allItems', allItems);
+                        logger.debug('allItems', allItems);
     
                         ItemService.processAllItemSubitemSeleted(allItems);
                     // }
@@ -98,10 +98,10 @@ const updateStock = async (op, item, idsede) => {
         }
 
         if (item.isporcion === 'SP') {
-            console.log('ingresa processItemPorcion');
+            logger.debug('ingresa processItemPorcion');
             return await ItemService.processItemPorcion(item);
         } else {
-            console.log('ingresa processItem');            
+            logger.debug('ingresa processItem');            
             if (item.isporcion !== 'ND') {             
                 return await ItemService.processItem(item, idsede);
             } else {

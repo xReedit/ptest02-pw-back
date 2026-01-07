@@ -110,11 +110,10 @@ class ItemService {
             // Procesar el resultado
             if (updatedItem && updatedItem[0] && updatedItem[0].cantidad !== undefined && !isNaN(updatedItem[0].cantidad)) {
                 result[0].cantidad = parseFloat(updatedItem[0].cantidad);
-                console.log('🟢 [item.v1] Cantidad actualizada:', result[0].cantidad);
+                
             } else {
                 // updatedItem[0].cantidad = 0; 
                 result[0].cantidad = 'ND';
-                console.log('⚠️ [item.v1] No se pudo obtener la cantidad actualizada');
                 return result;
             }
             

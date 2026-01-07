@@ -207,7 +207,7 @@ routerV3.post('/repartidor/set-cambio-pass-repartidor', auth.verificarToken, api
 routerV3.get('/repartidor/get-list-pedidos-pendientes-comercio', auth.verificarToken, apiPwaAppRepartidor.getListPedidosPendientesComercio);
 routerV3.get('/repartidor/get-list-pedidos-asignados', auth.verificarToken, apiPwaAppRepartidor.getListPedidosAsignados);
 routerV3.get('/repartidor/set-pedido-delivery-cancelado', auth.verificarToken, apiPwaAppRepartidor.setPedidoCanceladoRepartidor);
-routerV3.get('/repartidor/set-suscription-notification-push', auth.verificarToken, apiPwaAppRepartidor.setSuscriptionNotificationPush);
+routerV3.post('/repartidor/set-suscription-notification-push', auth.verificarToken, apiPwaAppRepartidor.setSuscriptionNotificationPush);
 
 // routerV3.get('/repartidor/get-view-event-new-pedido', apiPwaAppRepartidor.getIfPedidoNuevo);
 

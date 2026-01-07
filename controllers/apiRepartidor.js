@@ -420,7 +420,6 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 	const idsPedidos = dataPedido.pedidos.join(',');
 	let firtsRepartidor = listRepartidores[numIndex];
 
-	console.log('dataPedido ===== sendPedidoRepartidorOp2', dataPedido);
 
 	logger.debug('lista de repartidor ============ listRepartidores', listRepartidores);
 	logger.debug('repartidor ============ firtsRepartidor', firtsRepartidor);
@@ -432,7 +431,6 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 		// logger.debug('repartidor-notifica-server-quita-pedido --a');
 		const getSocketIdRepartidorReasigno = await getSocketIdRepartidor(dataPedido.last_id_repartidor_reasigno);
 
-		console.log('getSocketIdRepartidorReasigno', getSocketIdRepartidorReasigno);
 		
 
 
@@ -889,8 +887,7 @@ const getListPedidosPendientesComercio = async function(req, res) {
 // order by p.idpedido desc`;
 // 	return await emitirRespuesta_RES(read_query, res);
 
-	const idsede = managerFilter.getInfoToken(req,'idsede_suscrito');
-	console.log('idsede_suscrito', idsede)
+	const idsede = managerFilter.getInfoToken(req,'idsede_suscrito');	
 	// ✅ SEGURO: Prepared statement
 	// const read_query = `SELECT * FROM pedido p
 	// INNER JOIN tipo_consumo tc ON p.idtipo_consumo = tc.idtipo_consumo 

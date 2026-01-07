@@ -29,7 +29,7 @@ const setPedidoBot = async function (req, res) {
 			idpedido: rpt[0].idpedido,			
 		}
 
-		console.log('respuesta pedido bot ====', data);
+		
 
 		res.json(data)
 	})
@@ -43,8 +43,7 @@ module.exports.setPedidoBot = setPedidoBot;
 const setAceptaSolicitudRemotoBot = function(req, res) {	
 	const payload = req.body	
 	const infoUser = payload.query	
-	const data = payload.dataSend
-	console.log('======= setAceptaSolicitudRemotoBot', infoUser)	
+	const data = payload.dataSend	
 
 	const socket = connectBotSocket(infoUser);
 
@@ -52,31 +51,26 @@ const setAceptaSolicitudRemotoBot = function(req, res) {
 
 	// borrar un producto
 	if ( data.tipo_permiso == 1 ) {
-		console.log('restobar-permiso-remove-producto-mesa', data)
 		socket.emit('restobar-permiso-remove-producto-mesa', data)
 	}
 
 	// borrar pedidos completos
 	if ( data.tipo_permiso == 2 ) {
-		console.log('restobar-permiso-remove-pedido-mesa', data)
 		socket.emit('restobar-permiso-remove-pedido-mesa', data)
 	}
 
 	// borrar pedidos completos
 	if ( data.tipo_permiso == 3 ) {
-		console.log('restobar-permiso-change-metodo-pago', data)
 		socket.emit('restobar-permiso-change-metodo-pago', data)
 	}
 	
 	// cerrar caja
 	if ( data.tipo_permiso == 4 ) {
-		console.log('restobar-permiso-cerrar-caja', data)
 		socket.emit('restobar-permiso-cerrar-caja', data)
 	}
 
 	// anualr registro pago
 	if ( data.tipo_permiso == 5 ) {
-		console.log('restobar-permiso-remove-registro-pago', data)
 		socket.emit('restobar-permiso-remove-registro-pago', data)
 	}
 
@@ -87,7 +81,7 @@ module.exports.setAceptaSolicitudRemotoBot = setAceptaSolicitudRemotoBot;
 
 function connectBotSocket(infoUser) {
 	const urlSocket = `http://127.0.0.1:${config.portSocket}`
-	console.log('conectando === ', urlSocket)
+	logger.debug('conectando === ', urlSocket)
 	const socket = io(urlSocket,{
 		query: infoUser
 	});

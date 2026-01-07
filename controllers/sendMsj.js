@@ -600,7 +600,7 @@ const sendPushNotificactionOneRepartidor = async function (
 			notification
 		});
 
-		return sender.send(message, { registrationIds: [fcm_token] }, (err, response) => {
+		sender.send(message, { registrationIds: [fcm_token] }, (err, response) => {
 			if (err) {
 				console.log('Error sending FCM to repartidor: ===>', err);
 				logger.error('Error sending FCM to repartidor:', err);
@@ -609,6 +609,8 @@ const sendPushNotificactionOneRepartidor = async function (
 				logger.debug('FCM response:', response);
 			}
 		});
+
+		return;
 	}
 
 	// 3) No hay data de push

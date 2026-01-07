@@ -79,7 +79,7 @@ async function updateStockItemPorcion(item, transaction = null) {
             } else {
                 updateQuery = `
                     UPDATE carta_lista 
-                    SET cantidad = GREATEST(0, cantidad + ?) 
+                    SET cantidad = ROUND(GREATEST(0, cantidad + ?), 2) 
                     WHERE idcarta_lista = ?
                 `;
                 updateParams = [cantidadAjuste, item.idcarta_lista];
@@ -103,7 +103,7 @@ async function updateStockItemPorcion(item, transaction = null) {
         await sequelize.query(`
             UPDATE porcion AS p
                 LEFT JOIN item_ingrediente AS ii USING (idporcion)
-                SET p.stock = p.stock + (? * (ii.cantidad))
+                SET p.stock = ROUND(p.stock + (? * ii.cantidad), 2)
             WHERE ii.iditem = ?
                 AND (p.stock + (? * (ii.cantidad)) >= 0)
         `, {

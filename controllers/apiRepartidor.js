@@ -1725,10 +1725,13 @@ const setPedidoCanceladoRepartidor = async function (dataPedido) {
 }
 module.exports.setPedidoCanceladoRepartidor = setPedidoCanceladoRepartidor;
 
-const setSuscriptionNotificationPush = async function(dataSuscription){
-	const { idrepartidor, pwa_code_verification, fcm_token } = dataSuscription;
+const setSuscriptionNotificationPush = async function (req, res){
+	const { idrepartidor, pwa_code_verification, fcm_token } = req.body;
 	const sql = `update repartidor set pwa_code_verification=?, fcm_token=? where idrepartidor=?`;	
 	QueryServiceV1.ejecutarConsulta(sql, [pwa_code_verification, fcm_token, idrepartidor], 'UPDATE', 'setSuscriptionNotificationPush');
+	return ReS(res, {
+		data: true
+	});
 }
 module.exports.setSuscriptionNotificationPush = setSuscriptionNotificationPush;
 

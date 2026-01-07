@@ -602,8 +602,10 @@ const sendPushNotificactionOneRepartidor = async function (
 
 		return sender.send(message, { registrationIds: [fcm_token] }, (err, response) => {
 			if (err) {
+				console.log('Error sending FCM to repartidor: ===>', err);
 				logger.error('Error sending FCM to repartidor:', err);
 			} else {
+				console.log("FCM response:", response);
 				logger.debug('FCM response:', response);
 			}
 		});

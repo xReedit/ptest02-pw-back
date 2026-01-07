@@ -18,7 +18,7 @@ const adminFirebase = require("firebase-admin");
 if (!adminFirebase.apps.length) {
 	const serviceAccount = require('./../serviceAccountKey.json'); // Ajusta la ruta
 	adminFirebase.initializeApp({
-		credential: admin.credential.cert(serviceAccount)
+		credential: adminFirebase.credential.cert(serviceAccount)
 	});
 }
 
@@ -627,7 +627,7 @@ const sendPushNotificactionOneRepartidor = async function (
 		};
 
 		try {
-			const response = await admin.messaging().send(message);
+			const response = await adminFirebase.messaging().send(message);
 			logger.debug('FCM OK:', response);
 			return;
 		} catch (err) {

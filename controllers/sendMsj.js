@@ -12,20 +12,8 @@ const { sequelize, QueryTypes } = require('../config/database');
 const nodemailer = require("nodemailer");
 const logger = require('../utilitarios/logger');
 
-const adminFirebase = require("firebase-admin");
-
-// Inicializar Firebase Admin (solo una vez)
-if (!adminFirebase.apps.length) {
-	const serviceAccount = require('./../serviceAccountKey.json'); // Ajusta la ruta
-	adminFirebase.initializeApp({
-		credential: adminFirebase.credential.cert(serviceAccount)
-	});
-}
-
-
-
-
-// // create reusable transporter object using the default SMTP transport
+// Usar instancia de Firebase Admin ya inicializada
+const { admin: adminFirebase } = require('../firebase_config');
 // const transporter = nodemailer.createTransport({
 //     host: "email-smtp.us-east-2.amazonaws.com",
 //     port: 465,

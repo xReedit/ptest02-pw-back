@@ -22,7 +22,14 @@ const repartidorCollection = collection(db, 'repartidor');
 
 
 const admin = require('firebase-admin');
-admin.initializeApp();
+
+if (!admin.apps.length) {
+	const serviceAccount = require('./serviceAccountKey.json');
+	admin.initializeApp({
+		credential: admin.credential.cert(serviceAccount)
+	});
+}
+
 const messaging = admin.messaging();
 
 async function sendPushNotification(token, notification) {
@@ -62,7 +69,9 @@ module.exports = {
   setDoc,
   doc,
   getDoc,
-  sendPushNotification
+  sendPushNotification,
+  admin,
+  messaging
 };
 
 

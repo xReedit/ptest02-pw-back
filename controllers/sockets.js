@@ -862,7 +862,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to(socketIdRepartidor[0].socketid).emit('set-repartidor-pedido-asigna-comercio', dataPedido);				
 
 			// notificacion push nuevo pedido
-			apiPwaRepartidor.sendOnlyNotificaPush(socketIdRepartidor[0].key_suscripcion_push, 0);
+			apiPwaRepartidor.sendOnlyNotificaPush(socketIdRepartidor[0].key_suscripcion_push, 0, socketIdRepartidor[0]);
 		});
 
 
@@ -1469,7 +1469,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to(socketIdRepartidor[0].socketid).emit('set-repartidor-pedido-asigna-comercio', dataPedido);				
 
 			// notificacion push nuevo pedido
-			apiPwaRepartidor.sendOnlyNotificaPush(socketIdRepartidor[0].key_suscripcion_push, 0);
+			apiPwaRepartidor.sendOnlyNotificaPush(socketIdRepartidor[0].key_suscripcion_push, 0, socketIdRepartidor[0]);
 		});
 
 
@@ -1497,7 +1497,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			io.to(socketIdRepartidor).emit('repartidor-get-pedido-pendiente-aceptar', pedioPendienteAceptar);
 
 			// notificacion push nuevo pedido
-			apiPwaRepartidor.sendOnlyNotificaPush(pedioPendienteAceptar[0].key_suscripcion_push, 0);
+			apiPwaRepartidor.sendOnlyNotificaPush(pedioPendienteAceptar[0].key_suscripcion_push, 0, pedioPendienteAceptar[0]);
 
 			// notifica a monitor para refesh vista
 			io.to('MONITOR').emit('set-asigna-pedido-repartidor-manual', {idrepartidor: dataPedido.idrepartidor, pedidos: dataPedido.pedidos});

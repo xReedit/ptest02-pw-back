@@ -501,7 +501,7 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 
 		
 		logger.debug("============== last_notification = ", firtsRepartidor.last_notification);
-		sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0);
+		sendMsjsService.sendPushNotificactionOneRepartidor(firtsRepartidor.key_suscripcion_push, 0, firtsRepartidor);
 		// enviamos el socket
 		logger.debug('socket enviado a repartidor', firtsRepartidor);
 		
@@ -533,8 +533,8 @@ const sendPedidoRepartidorOp2 = async function (listRepartidores, dataPedido, io
 module.exports.sendPedidoRepartidorOp2 = sendPedidoRepartidorOp2;
 
 
-const sendOnlyNotificaPush = function (key_suscripcion_push, tipo_msjs) {
-	sendMsjsService.sendPushNotificactionOneRepartidor(key_suscripcion_push, tipo_msjs);
+const sendOnlyNotificaPush = function (key_suscripcion_push, tipo_msjs, user_repartidor) {
+	sendMsjsService.sendPushNotificactionOneRepartidor(key_suscripcion_push, tipo_msjs, user_repartidor);
 }
 module.exports.sendOnlyNotificaPush = sendOnlyNotificaPush;
 
@@ -872,7 +872,7 @@ const getSocketIdRepartidor = async function (listIdRepartidor) {
 	// 	return [];
 	// }
 
-	const read_query = `SELECT socketid, pwa_code_verification as key_suscripcion_push, ocupado FROM repartidor WHERE idrepartidor IN (?)`;
+	const read_query = `SELECT socketid, pwa_code_verification as key_suscripcion_push, fcm_token, ocupado FROM repartidor WHERE idrepartidor IN (?)`;
 	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [listIdRepartidor], 'SELECT', 'getSocketIdRepartidor');
 	return rows || [];
 }
@@ -1111,7 +1111,7 @@ const getPedidoPendienteAceptar = async function (idrepartidor) {
     // return await emitirRespuesta(read_query);        
 	
 	// ✅ SEGURO: Prepared statement
-    const read_query = `SELECT pedido_por_aceptar, solicita_liberar_pedido, pedido_paso_va, socketid, pwa_code_verification as key_suscripcion_push from repartidor where idrepartidor = ?`;
+    const read_query = `SELECT pedido_por_aceptar, solicita_liberar_pedido, pedido_paso_va, socketid, pwa_code_verification as key_suscripcion_push, fcm_token from repartidor where idrepartidor = ?`;
     // try {
 	// 	return await sequelize.query(read_query, {
 	// 		replacements: [idrepartidor],

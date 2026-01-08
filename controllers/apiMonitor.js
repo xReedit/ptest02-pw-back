@@ -599,7 +599,15 @@ module.exports.setAnularPagoServicio = setAnularPagoServicio;
 
 
 const getShowPedidosAsignadosRepartidor = async function (req, res) {
-    const arrPedidos = req.body.arr;
+    let arrPedidos = req.body.arr;
+    // asegurarnos de que arrPedidos sea un array
+    if (!arrPedidos) arrPedidos = '';
+    // siempre string => array
+    arrPedidos = String(arrPedidos)
+        .split(',')
+        .map(x => Number(x.trim()))
+        .filter(Number.isFinite);
+
 	// ✅ SEGURO: Prepared statement
     const read_query = `SELECT p1.idpedido, ptle.time_line, p1.json_datos_delivery->'$.p_header.arrDatosDelivery.establecimiento.nombre' establecimiento
                             ,TIMESTAMPDIFF(MINUTE, p1.fecha_hora, now()) t_transcurrido

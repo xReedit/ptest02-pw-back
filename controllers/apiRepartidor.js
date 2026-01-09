@@ -1348,7 +1348,7 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 					importe_pagar: importePagar,
 					last_id_repartidor_reasigno: _last_id_repartidor_reasigno,
 					idsede: p.idsede,
-					num_reasignaciones: _num_reasignaciones,
+					num_reasignaciones: _num_reasignaciones,					
 					sede_coordenadas: {
 						latitude: p.latitude,
 						longitude: p.longitude
@@ -1710,8 +1710,8 @@ const getListPedidosAsignados = async function (req, res) {
 }
 module.exports.getListPedidosAsignados = getListPedidosAsignados;
 
-const setPedidoCanceladoRepartidor = async function (dataPedido) {
-	const { idpedido, idsede, idrepartidor, motivo } = dataPedido;
+const setPedidoCanceladoRepartidor = async function (req, res) {
+	const { idpedido, idsede, idrepartidor, motivo } = req.body;
 	const fechaHora = new Date();
 	const sql = `insert into pedido_delivery_cancelado_repartidor (idpedido, idsede, idrepartidor, fecha, motivo) values (?, ?, ?, ?, ?)`;	
 	QueryServiceV1.ejecutarConsulta(sql, [idpedido, idsede, idrepartidor, fechaHora, motivo], 'INSERT', 'setPedidoCanceladoRepartidor');	
@@ -1719,6 +1719,10 @@ const setPedidoCanceladoRepartidor = async function (dataPedido) {
 	// marca como que el repartidor marco cancelado
 	const read_query = `UPDATE pedido SET pwa_delivery_status = 5 pwa_estado='C'  WHERE idpedido = ?`;
 	await QueryServiceV1.ejecutarConsulta(read_query, [idpedido], 'UPDATE', 'setUpdateEstadoPedido');
+	
+	return ReS(res, {
+		data: true
+	});
 }
 module.exports.setPedidoCanceladoRepartidor = setPedidoCanceladoRepartidor;
 

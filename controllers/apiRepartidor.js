@@ -1701,8 +1701,6 @@ const setAsignarRepartoAtencionCliente = async function (idpedido) {
 module.exports.setAsignarRepartoAtencionCliente = setAsignarRepartoAtencionCliente;
 
 
-
-
 const getListPedidosAsignados = async function (req, res) {
 	const idrepartidor = req.query.id;
 	const sql = `select idpedidos from repartidor_pedido_asignado where idrepartidor = ?`;
@@ -1713,13 +1711,51 @@ module.exports.getListPedidosAsignados = getListPedidosAsignados;
 const setPedidoCanceladoRepartidor = async function (req, res) {
 	const { idpedido, idsede, idrepartidor, motivo } = req.body;
 	const fechaHora = new Date();
-	const sql = `insert into pedido_delivery_cancelado_repartidor (idpedido, idsede, idrepartidor, fecha, motivo) values (?, ?, ?, ?, ?)`;	
-	QueryServiceV1.ejecutarConsulta(sql, [idpedido, idsede, idrepartidor, fechaHora, motivo], 'INSERT', 'setPedidoCanceladoRepartidor');	
+
+	const sql = `insert into pedido_delivery_cancelado_repartidor (idpedido, idsede, idrepartidor, fecha, motivo) values (?, ?, ?, ?, ?)`;
+	QueryServiceV1.ejecutarConsulta(sql, [idpedido, idsede, idrepartidor, fechaHora, motivo], 'INSERT', 'setPedidoCanceladoRepartidor');
 	
 	// marca como que el repartidor marco cancelado
-	const read_query = `UPDATE pedido SET pwa_delivery_status = 5 pwa_estado='C'  WHERE idpedido = ?`;
-	await QueryServiceV1.ejecutarConsulta(read_query, [idpedido], 'UPDATE', 'setUpdateEstadoPedido');
-	
+	const updatePedido = `UPDATE pedido SET pwa_delivery_status = 5, pwa_estado='C' WHERE idpedido = ?`;
+	await QueryServiceV1.ejecutarConsulta(updatePedido, [idpedido], 'UPDATE', 'setUpdateEstadoPedido');
+
+	// quitar idpedido del array pedidos y volver a guardar el json
+	const queryRepartidor = `SELECT pedido_por_aceptar FROM repartidor WHERE idrepartidor = ?`;
+	const rows = await QueryServiceV1.ejecutarConsulta(queryRepartidor, [idrepartidor], 'SELECT', 'getPedidoPorAceptarRepartidor');
+	const rawPedidoPorAceptar = rows?.[0]?.pedido_por_aceptar ?? null;
+
+	let pedidoPorAceptar = null;
+	if (rawPedidoPorAceptar) {
+		if (typeof rawPedidoPorAceptar === 'object') {
+			pedidoPorAceptar = rawPedidoPorAceptar;
+		} else {
+			try {
+				pedidoPorAceptar = JSON.parse(rawPedidoPorAceptar);
+			} catch (e) {
+				pedidoPorAceptar = null;
+			}
+		}
+	}
+
+	const idpedidoNum = Number(idpedido);
+	if (pedidoPorAceptar && Array.isArray(pedidoPorAceptar.pedidos) && Number.isFinite(idpedidoNum)) {
+		const pedidosActuales = pedidoPorAceptar.pedidos.map((p) => Number(p)).filter(Number.isFinite);
+		const pedidosFiltrados = pedidosActuales.filter((p) => p !== idpedidoNum);
+
+		if (pedidosFiltrados.length === 0) {
+			const updateRepartidor = `UPDATE repartidor SET pedido_por_aceptar = NULL WHERE idrepartidor = ?`;
+			await QueryServiceV1.ejecutarConsulta(updateRepartidor, [idrepartidor], 'UPDATE', 'clearPedidoPorAceptarRepartidor');
+		} else {
+			pedidoPorAceptar.pedidos = pedidosFiltrados;
+			if (typeof pedidoPorAceptar.cantidad_pedidos_aceptados === 'number') {
+				pedidoPorAceptar.cantidad_pedidos_aceptados = pedidosFiltrados.length;
+			}			
+
+			const updateRepartidor = `UPDATE repartidor SET pedido_por_aceptar = ? WHERE idrepartidor = ?`;
+			await QueryServiceV1.ejecutarConsulta(updateRepartidor, [JSON.stringify(pedidoPorAceptar), idrepartidor], 'UPDATE', 'updatePedidoPorAceptarRepartidor');
+		}
+	}
+
 	return ReS(res, {
 		data: true
 	});
@@ -1736,51 +1772,10 @@ const setSuscriptionNotificationPush = async function (req, res){
 }
 module.exports.setSuscriptionNotificationPush = setSuscriptionNotificationPush;
 
-
-// function emitirRespuestaSP(xquery) {
-// 	logger.debug(xquery);
-// 	return sequelize.query(xquery, {		
-// 		type: QueryTypes.SELECT
-// 	})
-// 	.then(function (rows) {
-
-// 		// convertimos en array ya que viene en object
-// 		var arr = [];
-// 		arr = Object.values(rows[0]);		
-		
-// 		return arr;
-// 	})
-// 	.catch((err) => {
-// 		return false;
-// 	});
-// }
-
-
-
-
-
-
-
-// function emitirRespuesta(xquery) {
-// 	logger.debug(xquery);
-// 	return sequelize.query(xquery, {type: QueryTypes.SELECT})
-// 	.then(function (rows) {
-		
-// 		// return ReS(res, {
-// 		// 	data: rows
-// 		// });
-// 		return rows;
-// 	})
-// 	.catch((err) => {
-// 		return false;
-// 	});
-// }
-
 function emitirRespuestaData(xquery) {
 	// logger.debug(xquery);
 	return sequelize.query(xquery, {type: QueryTypes.SELECT})
 	.then(function (rows) {
-		
 		// return ReS(res, {
 		// 	data: rows
 		// });

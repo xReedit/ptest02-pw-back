@@ -72,6 +72,7 @@ routerV3.post('/bot/send-bot-solicitud-permiso', pedidoBot.setAceptaSolicitudRem
 
 // para usuario autorizado - colaboradores --->>>
 routerV3.post('/login-usuario-autorizado', login.loggerUsAutorizado);
+routerV3.post('/login-usuario-print-server', login.loggerUsPrintServer);
 routerV3.post('/verificarToken', auth.verificarToken);
 routerV3.get('/validar-token', auth.validarTokenExperidado);
 routerV3.post('/pedido/lacuenta', auth.verificarToken, apiPwaAppPedidos.getLaCuenta);

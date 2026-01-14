@@ -36,6 +36,9 @@ const socketPrintServerClient = async function (data, socket) {
 	// logo local
 	const logoLocal = await getLogoLocal(idsedeSocket);	
 
+	// impresoras local
+	const impresorasLocal = await getImpresorasSede(idsedeSocket);
+
 	// registros no impresos 
 	// 101023 quitamos porque va con el mix
 	// const lastRowsNoPrint = await getRegisterNoPrint(data);
@@ -49,7 +52,8 @@ const socketPrintServerClient = async function (data, socket) {
 			estructura: _estructuras,
 			logo: logoLocal,
 			url: 'http://'+urlLocal[0].ip_server_local,
-			rows_print: lastRowsNoPrint
+			rows_print: lastRowsNoPrint,
+			impresoras: impresorasLocal
 		}
 
 		socket.emit('get-ps-estructuras', _payload);
@@ -199,7 +203,7 @@ function getRegisterNoPrint(data) {
 }
 
 function getEsctructuras() {
-	const sql = "SELECT nom_documento, v, estructura_json FROM print_server_estructura where estado=0";
+	const sql = "SELECT nom_documento, v, estructura_json, template_js FROM print_server_estructura where estado=0";
 	return emitirRespuesta(sql);
 }
 
@@ -213,6 +217,13 @@ function getLogoLocal(idsedeSocket) {
 	const sql = `SELECT logo64 FROM sede where idsede=${idsedeSocket}`;
 	return emitirRespuesta(sql)
 ;}
+
+function getImpresorasSede(idsedeSocket) {
+	const sql = `select idimpresora, ip, descripcion from impresora where idsede=${idsedeSocket} and estado=0`;
+	return emitirRespuesta(sql)
+;}
+
+
 
 
 

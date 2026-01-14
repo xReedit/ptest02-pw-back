@@ -210,3 +210,38 @@ const loggerUsAutorizadoPacman = async function (req, res) {
 }
 
 module.exports.loggerUsAutorizadoPacman = loggerUsAutorizadoPacman;
+
+
+const loggerUsPrintServer = async function (req, res) {
+        const usuario = req.body.nomusuario;
+        const pass = req.body.pass;
+
+        const sql = `select u.idorg, u.idsede, u.usuario nom_usuario, s.nombre nom_sede, u.pass from usuario u 
+                        inner join sede s using(idsede) WHERE u.usuario = ? AND u.estado = 0 and s.estado=0`;
+
+        const rows = await QueryServiceV1.ejecutarConsulta(sql, [usuario], 'SELECT', 'loggerUsPrintServer');
+        
+
+        // ✅ Validar que el usuario exista
+        if (!rows || rows.length === 0) {
+                return ReE(res, 'Credenciales Incorrectas.');
+        }
+
+        // TODO: Activar bcrypt en siguiente paso
+        const result = pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
+        if (!result) {
+                return ReE(res, 'Credenciales Incorrectas.');
+        }
+
+        var p = rows[0].pass;
+        p = Buffer.from(p).toString('base64');
+        rows[0].pass = p;
+
+        const token = jwt.sign({ usuario: rows[0] }, SEED, { expiresIn: '1d' });
+
+        return ReS(res, { usuario: rows[0], token: token });
+
+}
+
+module.exports.loggerUsPrintServer = loggerUsPrintServer;
+

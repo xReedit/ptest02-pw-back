@@ -726,7 +726,6 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// para imprmir solo la comanda desde control pedidos, venta rapida, zona despacho
 		socket.on('printerOnly', (dataSend) => {			
 			dataSend.hora = n;			
-
 			socket.broadcast.to(chanelConect).emit('printerOnly', dataSend);
 			socket.broadcast.to(chanelConect).emit('nuevoPedido-for-list-mesas', dataSend); // app mozo
 

@@ -53,6 +53,9 @@ class ItemService {
         logger.debug({ item: _item }, '🟡 [item.v1] Item procesado');
         
         let updatedItem;
+
+        // cambio para evitar que idcarta_lista sea null y no se registre la venta
+        _item.idcarta_lista = _item.idcarta_lista ? _item.idcarta_lista : _item.iditem;
         
         try {  
             // Validar campos obligatorios

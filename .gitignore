@@ -13,6 +13,7 @@ dist/
 dist-prod/
 test/
 db/
+skills/
 
 # Migración de procedimientos almacenados
 dev/

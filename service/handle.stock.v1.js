@@ -148,7 +148,9 @@ const sanitizeObject = (obj) => {
     // Asegurar que propiedades críticas existan
     sanitized.cantidadSumar = sanitized.cantidadSumar || 0;
     sanitized.cantidad_reset = sanitized.cantidad_reset || 0;
-    sanitized.idcarta_lista = sanitized.idcarta_lista || '';
+    // sanitized.idcarta_lista = sanitized.idcarta_lista || '';
+    // cambio para evitar que idcarta_lista sea null y no se registre la venta
+    sanitized.idcarta_lista = sanitized.idcarta_lista || sanitized.iditem || '';
     sanitized.isporcion = sanitized.isporcion || 'ND';
     sanitized.iditem = sanitized.iditem || '';
     sanitized.cantidad = sanitized.cantidad || 0;

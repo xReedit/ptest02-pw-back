@@ -97,6 +97,18 @@ async function updateStockItemPorcion(item, transaction = null) {
         }
         
         
+        // 🆕 PRIMERO: Lock las porciones que vamos a actualizar
+        await sequelize.query(`
+            SELECT p.idporcion, p.stock 
+            FROM porcion AS p
+            LEFT JOIN item_ingrediente AS ii USING (idporcion)
+            WHERE ii.iditem = ?
+            FOR UPDATE
+        `, {
+            replacements: [_iditem],
+            type: QueryTypes.SELECT,
+            transaction
+        });
 
         // Paso 1.5: Actualizar porciones relacionadas EXACTAMENTE como el procedimiento almacenado (líneas 117-125)
         // Actualizar porciones
@@ -165,12 +177,12 @@ async function updateStockItemPorcion(item, transaction = null) {
                     i1.iditem,
                     FLOOR(COALESCE(
                         MIN(CASE WHEN i1.necesario = 1 THEN 
-                            CASE WHEN i1.viene_de = '1' THEN CAST(p1.stock AS SIGNED) ELSE ps.stock END 
+                            CASE WHEN i1.viene_de = '1' THEN p1.stock ELSE ps.stock END 
                         END),
                         MAX(CASE WHEN i1.necesario = 0 THEN 
-                            CASE WHEN i1.viene_de = '1' THEN CAST(p1.stock AS SIGNED) ELSE ps.stock END 
+                            CASE WHEN i1.viene_de = '1' THEN p1.stock ELSE ps.stock END 
                         END)
-                    ) / i1.cantidad) as cantidad
+                    ) / i1.cantidad, 2) as cantidad
                 FROM item_ingrediente AS i1 
                     LEFT JOIN porcion AS p1 ON i1.idporcion = p1.idporcion 
                     LEFT JOIN producto_stock ps ON ps.idproducto_stock = i1.idproducto_stock

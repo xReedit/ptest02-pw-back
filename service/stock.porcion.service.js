@@ -25,7 +25,7 @@ const logger = require('../utilitarios/logger');
  */
 const CONFIG = {
     // Isolation level óptimo para evitar dirty reads pero permitir concurrencia
-    ISOLATION_LEVEL: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED,
+    ISOLATION_LEVEL: Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE,
     
     // Retry logic para deadlocks
     MAX_RETRIES: 3,
@@ -633,10 +633,28 @@ class StockPorcionService {
         
         for (const itemReceta of receta) {
             if (itemReceta.idporcion > 0) {
+                
+
+                // AGREGAR: SELECT FOR UPDATE antes de actualizar
+                const [porcionLocked] = await sequelize.query(
+                    'SELECT stock FROM porcion WHERE idporcion = :idporcion FOR UPDATE',
+                    {
+                        replacements: { idporcion: itemReceta.idporcion },
+                        type: Sequelize.QueryTypes.SELECT,
+                        transaction
+                    }
+                );
+
+                if (!porcionLocked) {
+                    logger.warn({ idporcion: itemReceta.idporcion }, 'Porción no encontrada para actualizar');
+                    continue;
+                }
+
                 // Calcular ajuste según el tipo de operación:
                 // - Reset: establece el valor exacto
                 // - Salida (VENTA): descuenta (negativo)
                 // - Entrada (DEVOLUCION/RECUPERA): suma (positivo)
+
                 const cantidadAjuste = esReset 
                     ? cantidadProducto
                     : (esSalida ? -(itemReceta.cantidad_receta * cantidadProducto) : (itemReceta.cantidad_receta * cantidadProducto));
@@ -664,11 +682,12 @@ class StockPorcionService {
                     }
                 );
                 
+                // stockAnterior: itemReceta.stock_actual,
                 porcionesActualizadas.push({
                     idporcion: itemReceta.idporcion,
                     descripcion: itemReceta.descripcion,
-                    cantidadAjustada: cantidadAjuste,
-                    stockAnterior: itemReceta.stock_actual,
+                    cantidadAjustada: cantidadAjuste,                    
+                    stockAnterior: porcionLocked.stock, 
                     stockNuevo: stockNuevo ? parseFloat(stockNuevo.stock) : 0
                 });
             }

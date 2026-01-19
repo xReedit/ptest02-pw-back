@@ -175,7 +175,7 @@ async function updateStockItemPorcion(item, transaction = null) {
                 SELECT 
                     cl.idcarta_lista, 
                     i1.iditem,
-                    FLOOR(COALESCE(
+                    ROUND(COALESCE(
                         MIN(CASE WHEN i1.necesario = 1 THEN 
                             CASE WHEN i1.viene_de = '1' THEN p1.stock ELSE ps.stock END 
                         END),

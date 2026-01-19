@@ -339,6 +339,12 @@ class ItemService {
             // 🆕 SOLID: Registrar SOLO historial (el stock ya lo actualizó procedure_stock_item_porcion.js)
             // Responsabilidad única: stock.porcion.service.js solo registra historial, no actualiza stock
             try {
+                // Solo registrar si hay una operación real
+                if (!item.cantidadSumar && !item.cantidad_reset) {
+                    // No hay operación, no registrar nada
+                    return;
+                }
+
                 // Determinar tipo de movimiento:
                 // - Si cantidadSumar < 0: VENTA (disminuye stock desde venta)
                 // - Si cantidad_reset > 0 o cantidadSumar > 0: VENTA_DEVOLUCION (devuelve/cancela venta, aumenta stock)
@@ -346,10 +352,20 @@ class ItemService {
                 const esReset = (item.cantidad_reset || 0) > 0;
                 
                 let tipoMovimiento;
+                // if (esSalida) {
+                //     tipoMovimiento = 'VENTA'; // Venta normal (disminuye)
+                // } else {
+                //     tipoMovimiento = 'VENTA_DEVOLUCION'; // Cancelación/devolución (aumenta)
+                // }
+
                 if (esSalida) {
-                    tipoMovimiento = 'VENTA'; // Venta normal (disminuye)
+                    tipoMovimiento = 'VENTA';
+                } else if (esReset || (item.cantidadSumar > 0)) {
+                    // Solo si es reset EXPLÍCITO o cantidadSumar POSITIVA
+                    tipoMovimiento = 'VENTA_DEVOLUCION';
                 } else {
-                    tipoMovimiento = 'VENTA_DEVOLUCION'; // Cancelación/devolución (aumenta)
+                    // No hay operación válida, no registrar
+                    return;
                 }
                 
                 logger.debug({ 
@@ -506,17 +522,29 @@ class ItemService {
             // Esto cubre el caso de subitems con porciones que NO están en la receta del item principal
             if (allItems.idporcion && allItems.idporcion > 0) {
                 try {
+                    // Solo registrar si hay una operación real
+                    if (!allItems.cantidadSumar && !allItems.cantidad_reset) {
+                        // No hay operación, no registrar nada
+                        logger.debug({ allItems }, '⚠️ [item.v1] No hay cantidadSumar ni cantidad_reset, omitiendo registro de historial');
+                        return updatedItem;
+                    }
+
                     // Determinar tipo de movimiento:
                     // - Si cantidadSumar < 0: VENTA (disminuye stock desde venta)
                     // - Si cantidad_reset > 0 o cantidadSumar > 0: VENTA_DEVOLUCION (devuelve/cancela venta, aumenta stock)
-                    // Todo es movimiento de venta (salida o devolución)
                     const esSalida = (allItems.cantidadSumar || 0) < 0;
+                    const esReset = (allItems.cantidad_reset || 0) > 0;
                     
                     let tipoMovimiento;
                     if (esSalida) {
-                        tipoMovimiento = 'VENTA'; // Venta normal (disminuye)
+                        tipoMovimiento = 'VENTA';
+                    } else if (esReset || (allItems.cantidadSumar > 0)) {
+                        // Solo si es reset EXPLÍCITO o cantidadSumar POSITIVA
+                        tipoMovimiento = 'VENTA_DEVOLUCION';
                     } else {
-                        tipoMovimiento = 'VENTA_DEVOLUCION'; // Cancelación/devolución (aumenta)
+                        // No hay operación válida, no registrar
+                        logger.debug({ allItems }, '⚠️ [item.v1] No hay operación válida para registrar historial');
+                        return updatedItem;
                     }
                     
                     // Registrar directamente esta porción específica

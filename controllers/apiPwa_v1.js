@@ -494,9 +494,11 @@ const setNuevoPedido = async (dataCliente, dataPedido) => {
 
 
 
-    // const query = `CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
+    // const consoleQuery = `CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
     const query = `CALL procedure_pwa_pedido_guardar(?, ?, ?, ?)`;
-    logger.debug({ idorg, idsede, idusuario }, 'Ejecutando procedure_pwa_pedido_guardar');
+
+    // console.log('setNuevoPedido -->', consoleQuery);
+    // logger.debug({ idorg, idsede, idusuario }, 'Ejecutando procedure_pwa_pedido_guardar');
     // return await emitirRespuestaSP(query);
 
     try {
@@ -566,8 +568,10 @@ const setNuevoPedido2 = async (req, res) => {
     // 2. Convertir a JSON y escapar comillas simples para SQL
     const _json = JSON.stringify(cleanObject).replace(/'/g, "\\'");
     
-    // const query = `CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
+    // const logquery = `CALL procedure_pwa_pedido_guardar(${idorg}, ${idsede}, ${idusuario},'${_json}')`;
     const query = `CALL procedure_pwa_pedido_guardar(?, ?, ?, ?)`;
+
+    // console.log('setNuevoPedido2 ==> ', query);
 
     try {
         // return await emitirRespuestaSP_RES(query, res);

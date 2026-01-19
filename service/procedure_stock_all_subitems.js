@@ -150,18 +150,24 @@ async function updateStockAllSubitems(allItems, transaction = null) {
                     });
 
                     // 🆕 Registrar en porcion_historial
+                    // NOTA: Aquí la lógica es correcta porque cantidadAjuste viene del cálculo real
+                    // No es como en item.service.v1.js donde cantidadSumar puede ser 0/null
                     const esSalida = cantidadAjuste < 0;
-                    const tipoMovimiento = esSalida ? 'VENTA' : 'VENTA_DEVOLUCION';
+                    
+                    // Validación adicional: solo registrar si hay cambio real
+                    if (cantidadIngrediente !== 0) {
+                        const tipoMovimiento = esSalida ? 'VENTA' : 'VENTA_DEVOLUCION';
 
-                    await StockPorcionService.registrarMovimientoPorcionDirecta({
-                        idporcion: ingrediente.idporcion,
-                        iditem: allItems.iditem || 0,
-                        cantidad: Math.abs(cantidadIngrediente),
-                        idsede: idsede,
-                        idusuario: allItems.idusuario || 1,
-                        idpedido: allItems.idpedido || null,
-                        tipoMovimiento: tipoMovimiento
-                    });
+                        await StockPorcionService.registrarMovimientoPorcionDirecta({
+                            idporcion: ingrediente.idporcion,
+                            iditem: allItems.iditem || 0,
+                            cantidad: Math.abs(cantidadIngrediente),
+                            idsede: idsede,
+                            idusuario: allItems.idusuario || 1,
+                            idpedido: allItems.idpedido || null,
+                            tipoMovimiento: tipoMovimiento
+                        });
+                    }
 
                     logger.debug({
                         idporcion: ingrediente.idporcion,

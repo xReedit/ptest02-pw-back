@@ -43,8 +43,8 @@ async function agruparPedidosHolding(pedidoHolding) {
             const grupo = grupos[key];
             if (!grupo.idsede || !grupo.idorg) continue;
             
-            // Crear copia profunda de dataUsuario para evitar mutación del objeto original
-            let _dataUsuario = JSON.parse(JSON.stringify(pedidoHolding.dataUsuario));
+            // aca modificados el idsede y idorg por los del grupo
+            let _dataUsuario = pedidoHolding.dataUsuario;
             _dataUsuario.idsede = grupo.idsede;
             _dataUsuario.idorg = grupo.idorg;
 
@@ -233,9 +233,10 @@ async function savePedidosAgrupados(pedidosAgrupados, arrSubtotales, io, onlyMoz
                 continue;
             }
 
+            
             // onlyMozoCobra no es holding
-            const idsedeHolding = onlyMozoCobra ? '' : (pedido.dataPedido.p_header?.holding?.idsede || '');
-            const idorgHolding = onlyMozoCobra ? '' : (pedido.dataPedido.p_header?.holding?.idorg || '');
+            const idsedeHolding = onlyMozoCobra ? '' : pedido.dataPedido.p_header.holding.idsede;
+            const idorgHolding = onlyMozoCobra ? '' : pedido.dataPedido.p_header.holding.idorg;
 
             const dataUsuario = {
                 idsede: idsedePedido,
@@ -245,6 +246,8 @@ async function savePedidosAgrupados(pedidosAgrupados, arrSubtotales, io, onlyMoz
 
             pedido.dataUsuario.idsede = idsedePedido;
             pedido.dataUsuario.idorg = idorgPedido
+
+            // console.log('dataUsuario === ', dataUsuario);
 
             // Save pedido
             let rptSave = await apiPwa.setNuevoPedido(dataUsuario, pedido);            
@@ -277,11 +280,9 @@ async function savePedidosAgrupados(pedidosAgrupados, arrSubtotales, io, onlyMoz
             
             emitPedidoEvents(io, pedido.dataPedido, chanelMarca, chanelHolding);
 
-            const impresora = onlyMozoCobra 
-                ? (pedido.listPrinters || []) 
-                : (pedido.dataPrint?.[0]?.Array_print || []);
+            const impresora = onlyMozoCobra ? pedido.listPrinters : pedido.dataPrint[0].Array_print;
 
-            if (impresora.length > 0 && rptSave[0]?.data?.[0]) {
+            if (impresora.length > 0) {
                 handlePedidoPrinting(io, chanelMarca, rptSave[0].data[0], impresora);
             }
             
@@ -297,7 +298,7 @@ async function savePedidosAgrupados(pedidosAgrupados, arrSubtotales, io, onlyMoz
         // }
     }
 
-    // Process single payment for all pedidos - registrar en sede del HOLDING principal
+    // Process single payment for all pedidos
     if (pedidosParaPago.length > 0) {
         try {
             // Get all pedido details
@@ -307,32 +308,19 @@ async function savePedidosAgrupados(pedidosAgrupados, arrSubtotales, io, onlyMoz
                 )
             );
 
+            // console.log('allPedidoDetails === ', JSON.stringify(allPedidoDetails));
+
             // Combine all pedido details
             const consolidatedPedidoDetails = allPedidoDetails.flat();
+            // console.log('consolidatedPedidoDetails === ', JSON.stringify(consolidatedPedidoDetails));
 
-            // Obtener datos del holding principal desde p_header
-            const holdingInfo = pedidosParaPago[0].dataPedido.p_header?.holding || {};
+            pedidosParaPago[0].dataPedido.idsede = pedidosParaPago[0].dataUsuario.idsede;
+            pedidosParaPago[0].dataPedido.idorg = pedidosParaPago[0].dataUsuario.idorg;
             
-            // Crear objeto de pago con datos del HOLDING (sede principal para arqueo)
-            const dataPedidoPago = {
-                ...pedidosParaPago[0].dataPedido,
-                // Usar sede del holding para el registro de pago (arqueo de caja)
-                idsede: holdingInfo.idsede || pedidosParaPago[0].dataUsuario.idsede,
-                idorg: holdingInfo.idorg || pedidosParaPago[0].dataUsuario.idorg,
-                idsede_holding: holdingInfo.idsede_holding,
-                p_subtotales: arrSubtotales,
-                // Incluir lista de pedidos por marca para distribución posterior
-                pedidos_marcas: pedidosParaPago.map(p => ({
-                    idpedido: p.idpedido,
-                    idsede: p.dataUsuario.idsede,
-                    idorg: p.dataUsuario.idorg,
-                    subtotal: p.dataPedido.p_subtotales
-                }))
-            };
-            
-            // Create single payment record en sede del holding
+            // Create single payment record
+            pedidosParaPago[0].dataPedido.p_subtotales = arrSubtotales;            
             const rptPago = await apiHolding.saveRegistroPagoPedido(
-                dataPedidoPago,
+                pedidosParaPago[0].dataPedido,
                 consolidatedPedidoDetails                
             );
             logger.debug({ rptPago }, 'rptPago === ');

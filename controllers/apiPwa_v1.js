@@ -796,7 +796,7 @@ const getDataSedeIni = async function (req, res) {
 	// const read_query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit, pwa_delivery_comercio_online from sede where (idsede=${idsede}) AND estado=0`;	
     // return await emitirRespuesta_RES(read_query, res);
 
-    const query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit, pwa_delivery_comercio_online from sede where (idsede=?) AND estado=0`;	
+    const query = `SELECT idsede, idorg, nombre, eslogan, pwa_msj_ini, pwa_time_limit, pwa_delivery_comercio_online, is_holding from sede where (idsede=?) AND estado=0`;	
     const rows = await QueryServiceV1.ejecutarConsulta(query, [idsede], 'SELECT', 'getDataSedeIni');
     return ReS(res, {data: rows || [] });
 }

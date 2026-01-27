@@ -514,55 +514,12 @@ class ItemService {
             // console.log('📦 [item.v1] Llamando a procedure_stock_all_subitems.js');
             
             // 🆕 NUEVO: Usar función JavaScript que reemplaza el procedimiento almacenado
+            // NOTA: updateStockAllSubitems ya usa procesarMovimientoPorcion (SOLID) que actualiza stock Y registra historial
             updatedItem = await QueryServiceV1.ejecutarTransaccion(async (transaction) => {
                 return await updateStockAllSubitems(allItems, transaction);
             });
-
-            // 🆕 NUEVO: Registrar movimiento SOLO si el subitem tiene idporcion directo
-            // Esto cubre el caso de subitems con porciones que NO están en la receta del item principal
-            if (allItems.idporcion && allItems.idporcion > 0) {
-                try {
-                    // Solo registrar si hay una operación real
-                    if (!allItems.cantidadSumar && !allItems.cantidad_reset) {
-                        // No hay operación, no registrar nada
-                        logger.debug({ allItems }, '⚠️ [item.v1] No hay cantidadSumar ni cantidad_reset, omitiendo registro de historial');
-                        return updatedItem;
-                    }
-
-                    // Determinar tipo de movimiento:
-                    // - Si cantidadSumar < 0: VENTA (disminuye stock desde venta)
-                    // - Si cantidad_reset > 0 o cantidadSumar > 0: VENTA_DEVOLUCION (devuelve/cancela venta, aumenta stock)
-                    const esSalida = (allItems.cantidadSumar || 0) < 0;
-                    const esReset = (allItems.cantidad_reset || 0) > 0;
-                    
-                    let tipoMovimiento;
-                    if (esSalida) {
-                        tipoMovimiento = 'VENTA';
-                    } else if (esReset || (allItems.cantidadSumar > 0)) {
-                        // Solo si es reset EXPLÍCITO o cantidadSumar POSITIVA
-                        tipoMovimiento = 'VENTA_DEVOLUCION';
-                    } else {
-                        // No hay operación válida, no registrar
-                        logger.debug({ allItems }, '⚠️ [item.v1] No hay operación válida para registrar historial');
-                        return updatedItem;
-                    }
-                    
-                    // Registrar directamente esta porción específica
-                    await StockPorcionService.registrarMovimientoPorcionDirecta({
-                        idporcion: allItems.idporcion,
-                        iditem: allItems.iditem || 0,
-                        cantidad: Math.abs(allItems.cantidadSumar || allItems.cantidad_reset || 1),
-                        idsede: allItems.idsede || 1,
-                        idusuario: allItems.idusuario || 1,
-                        idpedido: allItems.idpedido || null,
-                        tipoMovimiento: tipoMovimiento
-                    });
-                } catch (porcionError) {
-                    logger.error({ error: porcionError, allItems }, '❌ [item.v1] Error al registrar movimiento de porción directa');
-                }
-            }
             
-            // console.log('✅ [item.v1] procedure_stock_all_subitems exitoso', updatedItem);
+            // ✅ SOLID: No se necesita registro adicional aquí porque updateStockAllSubitems ya lo hace
             return updatedItem;
             
         } catch (error) {

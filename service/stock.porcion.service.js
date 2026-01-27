@@ -702,62 +702,18 @@ class StockPorcionService {
      */
     static async _registrarMovimientosHistorial(porcionesActualizadas, datosBase, transaction) {
         logger.debug({ porcionesActualizadas, datosBase }, '📦 [stock.porcion.service] Registrando movimientos en porcion_historial');
-        const { iditem, cantidadProducto, idsede, idusuario, idpedido, tipoMovimiento } = datosBase;
+        const { iditem, idsede, idusuario, idpedido, tipoMovimiento } = datosBase;
         
-        const tipoMovConfig = CONFIG.TIPO_MOVIMIENTO[tipoMovimiento] || CONFIG.TIPO_MOVIMIENTO.VENTA;
-        
+        // SOLID: Usar función centralizada para cada porción
         for (const porcion of porcionesActualizadas) {
-            const cantidad = Math.abs(porcion.cantidadAjustada);
-
-            logger.debug({ cantidad }, '📦 [stock.porcion.service] Registrando movimiento en porcion_historial');
-
-            const query = `
-                INSERT INTO porcion_historial (
-                    tipo_movimiento,
-                    fecha,
-                    hora,
-                    cantidad,
-                    idusuario,
-                    idporcion,
-                    idsede,
-                    estado,
-                    stock_total,
-                    fecha_date,
-                    idtipo_movimiento_stock,
-                    idpedido,
-                    iditem
-                ) VALUES (
-                    :tipo_movimiento,
-                    NOW(),
-                    TIME(NOW()),
-                    :cantidad,
-                    :idusuario,
-                    :idporcion,
-                    :idsede,
-                    'CONFIRMADO',
-                    :stock_total,
-                    DATE(NOW()),
-                    :idtipo_movimiento_stock,
-                    :idpedido,
-                    :iditem
-                )
-            `;
-            
-            await sequelize.query(query, {
-                replacements: {
-                    tipo_movimiento: tipoMovConfig.nombre,
-                    cantidad: Math.abs(porcion.cantidadAjustada),
-                    idusuario,
-                    idporcion: porcion.idporcion,
-                    idsede,
-                    stock_total: porcion.stockNuevo,
-                    idtipo_movimiento_stock: tipoMovConfig.id,
-                    idpedido: idpedido || null,
-                    iditem
-                },
-                type: Sequelize.QueryTypes.INSERT,
+            await this.registrarHistorialPorcion(
+                porcion.idporcion,
+                Math.abs(porcion.cantidadAjustada),
+                porcion.stockNuevo,
+                tipoMovimiento,
+                { idsede, idusuario, idpedido, iditem },
                 transaction
-            });
+            );
         }
     }
     
@@ -797,6 +753,211 @@ class StockPorcionService {
     
     static _sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // ============================================================================
+    // FUNCIONES SOLID CENTRALIZADAS - Responsabilidad Única
+    // ============================================================================
+
+    /**
+     * ACTUALIZAR STOCK PORCIÓN - Solo modifica el stock de la porción
+     * Principio SRP: Solo actualiza stock, no registra historial
+     * 
+     * @param {number} idporcion - ID de la porción
+     * @param {number} cantidad - Cantidad a sumar (positiva) o restar (negativa)
+     * @param {number} idsede - ID de la sede
+     * @param {Transaction} [transaction=null] - Transacción Sequelize (opcional)
+     * @returns {Promise<{success: boolean, stockAnterior: number, stockNuevo: number, error?: string}>}
+     */
+    static async actualizarStockPorcion(idporcion, cantidad, idsede, transaction = null) {
+        try {
+            if (!idporcion || idporcion <= 0) {
+                return { success: false, error: 'idporcion inválido', stockAnterior: 0, stockNuevo: 0 };
+            }
+
+            // Obtener stock actual con lock si hay transacción
+            const lockQuery = transaction ? ' FOR UPDATE' : '';
+            const [porcion] = await sequelize.query(
+                `SELECT stock, descripcion FROM porcion WHERE idporcion = :idporcion AND idsede = :idsede${lockQuery}`,
+                {
+                    replacements: { idporcion, idsede },
+                    type: Sequelize.QueryTypes.SELECT,
+                    transaction
+                }
+            );
+
+            if (!porcion) {
+                logger.warn({ idporcion, idsede }, '⚠️ [SOLID] Porción no encontrada');
+                return { success: false, error: 'Porción no encontrada', stockAnterior: 0, stockNuevo: 0 };
+            }
+
+            const stockAnterior = parseFloat(porcion.stock) || 0;
+            const stockNuevo = stockAnterior + cantidad;
+
+            // Actualizar stock
+            await sequelize.query(
+                'UPDATE porcion SET stock = :stockNuevo WHERE idporcion = :idporcion AND idsede = :idsede',
+                {
+                    replacements: { stockNuevo, idporcion, idsede },
+                    type: Sequelize.QueryTypes.UPDATE,
+                    transaction
+                }
+            );
+
+            logger.debug({
+                idporcion,
+                stockAnterior,
+                cantidad,
+                stockNuevo
+            }, '✅ [SOLID] Stock porción actualizado');
+
+            return { success: true, stockAnterior, stockNuevo };
+
+        } catch (error) {
+            logger.error({ error: error.message, idporcion, cantidad, idsede }, '❌ [SOLID] Error actualizando stock porción');
+            return { success: false, error: error.message, stockAnterior: 0, stockNuevo: 0 };
+        }
+    }
+
+    /**
+     * REGISTRAR HISTORIAL PORCIÓN - Solo inserta el movimiento en porcion_historial
+     * Principio SRP: Solo registra historial, no modifica stock
+     * 
+     * @param {number} idporcion - ID de la porción
+     * @param {number} cantidad - Cantidad del movimiento (siempre positiva)
+     * @param {number} stockActual - Stock después del movimiento
+     * @param {string} tipoMovimiento - 'VENTA', 'VENTA_DEVOLUCION', 'ENTRADA', 'SALIDA', etc.
+     * @param {Object} metadata - {idsede, idusuario, idpedido, iditem}
+     * @param {Transaction} [transaction=null] - Transacción Sequelize (opcional)
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    static async registrarHistorialPorcion(idporcion, cantidad, stockActual, tipoMovimiento, metadata, transaction = null) {
+        try {
+            if (!idporcion || idporcion <= 0) {
+                return { success: false, error: 'idporcion inválido' };
+            }
+
+            const { idsede, idusuario, idpedido, iditem } = metadata;
+            const tipoMovConfig = CONFIG.TIPO_MOVIMIENTO[tipoMovimiento] || CONFIG.TIPO_MOVIMIENTO.VENTA;
+
+            await sequelize.query(
+                `INSERT INTO porcion_historial (
+                    tipo_movimiento,
+                    fecha,
+                    hora,
+                    cantidad,
+                    idusuario,
+                    idporcion,
+                    idsede,
+                    estado,
+                    stock_total,
+                    fecha_date,
+                    idtipo_movimiento_stock,
+                    idpedido,
+                    iditem
+                ) VALUES (
+                    :tipoMovimiento,
+                    NOW(),
+                    TIME(NOW()),
+                    :cantidad,
+                    :idusuario,
+                    :idporcion,
+                    :idsede,
+                    'CONFIRMADO',
+                    :stockActual,
+                    DATE(NOW()),
+                    :idtipoMovimiento,
+                    :idpedido,
+                    :iditem
+                )`,
+                {
+                    replacements: {
+                        tipoMovimiento: tipoMovConfig.nombre,
+                        cantidad: Math.abs(cantidad),
+                        idusuario: idusuario || 1,
+                        idporcion,
+                        idsede: idsede || 1,
+                        stockActual,
+                        idtipoMovimiento: tipoMovConfig.id,
+                        idpedido: idpedido || null,
+                        iditem: iditem || 0
+                    },
+                    type: Sequelize.QueryTypes.INSERT,
+                    transaction
+                }
+            );
+
+            logger.debug({
+                idporcion,
+                cantidad: Math.abs(cantidad),
+                tipoMovimiento: tipoMovConfig.nombre,
+                stockActual
+            }, '✅ [SOLID] Historial porción registrado');
+
+            return { success: true };
+
+        } catch (error) {
+            logger.error({ error: error.message, idporcion, cantidad, tipoMovimiento }, '❌ [SOLID] Error registrando historial porción');
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * PROCESAR MOVIMIENTO PORCIÓN - Función de conveniencia que actualiza stock Y registra historial
+     * Combina ambas operaciones en una sola llamada
+     * 
+     * @param {number} idporcion - ID de la porción
+     * @param {number} cantidad - Cantidad a sumar (positiva) o restar (negativa)
+     * @param {string} tipoMovimiento - 'VENTA', 'VENTA_DEVOLUCION', 'ENTRADA', 'SALIDA', etc.
+     * @param {Object} metadata - {idsede, idusuario, idpedido, iditem}
+     * @param {Transaction} [transaction=null] - Transacción Sequelize (opcional)
+     * @returns {Promise<{success: boolean, stockAnterior: number, stockNuevo: number, error?: string}>}
+     */
+    static async procesarMovimientoPorcion(idporcion, cantidad, tipoMovimiento, metadata, transaction = null) {
+        try {
+            if (!idporcion || idporcion <= 0) {
+                logger.debug({ idporcion }, '⏭️ [SOLID] idporcion inválido, omitiendo');
+                return { success: false, error: 'idporcion inválido', stockAnterior: 0, stockNuevo: 0 };
+            }
+
+            if (cantidad === 0) {
+                logger.debug({ idporcion, cantidad }, '⏭️ [SOLID] cantidad es 0, omitiendo');
+                return { success: true, stockAnterior: 0, stockNuevo: 0, skipped: true };
+            }
+
+            const { idsede } = metadata;
+
+            // 1. Actualizar stock
+            const resultadoStock = await this.actualizarStockPorcion(idporcion, cantidad, idsede, transaction);
+
+            if (!resultadoStock.success) {
+                return resultadoStock;
+            }
+
+            // 2. Registrar historial
+            const resultadoHistorial = await this.registrarHistorialPorcion(
+                idporcion,
+                Math.abs(cantidad),
+                resultadoStock.stockNuevo,
+                tipoMovimiento,
+                metadata,
+                transaction
+            );
+
+            if (!resultadoHistorial.success) {
+                logger.error({ idporcion, error: resultadoHistorial.error }, '❌ [SOLID] Error en historial pero stock ya actualizado');
+            }
+
+            return {
+                success: true,
+                stockAnterior: resultadoStock.stockAnterior,
+                stockNuevo: resultadoStock.stockNuevo
+            };
+
+        } catch (error) {
+            logger.error({ error: error.message, idporcion, cantidad, tipoMovimiento }, '❌ [SOLID] Error procesando movimiento porción');
+            return { success: false, error: error.message, stockAnterior: 0, stockNuevo: 0 };
+        }
     }
 }
 

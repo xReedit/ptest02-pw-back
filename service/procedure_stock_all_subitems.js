@@ -78,19 +78,38 @@ async function updateStockAllSubitems(allItems, transaction = null) {
 
         // Determinar tipo de subitem y actualizar correspondientemente
         
-        // CASO 1: Es una porción
+        // CASO 1: Es una porción - Usar función SOLID centralizada
         if (allItems.idporcion && allItems.idporcion > 0) {
-            const updateQuery = esReset
-                ? 'UPDATE porcion SET stock = GREATEST(0, stock + ?) WHERE idporcion = ? AND idsede = ?' //'UPDATE porcion SET stock = ? WHERE idporcion = ? AND idsede = ?'
-                : 'UPDATE porcion SET stock = GREATEST(0, stock + ?) WHERE idporcion = ? AND idsede = ?';
+            // Validación: solo procesar si hay cambio real
+            if (cantidadAjuste !== 0) {
+                const esSalida = cantidadAjuste < 0;
+                const tipoMovimiento = esSalida ? 'VENTA' : 'VENTA_DEVOLUCION';
+
+                // SOLID: Una sola función que actualiza stock Y registra historial
+                const resultado = await StockPorcionService.procesarMovimientoPorcion(
+                    allItems.idporcion,
+                    cantidadAjuste,  // negativo para restar, positivo para sumar
+                    tipoMovimiento,
+                    {
+                        idsede: idsede,
+                        idusuario: allItems.idusuario || 1,
+                        idpedido: allItems.idpedido || null,
+                        iditem: allItems.iditem || 0
+                    },
+                    transaction
+                );
+
+                logger.debug({
+                    idporcion: allItems.idporcion,
+                    cantidadAjuste,
+                    stockNuevo: resultado.stockNuevo,
+                    executionTime: `${Date.now() - startTime}ms`
+                }, '✅ [procedure_stock_all_subitems.js] Porción procesada (SOLID)');
+
+                return [{ cantidad: resultado.stockNuevo || 0 }];
+            }
             
-            await sequelize.query(updateQuery, {
-                replacements: [cantidadAjuste, allItems.idporcion, idsede],
-                type: QueryTypes.UPDATE,
-                transaction
-            });
-            
-            // Obtener stock actualizado
+            // Si cantidadAjuste es 0, solo obtener stock actual
             const [result] = await sequelize.query(
                 'SELECT stock as cantidad FROM porcion WHERE idporcion = ? AND idsede = ? LIMIT 1',
                 {
@@ -99,13 +118,6 @@ async function updateStockAllSubitems(allItems, transaction = null) {
                     transaction
                 }
             );
-            
-            logger.debug({
-                idporcion: allItems.idporcion,
-                cantidadFinal: result?.cantidad,
-                executionTime: `${Date.now() - startTime}ms`
-            }, '✅ [procedure_stock_all_subitems.js] Stock porción actualizado');
-            
             return [result || { cantidad: 0 }];
         }
 
@@ -137,42 +149,33 @@ async function updateStockAllSubitems(allItems, transaction = null) {
             for (const ingrediente of ingredientesSubreceta) {
                 const cantidadIngrediente = cantidadAjuste * ingrediente.cantidad;
 
-                // Si es porción
+                // Si es porción - Usar función SOLID centralizada
                 if (ingrediente.idporcion && ingrediente.idporcion > 0) {
-                    const updateQuery = esReset
-                        ? 'UPDATE porcion SET stock = GREATEST(0, stock + ?) WHERE idporcion = ? AND idsede = ?' // 'UPDATE porcion SET stock = ? WHERE idporcion = ? AND idsede = ?'
-                        : 'UPDATE porcion SET stock = GREATEST(0, stock + ?) WHERE idporcion = ? AND idsede = ?';
-
-                    await sequelize.query(updateQuery, {
-                        replacements: [cantidadIngrediente, ingrediente.idporcion, idsede],
-                        type: QueryTypes.UPDATE,
-                        transaction
-                    });
-
-                    // 🆕 Registrar en porcion_historial
-                    // NOTA: Aquí la lógica es correcta porque cantidadAjuste viene del cálculo real
-                    // No es como en item.service.v1.js donde cantidadSumar puede ser 0/null
-                    const esSalida = cantidadAjuste < 0;
-                    
-                    // Validación adicional: solo registrar si hay cambio real
+                    // Validación: solo procesar si hay cambio real
                     if (cantidadIngrediente !== 0) {
+                        const esSalida = cantidadAjuste < 0;
                         const tipoMovimiento = esSalida ? 'VENTA' : 'VENTA_DEVOLUCION';
 
-                        await StockPorcionService.registrarMovimientoPorcionDirecta({
-                            idporcion: ingrediente.idporcion,
-                            iditem: allItems.iditem || 0,
-                            cantidad: Math.abs(cantidadIngrediente),
-                            idsede: idsede,
-                            idusuario: allItems.idusuario || 1,
-                            idpedido: allItems.idpedido || null,
-                            tipoMovimiento: tipoMovimiento
-                        });
-                    }
+                        // SOLID: Una sola función que actualiza stock Y registra historial
+                        await StockPorcionService.procesarMovimientoPorcion(
+                            ingrediente.idporcion,
+                            cantidadIngrediente,  // negativo para restar, positivo para sumar
+                            tipoMovimiento,
+                            {
+                                idsede: idsede,
+                                idusuario: allItems.idusuario || 1,
+                                idpedido: allItems.idpedido || null,
+                                iditem: allItems.iditem || 0
+                            },
+                            transaction
+                        );
 
-                    logger.debug({
-                        idporcion: ingrediente.idporcion,
-                        cantidadIngrediente
-                    }, '✅ [subreceta] Porción actualizada');
+                        logger.debug({
+                            idporcion: ingrediente.idporcion,
+                            cantidadIngrediente,
+                            tipoMovimiento
+                        }, '✅ [subreceta] Porción procesada (SOLID)');
+                    }
                 }
                 // Si es producto
                 else if (ingrediente.idproducto_stock && ingrediente.idproducto_stock > 0) {

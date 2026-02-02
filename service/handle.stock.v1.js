@@ -1,11 +1,21 @@
 /**
  * handle.stock.v1.js
  * Versión refactorizada del manejador de stock con validación robusta y manejo de reintentos
+ * 
+ * Toggle USE_RESERVAS:
+ *   - true: Usa sistema de reservas (stock real solo se descuenta al confirmar pedido)
+ *   - false: Descuenta stock real directamente (comportamiento original)
  */
 
 const ResponseService = require('./query.service.v1');
 let ItemService = require('./item.service.v1');
 const logger = require('../utilitarios/logger');
+
+// Sistema de reservas SOLID
+const { StockReservaService, CONFIG: ReservaConfig } = require('./stock-reserva');
+
+// Toggle para activar/desactivar sistema de reservas
+const USE_RESERVAS = ReservaConfig.USE_RESERVAS || false;
 
 // Importar el gestor de errores o crearlo si no existe
 let errorManager;
@@ -228,15 +238,7 @@ const buildAllItemsFromSubitemsView = (subitem, sanitizedItem, cantSelected) => 
     // Para RESET/RECUPERA: mantener positivo para sumar/establecer stock
     const cantidadFinal = esVenta ? -cantSelected : cantSelected;
     
-    logger.debug({
-        cantSelected,
-        _cantidad_decuenta,
-        esVenta,
-        cantidadSumarOriginal: sanitizedItem.cantidadSumar,
-        cantidadFinal
-    }, '📦 [handle.stock.v1] buildAllItemsFromSubitemsView');
-    
-    // Para VENTAS: usar cantidadFinal negativo, cantidad_reset = 0 (no resetear)
+        // Para VENTAS: usar cantidadFinal negativo, cantidad_reset = 0 (no resetear)
     // Para RESET: usar cantSelected positivo para ambos
     const cantSumar = esVenta ? cantidadFinal : cantSelected;
     const cantReset = esVenta ? 0 : cantSelected;
@@ -266,12 +268,6 @@ const validateCantidadDecuenta = (descuenta) => {
         const parsed = parseFloat(descuenta);
         if (!isNaN(parsed) && isFinite(parsed) && parsed > 0) {
             _cantidad_decuenta = parsed;
-        } else {
-            logger.debug({ 
-                descuenta, 
-                parsed
-                // subitem 
-            }, '⚠️ [handle.stock.v1] Valor descuenta inválido en subitemsView, usando 1 por defecto');
         }
     }
     return _cantidad_decuenta;
@@ -288,10 +284,7 @@ const buildAllItemsFromSelectedArray = (subitemGroup, sanitizedItem) => {
     
     const _cantidad_decuenta = validateCantidadDecuenta(subitemGroup?.descuenta);
 
-    logger.debug({
-        _cantidad_decuenta,
-    }, '📦 [handle.stock.v1] _cantidad_decuenta');
-
+    
     const cantSelected = subitemGroup.cantidad_selected || 1;  
     const cantSumar = sanitizedItem.cantidadSumar * cantSelected * _cantidad_decuenta;
     const cantReset = sanitizedItem.cantidad_reset * cantSelected * _cantidad_decuenta;
@@ -320,8 +313,7 @@ const buildAllItemsFromSelectedArray = (subitemGroup, sanitizedItem) => {
  */
 const processSubitems = async (sanitizedItem, item) => {
     const _existSubItemsWithCantidad = sanitizedItem.isExistSubItemsWithCantidad || checkExistSubItemsWithCantidad(sanitizedItem);
-    logger.debug({ _existSubItemsWithCantidad }, '_existSubItemsWithCantidad');
-
+    
     if (!_existSubItemsWithCantidad) {
         return;
     }
@@ -338,8 +330,7 @@ const processSubitems = async (sanitizedItem, item) => {
         subitemsSource = sanitizedItem.subitems_selected_array;
     }
 
-    logger.debug({ subitemsSource }, 'subitemsSource');
-
+    
     if (!subitemsSource || !Array.isArray(subitemsSource)) {
         return;
     }
@@ -378,8 +369,7 @@ const processSubitems = async (sanitizedItem, item) => {
                         // Solo procesar opciones que tienen producto, porcion o subreceta
                         const tieneStock = subitem.idproducto || subitem.idporcion || subitem.idsubreceta;
                         if (!tieneStock) {
-                            logger.debug({ subitem_des: subitem.des }, '⏭️ Subitem sin producto/porcion/subreceta, omitiendo');
-                            continue;
+                                                        continue;
                         }
                         
                         // 🔍 DEBUG: Log cada subitem procesado
@@ -439,8 +429,7 @@ const processSubitems = async (sanitizedItem, item) => {
  * Procesa items de tipo porción
  */
 const processItemPorcion = async (sanitizedItem, op) => {
-    logger.debug({ iditem: sanitizedItem.iditem }, 'Ingresa processItemPorcion');
-    
+        
     try {
         const itemPorcion = {
             iditem: sanitizedItem.iditem,
@@ -502,8 +491,7 @@ const processItemPorcion = async (sanitizedItem, op) => {
 const processRegularItem = async (sanitizedItem, idsede) => {
     // console.log('ingresa processItem');
     
-    logger.debug({ isporcion: sanitizedItem.isporcion }, '🟢 [handle.stock.v1] processRegularItem');
-    // if (sanitizedItem.isporcion === 'ND' || sanitizedItem.isporcion !== 'SP') {
+        // if (sanitizedItem.isporcion === 'ND' || sanitizedItem.isporcion !== 'SP') {
     //     return [{
     //         cantidad: sanitizedItem.cantidad,
     //         listItemsPorcion: null,
@@ -511,8 +499,7 @@ const processRegularItem = async (sanitizedItem, idsede) => {
     //     }];
     // }
     
-    logger.debug('Pasa al siguiente proceso processItem itemProcess');
-    const itemProcess = {
+        const itemProcess = {
         iditem: sanitizedItem.iditem,
         idcarta_lista: sanitizedItem.idcarta_lista,
         cantidadSumar: sanitizedItem.cantidadSumar,
@@ -531,41 +518,45 @@ const processRegularItem = async (sanitizedItem, idsede) => {
  * @returns {Promise} - Resultado de la actualización
  */
 const updateStock = async (op, item, idsede) => {
-    // console.log('🟡 [handle.stock.v1] updateStock - INICIO', { op, idsede, itemId: item?.iditem, elItem: JSON.stringify(item) });
-    
-    // Sanitizar el objeto item para evitar errores de referencia nula
-    // console.log('🟣 [handle.stock.v1] item recibido', item);
     // Agregar op al item para detectar RECUPERA
     item.op = op;
     const sanitizedItem = sanitizeObject(item);
-    // console.log('🔵 [handle.stock.v1] Item sanitizado:', { 
-    //     iditem: sanitizedItem.iditem, 
-    //     cantidadSumar: sanitizedItem.cantidadSumar,
-    //     cantidad_reset: sanitizedItem.cantidad_reset,
-    //     isalmacen: sanitizedItem.isalmacen,
-    //     isporcion: sanitizedItem.isporcion
-    // });
     
     try {
-        // Procesar items de almacén
+        // Procesar items de almacén (siempre directo, sin reservas)
         if (sanitizedItem.isalmacen === 1) {
             return await processAlmacenItem(op, sanitizedItem);
         }
-        
-        // Procesar subitems si existen
-        logger.debug({ sanitizedItem }, '🟢 [handle.stock.v1] Procesando subitems')
-        logger.debug({ item }, '🟢 [handle.stock.v1] Procesando subitems')
-        await processSubitems(sanitizedItem, item);
-        
 
-        // console.log('🟢 [handle.stock.v1] item sanitizedItem', sanitizedItem);
+        // ========== SISTEMA DE RESERVAS ==========
+        if (USE_RESERVAS) {
+            logger.debug({ 
+                iditem: sanitizedItem.iditem, 
+                sumar: sanitizedItem.sumar,
+                USE_RESERVAS 
+            }, '📦 [STOCK] Usando sistema de reservas');
+            
+            const resultado = await StockReservaService.procesarItem(sanitizedItem, idsede);
+            
+            // Convertir respuesta al formato esperado
+            return [{
+                cantidad: sanitizedItem.cantidad,
+                listItemsPorcion: resultado.listItemsPorcion || '[]',
+                listSubItems: resultado.listSubItems || []
+            }];
+        }
+        // ========== FIN SISTEMA DE RESERVAS ==========
+        
+        // Procesar subitems si existen (modo directo)
+        await processSubitems(sanitizedItem, item);
 
         // Procesar item principal según su tipo
+        const tipo = sanitizedItem.isporcion === 'SP' ? 'PORCION' : 'REGULAR';
+        logger.debug({ iditem: sanitizedItem.iditem, tipo, sumar: sanitizedItem.sumar }, '⚙️ [STOCK-4] handleStock.updateStock');
+        
         if (sanitizedItem.isporcion === 'SP') {
-            logger.debug({ iditem: sanitizedItem.iditem }, '🟢 [handle.stock.v1] item porcion');
             return await processItemPorcion(sanitizedItem, op);
         } else {
-            logger.debug({ iditem: sanitizedItem.iditem }, '🟢 [handle.stock.v1] item regular');
             return await processRegularItem(sanitizedItem, idsede);
         }
         
@@ -594,5 +585,8 @@ module.exports = {
     checkExistSubItemsWithCantidad,
     retryOperation,
     sanitizeObject,
-    sanitizeJsonForProcedure
+    sanitizeJsonForProcedure,
+    // Exponer servicio de reservas para uso externo
+    StockReservaService,
+    USE_RESERVAS
 };

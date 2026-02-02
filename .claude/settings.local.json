@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"d:\\\\Projects\\\\backend-pedidos\" log --oneline -15)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ncheckpoint pre-refactor stock\n\n- Mover archivos obsoletos a _unused/\n- Agregar claude.md\n- Agregar socket.manager.js\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}

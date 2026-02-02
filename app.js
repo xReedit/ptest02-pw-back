@@ -21,6 +21,7 @@ app.use(helmet());
 var config = require('./_config'); 
 
 var socketsController = require('./controllers/sockets');
+const socketManager = require('./service/socket.manager');
 // const apiServiceSendCPE = require('./controllers/serviceSendCPE');
 const apiServiceTimerChangeCosto = require('./controllers/timerChangeCosto.js');
 
@@ -131,6 +132,7 @@ server.listen(config.port, function () {
 // server.listen(config.port, function () {
 // });
 
+socketManager.setIO(io);
 socketsController.socketsOn(io);
 
 

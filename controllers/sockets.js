@@ -326,7 +326,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('itemModificado', async function(item) {
 			item.idsede = dataCliente.idsede;
 			item.idusuario = dataCliente.idusuario;
-			logger.debug({ item }, 'Item modificado ==== aca');			
+			logger.debug({ iditem: item.iditem, sumar: item.sumar, isporcion: item.isporcion, from_monitor: item.from_monitor }, '📥 [STOCK-1] itemModificado recibido');			
 			// Verificar si es del monitor
 			if (item?.from_monitor === true) {
 				socketItemModificadoAfter(item);
@@ -359,21 +359,17 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// item.venta_x_peso solo para productos
 				var _cantSumar = item.venta_x_peso === 1 ? -item.cantidad : item.sumar ? -1 : parseInt(item.sumar) === 0 ? 0 : 1;
 				item.cantidadSumar = _cantSumar;
-				logger.debug({ item }, 'Item cantidad sumar');
 				// item.cantidad = _cantItem;		
 
 
 				const rptCantidad = await apiPwa.setItemCartaAfter(0, item);
-
-				logger.debug({ rptCantidad }, 'RESPUESTA Rpt cantidad ====== ');
+				logger.debug({ cantidad: rptCantidad[0]?.cantidad }, '📤 [STOCK-2] Monitor: SP ejecutado');
 
 				// if ( item.isporcion != 'SP' ) {
 				item.cantidad = rptCantidad[0].cantidad;
 				//}				
 
-				// subitems
-				logger.debug({ rptCantidad }, 'Rpt cantidad');
-				
+								
 
 				if ( rptCantidad[0].listSubItems ) {
 					try {

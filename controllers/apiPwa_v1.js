@@ -1891,7 +1891,9 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
         // console.log('_existSubItemsWithCantidadInND apiPwa', _existSubItemsWithCantidadInND);
         
         if (item.cantidad !== 'ND' || item.isExistSubItemsWithCantidad) {
-            const rptCantidad = await setItemCarta(0, item, idsede);                        
+            logger.debug({ iditem: item.iditem, sumar: item.sumar, isporcion: item.isporcion }, '📦 [STOCK-2] PWA: llamando setItemCarta');
+            const rptCantidad = await setItemCarta(0, item, idsede);
+            logger.debug({ cantidad: rptCantidad[0]?.cantidad }, '📤 [STOCK-3] PWA: stock actualizado');                        
             item.cantidad = rptCantidad[0].cantidad;
             // item.cantidad = _existSubItemsWithCantidadInND ? 'ND' : rptCantidad[0].cantidad;
 

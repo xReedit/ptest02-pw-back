@@ -7,6 +7,7 @@ let queryService = require('../service/query.service');
 let socketHoldingService = require('../service/holding.socket.sevice');
 const holdingService = require('../service/holding.sevice');
 let logger = require('../utilitarios/logger');
+const socketManager = require('../service/socket.manager');
 
 // let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 const { sequelize, QueryTypes } = require('../config/database');
@@ -159,6 +160,32 @@ async function setSavePedidoClienteHolding (req, res) {
     logger.debug(`call procedure_save_pedido_cliente_holding( ${id}, '${_pedido}', '${idcliente}', '${idsede_holding}');`); 
     const xquery = `call procedure_save_pedido_cliente_holding(?,?,?,?);`;
     const result = await queryService.emitirRespuestaSP_RAW(xquery, [id, _pedido, idcliente, idsede_holding]);
+    
+    // Notificar al room del holding que hay nuevo pedido de cliente
+    if (idsede_holding) {
+        const roomHolding = `holding_${idsede_holding}`;
+        
+        // Obtener socketid del cliente desde la tabla cliente_socketid
+        let socket_cliente = null;
+        try {
+            const querySocketCliente = `SELECT socketid FROM cliente_socketid WHERE idcliente = ${idcliente}`;
+            const socketResult = await emitirRespuesta(querySocketCliente);
+            socket_cliente = socketResult?.[0]?.socketid || null;
+        } catch (error) {
+            logger.error({ error }, 'Error obteniendo socket del cliente');
+        }
+        
+        socketManager.emitToRoom(roomHolding, 'nuevo-pedido-cliente-holding', {
+            id: result?.[0]?.id || id,
+            idcliente,
+            idsede_holding,
+            pedido,
+            timestamp: new Date().toISOString(),
+            socket_cliente
+        });
+        logger.debug({ roomHolding, socket_cliente }, 'Notificación enviada a room del holding');
+    }
+    
     return ReS(res, {
             success: true,
             data: result,

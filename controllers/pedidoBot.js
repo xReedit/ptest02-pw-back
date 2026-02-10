@@ -2,6 +2,7 @@ const { to, ReE, ReS }  = require('../service/uitl.service');
 // let config = require('../config');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
+const logger = require('../utilitarios/logger');
 // import io from 'socket.io-client';
 
 const io = require("socket.io-client");

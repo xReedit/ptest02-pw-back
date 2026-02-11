@@ -19,10 +19,10 @@ const logger = require('../utilitarios/logger');
 const CONFIG = {
     // Frecuencia de ejecución (formato cron)
     // PRODUCCIÓN: '*/30 * * * *' (cada 30 minutos)
-    CRON_SCHEDULE: '*/5 * * * *',  // cada 5 minutos (pruebas)
+    CRON_SCHEDULE: '*/30 * * * *',  // cada 5 minutos (pruebas)
     
     // Minutos sin actividad para considerar reserva huérfana
-    MINUTOS_INACTIVIDAD: 5,
+    MINUTOS_INACTIVIDAD: 30,
     
     // Habilitar/deshabilitar el job
     ENABLED: true

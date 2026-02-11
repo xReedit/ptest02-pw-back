@@ -236,7 +236,7 @@ class QueryServiceV1 {
                 }
 
                 if (attempt > 1) {
-                    logger.info(`✅ [${errorContext}] Éxito tras ${attempt} intentos`);
+                    logger.debug(`✅ [${errorContext}] Éxito tras ${attempt} intentos`);
                 }
 
                 return Object.values(result[0]);
@@ -307,7 +307,7 @@ class QueryServiceV1 {
 
                 if (attempt > 1) {
                     const msg = queryType === 'SELECT' ? `registros:${result?.length || 0}` : 'ok';
-                    logger.info(`✅ [${errorContext}] ${queryType} éxito tras ${attempt} intentos ${msg}`);
+                    logger.debug(`✅ [${errorContext}] ${queryType} éxito tras ${attempt} intentos ${msg}`);
                 }
 
                 return queryType === 'SELECT' ? (result || []) : true;

@@ -71,13 +71,15 @@ class RecetaService {
             const receta = await this.obtenerRecetaItem(iditem);
             
             for (const ing of receta) {
-                const cantidadIng = parseFloat(ing.cantidad_receta || 1) * itemInfo.cantidad;
+                const cantidadReceta = parseFloat(ing.cantidad_receta || 1);
+                const cantidadIng = cantidadReceta * itemInfo.cantidad;
 
                 if (ing.idporcion && ing.idporcion > 0) {
                     componentes.push({
                         tipo: 'porcion',
                         id: ing.idporcion,
                         cantidad: cantidadIng,
+                        cantidadReceta: cantidadReceta, // Para calcular stock disponible
                         descripcion: ing.porcion_descripcion || ''
                     });
                 }
@@ -87,6 +89,7 @@ class RecetaService {
                         tipo: 'producto',
                         id: ing.idproducto_stock,
                         cantidad: cantidadIng,
+                        cantidadReceta: cantidadReceta,
                         descripcion: ''
                     });
                 }
@@ -96,12 +99,15 @@ class RecetaService {
         // 2. Expandir subitems
         for (const subitem of subitems) {
             const cantidadSubitem = itemInfo.cantidad * subitem.cantidad_selected;
+            // Para subitems, cantidadReceta es cantidad_selected (descuenta)
+            const cantidadRecetaSubitem = subitem.cantidad_selected || 1;
 
             if (subitem.idporcion > 0) {
                 componentes.push({
                     tipo: 'porcion',
                     id: subitem.idporcion,
                     cantidad: cantidadSubitem,
+                    cantidadReceta: cantidadRecetaSubitem,
                     descripcion: subitem.des
                 });
             }
@@ -111,6 +117,7 @@ class RecetaService {
                     tipo: 'producto',
                     id: subitem.idproducto,
                     cantidad: cantidadSubitem,
+                    cantidadReceta: cantidadRecetaSubitem,
                     descripcion: subitem.des
                 });
             }
@@ -120,13 +127,15 @@ class RecetaService {
                 const ingredientes = await this.obtenerIngredientesSubreceta(subitem.idsubreceta);
                 
                 for (const ing of ingredientes) {
-                    const cantidadIng = parseFloat(ing.cantidad || 1) * cantidadSubitem;
+                    const cantidadRecetaIng = parseFloat(ing.cantidad || 1);
+                    const cantidadIng = cantidadRecetaIng * cantidadSubitem;
 
                     if (ing.idporcion && ing.idporcion > 0) {
                         componentes.push({
                             tipo: 'porcion',
                             id: ing.idporcion,
                             cantidad: cantidadIng,
+                            cantidadReceta: cantidadRecetaIng * cantidadRecetaSubitem,
                             descripcion: ing.descripcion || '',
                             subreceta: subitem.idsubreceta
                         });
@@ -137,6 +146,7 @@ class RecetaService {
                             tipo: 'producto',
                             id: ing.idproducto_stock,
                             cantidad: cantidadIng,
+                            cantidadReceta: cantidadRecetaIng * cantidadRecetaSubitem,
                             descripcion: '',
                             subreceta: subitem.idsubreceta
                         });
@@ -145,12 +155,30 @@ class RecetaService {
             }
         }
 
-        // 3. Si NO es SP y NO es ND → agregar carta_lista
+        // 3. Si es ALMACÉN → idcarta_lista ES el idproducto_stock
+        if (itemInfo.esAlmacen && itemInfo.idcarta_lista) {
+            componentes.push({
+                tipo: 'producto_almacen',
+                id: itemInfo.idcarta_lista, // En almacén, idcarta_lista = idproducto_stock
+                cantidad: itemInfo.cantidad,
+                cantidadReceta: 1,
+                descripcion: 'Producto almacén'
+            });
+            logger.debug({
+                tipo: 'producto_almacen',
+                idproducto_stock: itemInfo.idcarta_lista,
+                cantidad: itemInfo.cantidad
+            }, '📦 [RecetaService] Componente producto almacén');
+            return componentes;
+        }
+
+        // 4. Si NO es SP y NO es ND → agregar carta_lista
         if (!itemInfo.isSP && !itemInfo.isND && itemInfo.idcarta_lista) {
             componentes.push({
                 tipo: 'carta_lista',
                 id: itemInfo.idcarta_lista,
                 cantidad: itemInfo.cantidad,
+                cantidadReceta: 1,
                 descripcion: ''
             });
         }

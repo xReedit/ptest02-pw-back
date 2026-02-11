@@ -116,7 +116,7 @@ const io = socketIo(server, {
 
 
 server.listen(config.port, function () {
-    logger.info('Server is running.. port '+ config.port, 'socket port', config.portSocket); 
+    logger.debug('Server is running.. port '+ config.port, 'socket port', config.portSocket); 
 });
 
 // produccion
@@ -135,9 +135,9 @@ server.listen(config.port, function () {
 socketManager.setIO(io);
 socketsController.socketsOn(io);
 
-
-
-
+// Iniciar job de limpieza de reservas de stock huérfanas (3:00 AM)
+const stockCleanupJob = require('./service/stock.cleanup.job');
+stockCleanupJob.iniciarJob();
 
 // ejecutar servicio de envio de comprobantes electronicos
 // apiServiceSendCPE.activarEnvioCpe(); // servicio propio

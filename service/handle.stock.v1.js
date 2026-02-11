@@ -2,9 +2,9 @@
  * handle.stock.v1.js
  * Versión refactorizada del manejador de stock con validación robusta y manejo de reintentos
  * 
- * Toggle USE_RESERVAS:
- *   - true: Usa sistema de reservas (stock real solo se descuenta al confirmar pedido)
- *   - false: Descuenta stock real directamente (comportamiento original)
+ * Sistema de reservas por sede:
+ *   - Si sede.use_reservas_stock = 1: Usa reservas (stock real solo se descuenta al confirmar pedido)
+ *   - Si sede.use_reservas_stock = 0: Descuenta stock real directamente (comportamiento original)
  */
 
 const ResponseService = require('./query.service.v1');
@@ -12,10 +12,10 @@ let ItemService = require('./item.service.v1');
 const logger = require('../utilitarios/logger');
 
 // Sistema de reservas SOLID
-const { StockReservaService, CONFIG: ReservaConfig } = require('./stock-reserva');
+const { StockReservaService, sedeUsaReservas } = require('./stock-reserva');
 
-// Toggle para activar/desactivar sistema de reservas
-const USE_RESERVAS = ReservaConfig.USE_RESERVAS || false;
+// Ya NO hay toggle global. La verificación es SOLO por sede (campo use_reservas_stock en tabla sede)
+// sedeUsaReservas(idsede) consulta la BD (con caché) para determinar si la sede usa reservas
 
 // Importar el gestor de errores o crearlo si no existe
 let errorManager;
@@ -352,7 +352,7 @@ const processSubitems = async (sanitizedItem, item) => {
                 const opcionesArray = subitemGroup.subitems || subitemGroup.opciones || [];
                 
                 // 🔍 DEBUG: Logging para diagnosticar bug stock=0
-                logger.warn({
+                logger.debug({
                     grupo_des: subitemGroup.des,
                     cantidad_seleccionada: subitemGroup.cantidad_seleccionada,
                     cantSelected,
@@ -373,7 +373,7 @@ const processSubitems = async (sanitizedItem, item) => {
                         }
                         
                         // 🔍 DEBUG: Log cada subitem procesado
-                        logger.warn({
+                        logger.debug({
                             subitem_des: subitem.des,
                             selected: subitem.selected,
                             idproducto: subitem.idproducto,
@@ -386,7 +386,7 @@ const processSubitems = async (sanitizedItem, item) => {
                         const allItems = buildAllItemsFromSubitemsView(subitem, sanitizedItem, cantSelected);
                         
                         // 🔍 DEBUG: Log allItems construido
-                        logger.warn({
+                        logger.debug({
                             idproducto: allItems.idproducto,
                             idporcion: allItems.idporcion,
                             idsubreceta: allItems.idsubreceta,  // 🆕 Log subreceta
@@ -523,29 +523,39 @@ const updateStock = async (op, item, idsede) => {
     const sanitizedItem = sanitizeObject(item);
     
     try {
-        // Procesar items de almacén (siempre directo, sin reservas)
-        if (sanitizedItem.isalmacen === 1) {
-            return await processAlmacenItem(op, sanitizedItem);
-        }
-
-        // ========== SISTEMA DE RESERVAS ==========
-        if (USE_RESERVAS) {
+        // ========== SISTEMA DE RESERVAS POR SEDE ==========
+        // Verificar si esta sede tiene activado el sistema de reservas (solo por sede, sin toggle global)
+        const useReservasParaSede = await sedeUsaReservas(idsede);
+        
+        if (useReservasParaSede) {
             logger.debug({ 
+                sanitizedItem: sanitizedItem,
                 iditem: sanitizedItem.iditem, 
                 sumar: sanitizedItem.sumar,
-                USE_RESERVAS 
-            }, '📦 [STOCK] Usando sistema de reservas');
+                isalmacen: sanitizedItem.isalmacen,
+                idsede,
+                useReservasParaSede
+            }, '📦 [STOCK] Usando sistema de reservas para sede');
             
             const resultado = await StockReservaService.procesarItem(sanitizedItem, idsede);
+            logger.debug({ 
+                resultado,
+            }, '📦 [STOCK] Resultado del sistema de reservas');
             
             // Convertir respuesta al formato esperado
+            // Usar resultado.cantidad (stock vendible calculado por el sistema de reservas)
             return [{
-                cantidad: sanitizedItem.cantidad,
+                cantidad: resultado.cantidad,
                 listItemsPorcion: resultado.listItemsPorcion || '[]',
                 listSubItems: resultado.listSubItems || []
             }];
         }
         // ========== FIN SISTEMA DE RESERVAS ==========
+
+        // FLUJO LEGACY (sin reservas): Procesar items de almacén
+        if (sanitizedItem.isalmacen === 1) {
+            return await processAlmacenItem(op, sanitizedItem);
+        }
         
         // Procesar subitems si existen (modo directo)
         await processSubitems(sanitizedItem, item);
@@ -580,13 +590,44 @@ const updateStock = async (op, item, idsede) => {
     }
 };
 
+/**
+ * Confirma las reservas de stock de todos los items de un pedido.
+ * Delega a StockReservaService.confirmarPedido (SOLID).
+ * Solo actúa si la sede tiene use_reservas_stock = 1.
+ * 
+ * @param {Object|Array} pBody - p_body del pedido (tipoconsumo.secciones.items) o array plano
+ * @param {String|Number} idsede - ID de la sede
+ * @param {Object} metadata - Datos adicionales (idpedido, idusuario, etc.)
+ * @returns {Promise<Object>} - Resultado de las confirmaciones
+ */
+const confirmarStockPedido = async (pBody, idsede, metadata = {}) => {
+    try {
+        // Verificar si la sede usa reservas
+        const usaReservas = await sedeUsaReservas(idsede);
+        if (!usaReservas) {
+            return { success: true, skipped: true, reason: 'Sede no usa reservas' };
+        }
+
+        return await StockReservaService.confirmarPedido(pBody, idsede, metadata);
+    } catch (error) {
+        logger.error({
+            error: error.message,
+            idsede,
+            idpedido: metadata.idpedido
+        }, '❌ [STOCK] Error confirmando reservas del pedido');
+        return { success: false, error: error.message };
+    }
+};
+
 module.exports = {
     updateStock,
+    confirmarStockPedido,
     checkExistSubItemsWithCantidad,
     retryOperation,
     sanitizeObject,
     sanitizeJsonForProcedure,
     // Exponer servicio de reservas para uso externo
     StockReservaService,
-    USE_RESERVAS
+    // Verificar si una sede específica usa reservas
+    sedeUsaReservas
 };

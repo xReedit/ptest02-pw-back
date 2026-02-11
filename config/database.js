@@ -56,7 +56,7 @@ const sequelize = new Sequelize(
 sequelize.authenticate()
   .then(() => {
     const logger = require('../utilitarios/logger');
-    logger.info({
+    logger.debug({
       host: config.db_host,
       database: config.database,
       pool: sequelizeOptions.pool

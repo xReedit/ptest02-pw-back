@@ -10,6 +10,7 @@ const ReservaRepository = require('./reserva.repository');
 const ItemAnalyzer = require('./item.analyzer');
 const RecetaService = require('./receta.service');
 const CONFIG = require('./reserva.config');
+const SedeCache = require('./sede.cache');
 
 module.exports = {
     // Servicio principal (orquestador)
@@ -20,10 +21,17 @@ module.exports = {
     ItemAnalyzer,
     RecetaService,
     
+    // Caché de configuración por sede
+    SedeCache,
+    
     // Configuración
     CONFIG,
     
-    // Shortcut al método principal
+    // Shortcuts a métodos principales
     procesarItem: StockReservaService.procesarItem.bind(StockReservaService),
-    isEnabled: StockReservaService.isEnabled.bind(StockReservaService)
+    confirmarPedido: StockReservaService.confirmarPedido.bind(StockReservaService),
+    isEnabled: StockReservaService.isEnabled.bind(StockReservaService),
+    
+    // Verificar si una sede usa reservas
+    sedeUsaReservas: SedeCache.sedeUsaReservas
 };

@@ -60,7 +60,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// var aaa = '2020-05-28'.replace(',', '');
 		// aaa = aaa.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');		
 
-		logger.info({ dataSocket }, 'Datos socket recibidos');
+		logger.debug({ dataSocket }, 'Datos socket recibidos');
 
 		const dataCliente = dataSocket;
 
@@ -324,6 +324,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 		socket.on('itemModificado', async function(item) {
+
+			logger.debug({ item }, '==========> llego itemModificado');
+
 			item.idsede = dataCliente.idsede;
 			item.idusuario = dataCliente.idusuario;
 			logger.debug({ iditem: item.iditem, sumar: item.sumar, isporcion: item.isporcion, from_monitor: item.from_monitor }, '📥 [STOCK-1] itemModificado recibido');			
@@ -362,7 +365,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				// item.cantidad = _cantItem;		
 
 
-				const rptCantidad = await apiPwa.setItemCartaAfter(0, item);
+				const rptCantidad = await apiPwa.setItemCartaAfter(0, item, dataCliente.idsede);
 				logger.debug({ cantidad: rptCantidad[0]?.cantidad }, '📤 [STOCK-2] Monitor: SP ejecutado');
 
 				// if ( item.isporcion != 'SP' ) {
@@ -511,6 +514,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				dataSend = JSON.parse(dataSend);
 			}
 			
+			
 
 			/// <<<<< 250124 >>>> //
 			// si es holding ///					
@@ -520,7 +524,17 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			
 			if (dataSend.dataPedido.p_header.is_holding == 1) {				
-				const rptPedidoHolding = await apiHoldingServices.proccessSavePedidoHolding(dataSend, io);				
+				const rptPedidoHolding = await apiHoldingServices.proccessSavePedidoHolding(dataSend, io);
+				
+				// Confirmar reservas de stock (descuenta stock real) - fire-and-forget
+				if (dataSend.dataPedido.p_body) {
+					handleStock.confirmarStockPedido(
+						dataSend.dataPedido.p_body,
+						dataCliente.idsede,
+						{ idpedido: rptPedidoHolding?.[0]?.idpedido, idusuario: dataCliente.idusuario }
+					).catch(err => logger.error({ error: err.message }, '❌ Error confirmando reservas de stock (holding)'));
+				}
+
 				io.to(socket.id).emit('nuevoPedidoRes', rptPedidoHolding)
 				if ( callback ) {
 					callback(rptPedidoHolding);	
@@ -532,6 +546,16 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 				// si el mesero confirmo el pago // no holding
 				const rptPedidoSave = await apiHoldingServices.savePedidosAgrupados([dataSend], dataSend.dataPedido.p_subtotales, io, _savePedidoAndPago);
+				
+				// Confirmar reservas de stock (descuenta stock real) - fire-and-forget
+				if (dataSend.dataPedido.p_body) {
+					handleStock.confirmarStockPedido(
+						dataSend.dataPedido.p_body,
+						dataCliente.idsede,
+						{ idpedido: rptPedidoSave?.[0]?.idpedido, idusuario: dataCliente.idusuario }
+					).catch(err => logger.error({ error: err.message }, '❌ Error confirmando reservas de stock (pago)'));
+				}
+
 				io.to(socket.id).emit('nuevoPedidoRes', rptPedidoSave)
 				if ( callback ) {
 					callback(rptPedidoSave);	
@@ -555,6 +579,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			}			
 
 			dataSend.dataPedido.idpedido = rpt[0].idpedido; // para buscar el pedido en comercio
+
+			// La confirmación de reservas de stock se hace dentro de setNuevoPedido
 
 			// devuele del idpedido a quien envio el pedido // lo ja desde el procedure
 			// io.to(dataSend.socketid).emit('get-lastid-pedido', dataSend.dataPedido.idpedido);
@@ -946,20 +972,28 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			}
 		});
 		
-		// Confirmar pedido para evitar restauración de stock
-		socket.on('confirmar-pedido', async () => {
+		// Confirmar pedido - recibe p_body del pedido y descuenta stock real de las reservas
+		// esto viene de restobar
+		socket.on('restobar-confirmar-pedido-reservar-stock', async (data) => {
 			try {
-				logger.debug(`Pedido confirmado para socket ${socket.id}`);
-				socket.emit('pedido-confirmado', {
-					success: true,
-					message: 'Pedido confirmado correctamente'
-				});
+				const pBody = data?.p_body || null;				
+				const idsede = data?.idsede || null;
+
+				logger.debug({ socketId: socket.id, idsede }, '📦 [Socket] confirmar-pedido recibido');
+				
+
+				if (pBody && idsede) {
+					const resultado = await handleStock.confirmarStockPedido(
+						pBody,
+						idsede,
+						{ idusuario: dataCliente.idusuario }
+					);
+					logger.debug({ resultado }, '✅ [Socket] restobar-confirmar-pedido resultado');
+				} else {
+					logger.debug('Sin p_body o idsede para confirmar stock');
+				}
 			} catch (error) {
-				logger.error('Error al confirmar pedido:', error);
-				socket.emit('pedido-confirmado', {
-					success: false,
-					message: 'Error al confirmar pedido: ' + error.message
-				});
+				logger.error({ error: error.message }, '❌ Error al confirmar pedido (socket)');				
 			}
 		});
 
@@ -1107,16 +1141,34 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// 	socket.id = dataCliente.firts_socketid;
 
 		logger.debug ('repartidor conectado ==========');
-		// Confirmar pedido para evitar restauración de stock
-		socket.on('confirmar-pedido', async (pedidoId) => {
+		// Confirmar pedido - descuenta stock real de las reservas (repartidor)
+		socket.on('confirmar-pedido', async (data) => {
 			try {
-				logger.debug(`Pedido confirmado para socket ${socket.id}`);
-				socket.emit('pedido-confirmado', {
-					success: true,
-					message: 'Pedido confirmado correctamente'
-				});
+				const items = data?.items || data?.p_body || [];
+				const idpedido = data?.idpedido || null;
+				const idsede = data?.idsede || dataCliente.idsede;
+
+				logger.debug({ socketId: socket.id, idsede, totalItems: items.length, idpedido }, 'Confirmando pedido (repartidor)');
+
+				if (items.length > 0) {
+					const resultado = await handleStock.confirmarStockPedido(
+						items,
+						idsede,
+						{ idpedido, idusuario: dataCliente.idusuario }
+					);
+					socket.emit('pedido-confirmado', {
+						success: resultado.success,
+						message: resultado.success ? 'Pedido confirmado correctamente' : 'Pedido confirmado con errores en stock',
+						stockResult: resultado
+					});
+				} else {
+					socket.emit('pedido-confirmado', {
+						success: true,
+						message: 'Pedido confirmado (sin items para confirmar stock)'
+					});
+				}
 			} catch (error) {
-				logger.error('Error al confirmar pedido:', error);
+				logger.error({ error: error.message }, 'Error al confirmar pedido (repartidor)');
 				socket.emit('pedido-confirmado', {
 					success: false,
 					message: 'Error al confirmar pedido: ' + error.message

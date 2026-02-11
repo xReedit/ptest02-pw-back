@@ -279,30 +279,9 @@ module.exports.getReglasCarta = getReglasCarta;
 
 
 // para el caso de monitor pedidos
-const setItemCartaAfter = async function (op, item) {	
-    // nos aseguramos de quitar los espacios en blanco
-    let read_query = '';
-    if ( item.isalmacen.toString() === '1' ) { // si es producto}
-        const _item = {cantidadSumar: item.cantidadSumar, idcarta_lista: item.idcarta_lista, cantidad_reset: item.cantidad_reset};
-        logger.debug({ item: _item }, 'Actualizando cantidad producto almacén');
-        read_query = `call porcedure_pwa_update_cantidad_only_producto(${op},'${JSON.stringify(_item)}')`;
-        logger.debug({ query: read_query }, 'Query generada');
-    } else {
-        var item = JSON.stringify(item).replace(/\\n/g, '')
-                                      .replace(/\\'/g, '')
-                                      .replace(/\\"/g, '')
-                                      .replace(/\\&/g, '')
-                                      .replace(/\\r/g, '')
-                                      .replace(/\\t/g, '')
-                                      .replace(/\\b/g, '')
-                                      .replace(/\\f/g, '');               
-        // const read_query = `call porcedure_pwa_update_cantidad_item(${op},'${JSON.stringify(item)}')`;
-
-        item = item.replace(/[\r\n]/g, '');
-        read_query = `call porcedure_pwa_update_cantidad_item(${op},'${item}')`;
-    }
-    
-    return emitirRespuestaSP(read_query);        
+// Delega a handleStock.updateStock que internamente verifica por sede si usa reservas o flujo legacy
+const setItemCartaAfter = async function (op, item, idsede) {	
+    return handleStock.updateStock(op, item, idsede);
 }
 module.exports.setItemCartaAfter = setItemCartaAfter;
 
@@ -503,7 +482,17 @@ const setNuevoPedido = async (dataCliente, dataPedido) => {
 
     try {
         // return await emitirRespuestaSP(query);
-        return await QueryServiceV1.ejecutarProcedimiento(query, [idorg, idsede, idusuario, _json], 'setNuevoPedido');        
+        const result = await QueryServiceV1.ejecutarProcedimiento(query, [idorg, idsede, idusuario, _json], 'setNuevoPedido');
+        
+        // Confirmar reservas de stock (descuenta stock real) - fire-and-forget
+        const pBody = dataPedido?.dataPedido?.p_body;
+        if (pBody) {
+            const idpedido = result?.[0]?.idpedido || null;
+            handleStock.confirmarStockPedido(pBody, idsede, { idpedido, idusuario })
+                .catch(err => logger.error({ error: err.message, idsede, idpedido }, '❌ Error confirmando reservas de stock en setNuevoPedido'));
+        }
+
+        return result;
     } catch (error) {
         return ReE(res, error);
     }
@@ -575,7 +564,17 @@ const setNuevoPedido2 = async (req, res) => {
 
     try {
         // return await emitirRespuestaSP_RES(query, res);
-        return await QueryServiceV1.ejecutarProcedimiento(query, [idorg, idsede, idusuario, _json], 'setNuevoPedido2');        
+        const result = await QueryServiceV1.ejecutarProcedimiento(query, [idorg, idsede, idusuario, _json], 'setNuevoPedido2');
+        
+        // Confirmar reservas de stock (descuenta stock real) - fire-and-forget
+        const pBody = dataPedido?.dataPedido?.p_body || dataPedido?.p_body;
+        if (pBody) {
+            const idpedido = result?.[0]?.idpedido || null;
+            handleStock.confirmarStockPedido(pBody, idsede, { idpedido, idusuario })
+                .catch(err => logger.error({ error: err.message, idsede, idpedido }, '❌ Error confirmando reservas de stock en setNuevoPedido2'));
+        }
+
+        return result;
     } catch (error) {
         return ReE(res, error);
     }
@@ -813,6 +812,27 @@ const getIdSedeFromNickName = async function (req, res) {
 }
 module.exports.getIdSedeFromNickName = getIdSedeFromNickName;
 
+const getAreasMesas = async function (req, res) {	
+    const idsede = req.body.idsede;
+    const tipo_mesa = req.body.tipo_mesa === '1' ? 'alfanumerica' : 'numeric';
+    const query = `select am.titulo, am.num_mesa_ini, am.num_mesa_fin, am.tipo_mesa, am.prefijo_mesa from area_mesa am where idsede=? and estado=0 and tipo_mesa=?`;	
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [idsede, tipo_mesa], 'SELECT', 'getAreasMesas');
+
+    if (rows.length === 0) {
+        const query2 = `select mesas as cant from mesa where idsede=? and estado=0`;
+        const rows2 = await QueryServiceV1.ejecutarConsulta(query2, [idsede], 'SELECT', 'getAreasMesas');
+        
+        rows.push({
+            titulo: 'Mesas',
+            num_mesa_ini: 1,
+            num_mesa_fin: rows2[0]?.cant || 0,
+            prefijo_mesa: ''
+        });
+    }
+
+    return ReS(res, {data: rows || [] });
+}
+module.exports.getAreasMesas = getAreasMesas;
 
 const getReglasApp = async function (req, res) {	
 	// const read_query = `SELECT * from pwa_reglas_app where estado=0`;	

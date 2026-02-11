@@ -13,11 +13,17 @@ class ItemAnalyzer {
 
     /**
      * Analiza un item y retorna su información de stock
+     * IMPORTANTE: iditem2 contiene el ID real del producto, iditem puede ser idcarta_lista
      */
     static analizar(item) {
+        // Usar iditem2 si existe (es el ID real), sino usar iditem
+        const iditemReal = item.iditem2 || item.iditem;
+        
         return {
-            iditem: item.iditem,
-            idcarta_lista: item.idcarta_lista,
+            iditem: iditemReal,
+            iditemOriginal: item.iditem, // Guardar el original por si se necesita
+            idcarta_lista: item.idcarta_lista || item.iditem,
+            idproducto_stock: item.idproducto_stock || null,
             cantidad: Math.abs(item.cantidadSumar || 1),
             isND: item.cantidad === 'ND' || item.isporcion === 'ND',
             isSP: item.isporcion === 'SP',
@@ -62,12 +68,19 @@ class ItemAnalyzer {
 
     /**
      * Extraer todos los subitems seleccionados de las diferentes fuentes
+     * 
+     * PRIORIDAD:
+     *   1. subitems_selected (principal)
+     *   2. subitems_selected_array (fallback si subitems_selected está vacío)
+     *   3. subitems_view (adicional, estructura con grupos)
+     * 
      * @returns {Array} Lista de subitems con {idporcion, idproducto, idsubreceta, cantidad_selected}
      */
     static extraerSubitems(item) {
         const subitems = [];
+        let foundInSelected = false;
 
-        // Fuente 1: subitems_selected (objeto o array)
+        // Fuente 1 (PRIORITARIA): subitems_selected (objeto o array)
         if (item.subitems_selected) {
             const arr = Array.isArray(item.subitems_selected) 
                 ? item.subitems_selected 
@@ -76,27 +89,29 @@ class ItemAnalyzer {
             for (const s of arr) {
                 if (s && this._tieneStock(s)) {
                     subitems.push(this._normalizarSubitem(s));
+                    foundInSelected = true;
                 }
             }
         }
 
-        // Fuente 2: subitems_view (estructura con grupos y opciones)
-        if (item.subitems_view && Array.isArray(item.subitems_view)) {
+        // Fuente 2 (FALLBACK): subitems_selected_array - SOLO si no se encontró en subitems_selected
+        if (!foundInSelected && item.subitems_selected_array && Array.isArray(item.subitems_selected_array)) {
+            for (const s of item.subitems_selected_array) {
+                if (s && this._tieneStock(s)) {
+                    subitems.push(this._normalizarSubitem(s));
+                }
+            }
+        }
+
+        // Fuente 3: subitems_view (estructura con grupos y opciones) - para casos especiales
+        // Solo procesar si NO hay subitems de las fuentes anteriores
+        if (subitems.length === 0 && item.subitems_view && Array.isArray(item.subitems_view)) {
             for (const grupo of item.subitems_view) {
                 const opciones = grupo.subitems || grupo.opciones || [];
                 for (const o of opciones) {
                     if (o && o.selected && this._tieneStock(o)) {
                         subitems.push(this._normalizarSubitem(o, grupo.cantidad_seleccionada));
                     }
-                }
-            }
-        }
-
-        // Fuente 3: subitems_selected_array
-        if (item.subitems_selected_array && Array.isArray(item.subitems_selected_array)) {
-            for (const s of item.subitems_selected_array) {
-                if (s && this._tieneStock(s)) {
-                    subitems.push(this._normalizarSubitem(s));
                 }
             }
         }
@@ -113,27 +128,107 @@ class ItemAnalyzer {
 
     /**
      * Normaliza un subitem a formato estándar
+     * 
+     * IMPORTANTE: El campo 'descuenta' indica cuántas unidades se descuentan
+     * por cada unidad vendida. Ejemplo: descuenta=5 significa que por cada
+     * unidad vendida se descuentan 5 del stock.
+     * 
+     * cantidad_final = cantidad_selected * descuenta
      */
     static _normalizarSubitem(subitem, cantidadGrupo = null) {
+        // Cantidad base seleccionada
+        const cantidadBase = parseFloat(
+            subitem.cantidad_selected || 
+            subitem.cantidad_seleccionada || 
+            cantidadGrupo || 
+            1
+        );
+        
+        // Factor de descuento (por defecto 1)
+        const descuenta = parseFloat(subitem.descuenta) || 1;
+        
+        // Cantidad final = cantidad base * factor de descuento
+        const cantidadFinal = cantidadBase * descuenta;
+
+        if (descuenta !== 1) {
+            logger.debug({
+                des: subitem.des,
+                cantidadBase,
+                descuenta,
+                cantidadFinal
+            }, '📊 [ItemAnalyzer] Subitem con factor descuenta');
+        }
+
         return {
             idporcion: subitem.idporcion || 0,
             idproducto: subitem.idproducto || 0,
             idsubreceta: subitem.idsubreceta || 0,
-            cantidad_selected: parseFloat(
-                subitem.cantidad_selected || 
-                subitem.cantidad_seleccionada || 
-                cantidadGrupo || 
-                1
-            ),
+            cantidad_selected: cantidadFinal,
+            descuenta: descuenta,
             des: subitem.des || subitem.descripcion || ''
         };
     }
 
     /**
+     * Extrae todos los items de la estructura del pedido.
+     * 
+     * Soporta 2 estructuras:
+     *   1. PWA: p_body.tipoconsumo[].secciones[].items[]
+     *   2. Restobar: p_body es un array de tipos de consumo, los items son propiedades
+     *      con claves numéricas dentro de cada tipo (ej: { id: '32', '1613121961511': { iditem: '...', ... } })
+     * 
+     * @param {Object|Array} pBody - p_body del pedido
+     * @returns {Array} - Lista plana de items
+     */
+    static extraerItemsDelPedido(pBody) {
+        if (!pBody) return [];
+
+        const items = [];
+        try {
+            // Estructura Restobar: array de tipos de consumo con items como propiedades numéricas
+            if (Array.isArray(pBody)) {
+                for (const tipo of pBody) {
+                    if (!tipo || typeof tipo !== 'object') continue;
+                    // Las propiedades del tipo de consumo son: id, des, titulo, cantidad
+                    // Todo lo demás son items (claves numéricas con objetos que tienen iditem)
+                    for (const key of Object.keys(tipo)) {
+                        const val = tipo[key];
+                        if (val && typeof val === 'object' && !Array.isArray(val) && val.iditem) {
+                            items.push(val);
+                        }
+                    }
+                }
+                return items;
+            }
+
+            // Estructura PWA: p_body.tipoconsumo[].secciones[].items[]
+            const tipoconsumo = pBody.tipoconsumo || [];
+            for (const tipo of tipoconsumo) {
+                const secciones = tipo.secciones || [];
+                for (const seccion of secciones) {
+                    const seccionItems = seccion.items || [];
+                    for (const item of seccionItems) {
+                        items.push(item);
+                    }
+                }
+            }
+        } catch (error) {
+            logger.error({ error: error.message }, '❌ [ItemAnalyzer] Error extrayendo items del pedido');
+        }
+
+        return items;
+    }
+
+    /**
      * Determina la acción a realizar según el item
-     * @returns {'reservar'|'liberar'|'confirmar'|'skip'}
+     * @returns {'reservar'|'liberar'|'resetear'|'confirmar'|'skip'}
      */
     static determinarAccion(item) {
+        // Si viene cantidad_reset > 0 → resetear (cancelación de pedido)
+        if (item.cantidad_reset && parseFloat(item.cantidad_reset) > 0) {
+            return 'resetear';
+        }
+
         // Si sumar es false o cantidadSumar es positivo → liberar
         if (item.sumar === false || (item.cantidadSumar && item.cantidadSumar > 0)) {
             return 'liberar';

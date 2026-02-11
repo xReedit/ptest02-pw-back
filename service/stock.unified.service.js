@@ -129,7 +129,7 @@ class StockUnifiedService {
                 await transaction.commit();
 
                 const executionTime = Date.now() - startTime;
-                logger.info({
+                logger.debug({
                     iditem: item.iditem,
                     executionTime: `${executionTime}ms`,
                     porcionesAfectadas: porcionesAfectadas.length

@@ -7,16 +7,22 @@
  * Las reservas sin actividad por más de 30 minutos se resetean a 0.
  */
 
-const cron = require('node-cron');
+let cron;
+try {
+    cron = require('node-cron');
+} catch (e) {
+    // node-cron no instalado, el job no se iniciará
+}
 const StockReservaService = require('./stock-reserva/stock.reserva.service');
 const logger = require('../utilitarios/logger');
 
 const CONFIG = {
-    // Hora de ejecución (formato cron: minuto hora * * *)
-    CRON_SCHEDULE: '0 3 * * *',  // 3:00 AM todos los días
+    // Frecuencia de ejecución (formato cron)
+    // PRODUCCIÓN: '*/30 * * * *' (cada 30 minutos)
+    CRON_SCHEDULE: '*/5 * * * *',  // cada 5 minutos (pruebas)
     
     // Minutos sin actividad para considerar reserva huérfana
-    MINUTOS_INACTIVIDAD: 30,
+    MINUTOS_INACTIVIDAD: 5,
     
     // Habilitar/deshabilitar el job
     ENABLED: true
@@ -28,13 +34,13 @@ let jobInstance = null;
  * Ejecutar limpieza de reservas inactivas
  */
 const ejecutarCleanup = async () => {
-    logger.info('🧹 [StockCleanup] Iniciando limpieza de reservas inactivas...');
+    logger.debug('🧹 [StockCleanup] Iniciando limpieza de reservas inactivas...');
     
     try {
         const resultado = await StockReservaService.resetReservasInactivas(CONFIG.MINUTOS_INACTIVIDAD);
         
         if (resultado.success) {
-            logger.info({
+            logger.debug({
                 registrosReseteados: resultado.registrosReseteados,
                 minutosInactividad: CONFIG.MINUTOS_INACTIVIDAD
             }, '✅ [StockCleanup] Limpieza completada exitosamente');
@@ -54,8 +60,13 @@ const ejecutarCleanup = async () => {
  * Iniciar el job de limpieza programado
  */
 const iniciarJob = () => {
+    if (!cron) {
+        logger.debug('⏸️ [StockCleanup] node-cron no instalado, job no iniciado. Instalar con: npm install node-cron');
+        return null;
+    }
+
     if (!CONFIG.ENABLED) {
-        logger.info('⏸️ [StockCleanup] Job deshabilitado por configuración');
+        logger.debug('⏸️ [StockCleanup] Job deshabilitado por configuración');
         return null;
     }
 
@@ -72,10 +83,13 @@ const iniciarJob = () => {
             timezone: 'America/Lima'  // Ajustar según zona horaria
         });
 
-        logger.info({
+        logger.debug({
             schedule: CONFIG.CRON_SCHEDULE,
             timezone: 'America/Lima'
         }, '✅ [StockCleanup] Job de limpieza iniciado');
+
+        // Ejecutar cleanup inmediatamente al iniciar
+        ejecutarCleanup().catch(err => logger.error({ error: err.message }, '❌ [StockCleanup] Error en cleanup inicial'));
 
         return jobInstance;
 
@@ -92,7 +106,7 @@ const detenerJob = () => {
     if (jobInstance) {
         jobInstance.stop();
         jobInstance = null;
-        logger.info('🛑 [StockCleanup] Job de limpieza detenido');
+        logger.debug('🛑 [StockCleanup] Job de limpieza detenido');
     }
 };
 

@@ -27,6 +27,7 @@
     "jsonwebtoken": "^8.5.1",
     "mysql": "^2.18.1",
     "mysql2": "^3.14.2",
+    "node-cron": "^4.2.1",
     "node-fetch": "^2.6.0",
     "node-gcm": "^1.0.5",
     "nodemailer": "^6.4.17",

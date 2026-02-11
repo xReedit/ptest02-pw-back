@@ -329,7 +329,7 @@ class ItemService {
             // console.log('📦 [item.v1] Llamando a procedure_stock_item_porcion.js');
             
             // 🆕 NUEVO: Usar función JavaScript que reemplaza el procedimiento almacenado
-            logger.info({ item: _itemProcessPorcion }, '📦 [item.v1] Llamando a procedure_stock_item_porcion.js');
+            logger.debug({ item: _itemProcessPorcion }, '📦 [item.v1] Llamando a procedure_stock_item_porcion.js');
             updatedItem = await QueryServiceV1.ejecutarTransaccion(async (transaction) => {
                 return await updateStockItemPorcion(_itemProcessPorcion, transaction);
             });

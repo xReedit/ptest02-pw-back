@@ -50,26 +50,73 @@ class ReservaRepository {
     }
 
     /**
+     * Obtener solo la cantidad reservada de un elemento
+     */
+    static async getCantidadReservada(tipo, id, idsede) {
+        const config = this.getConfig(tipo);
+        if (!config || !id) return 0;
+
+        try {
+            const [result] = await sequelize.query(`
+                SELECT COALESCE(cantidad, 0) as cantidad
+                FROM stock_reserva
+                WHERE idsede = ? AND ${config.id} = ?
+            `, {
+                replacements: [idsede, id],
+                type: QueryTypes.SELECT
+            });
+
+            return parseFloat(result?.cantidad) || 0;
+        } catch (error) {
+            logger.error({ error: error.message, tipo, id }, '❌ [ReservaRepo] Error obteniendo reserva');
+            return 0;
+        }
+    }
+
+    /**
      * Quitar cantidad de reserva
      */
     static async quitar(tipo, id, cantidad, idsede, transaction = null) {
         const config = this.getConfig(tipo);
+        
+        logger.debug({
+            tipo, id, cantidad, idsede,
+            config: config ? config.id : 'NO_CONFIG',
+            validId: id && id > 0,
+            validCantidad: cantidad && cantidad > 0
+        }, '🔄 [ReservaRepo] Intentando quitar reserva');
+
         if (!config || !id || id <= 0 || !cantidad || cantidad <= 0) {
+            logger.warn({
+                tipo, id, cantidad, idsede,
+                reason: !config ? 'NO_CONFIG' : (!id || id <= 0) ? 'INVALID_ID' : 'INVALID_CANTIDAD'
+            }, '⚠️ [ReservaRepo] Quitar saltado por validación');
             return { success: true, skipped: true };
         }
 
         try {
-            await sequelize.query(`
+            const query = `
                 UPDATE stock_reserva 
                 SET cantidad = GREATEST(0, cantidad - ?)
                 WHERE idsede = ? AND ${config.id} = ?
-            `, {
+            `;
+            
+            logger.debug({
+                query,
+                replacements: [cantidad, idsede, id]
+            }, '🔄 [ReservaRepo] Ejecutando UPDATE');
+
+            const [, metadata] = await sequelize.query(query, {
                 replacements: [cantidad, idsede, id],
                 type: QueryTypes.UPDATE,
                 transaction
             });
 
-            return { success: true };
+            logger.debug({
+                affectedRows: metadata?.affectedRows || metadata || 0
+            }, '✅ [ReservaRepo] Reserva quitada');
+
+            return { success: true, affectedRows: metadata?.affectedRows || 0 };
         } catch (error) {
             logger.error({ error: error.message, tipo, id }, '❌ [ReservaRepo] Error quitando');
             return { success: false, error: error.message };
@@ -132,37 +179,88 @@ class ReservaRepository {
     }
 
     /**
-     * Obtener stock disponible (real - reservado)
+     * Obtener stock disponible (real - reservado) dividido por cantidadReceta
+     * @param {string} tipo - Tipo: 'porcion', 'producto', 'carta_lista'
+     * @param {number} id - ID del elemento
+     * @param {number} idsede - ID de sede
+     * @param {number} cantidadReceta - Cantidad que se consume por venta (default: 1)
+     * @returns {Object} {stockTotal, stockReservado, stockDisponible, stockVendible}
      */
-    static async getStockDisponible(tipo, id, idsede) {
+    static async getStockDisponible(tipo, id, idsede, cantidadReceta = 1) {
         const config = this.getConfig(tipo);
-        if (!config) return { stockTotal: 0, stockReservado: 0, stockDisponible: 0 };
+        if (!config) return { stockTotal: 0, stockReservado: 0, stockDisponible: 0, stockVendible: 0 };
 
         try {
-            const query = tipo === 'porcion' 
-                ? `SELECT 
+            let query, replacements;
+            
+            if (tipo === 'porcion') {
+                // Porcion tiene idsede en la tabla principal
+                query = `SELECT 
                         t.${config.stock} AS stockTotal,
                         COALESCE(sr.cantidad, 0) AS stockReservado,
                         (t.${config.stock} - COALESCE(sr.cantidad, 0)) AS stockDisponible
                    FROM ${config.tabla} t
                    LEFT JOIN stock_reserva sr ON sr.${config.id} = t.${config.pk} AND sr.idsede = t.idsede
-                   WHERE t.${config.pk} = ? AND t.idsede = ?`
-                : `SELECT 
+                   WHERE t.${config.pk} = ? AND t.idsede = ?`;
+                replacements = [id, idsede];
+            } else if (tipo === 'producto_almacen' || tipo === 'producto') {
+                // producto_stock NO tiene idsede, solo buscar por idproducto_stock
+                query = `SELECT 
                         t.${config.stock} AS stockTotal,
                         COALESCE(sr.cantidad, 0) AS stockReservado,
                         (t.${config.stock} - COALESCE(sr.cantidad, 0)) AS stockDisponible
                    FROM ${config.tabla} t
                    LEFT JOIN stock_reserva sr ON sr.${config.id} = t.${config.pk} AND sr.idsede = ?
                    WHERE t.${config.pk} = ?`;
+                replacements = [idsede, id];
+            } else {
+                // Otros tipos (carta_lista, etc)
+                query = `SELECT 
+                        t.${config.stock} AS stockTotal,
+                        COALESCE(sr.cantidad, 0) AS stockReservado,
+                        (t.${config.stock} - COALESCE(sr.cantidad, 0)) AS stockDisponible
+                   FROM ${config.tabla} t
+                   LEFT JOIN stock_reserva sr ON sr.${config.id} = t.${config.pk} AND sr.idsede = ?
+                   WHERE t.${config.pk} = ?`;
+                replacements = [idsede, id];
+            }
+
+            logger.debug({
+                tipo, id, idsede, cantidadReceta,
+                replacements
+            }, '📦 [ReservaRepo] Obteniendo stock disponible');
 
             const [result] = await sequelize.query(query, {
-                replacements: tipo === 'porcion' ? [id, idsede] : [idsede, id],
+                replacements,
                 type: QueryTypes.SELECT
             });
 
-            return result || { stockTotal: 0, stockReservado: 0, stockDisponible: 0 };
+            if (!result) {
+                return { stockTotal: 0, stockReservado: 0, stockDisponible: 0, stockVendible: 0 };
+            }
+
+            // Calcular stock vendible: stock disponible / cantidadReceta
+            const stockDisponible = parseFloat(result.stockDisponible) || 0;
+            const divisor = parseFloat(cantidadReceta) || 1;
+            const stockVendible = Math.floor(stockDisponible / divisor);
+
+            logger.debug({
+                stockTotal: result.stockTotal,
+                stockReservado: result.stockReservado,
+                stockDisponible,
+                cantidadReceta: divisor,
+                stockVendible
+            }, '📊 [ReservaRepo] Stock calculado (disponible/cantidadReceta)');
+
+            return {
+                stockTotal: parseFloat(result.stockTotal) || 0,
+                stockReservado: parseFloat(result.stockReservado) || 0,
+                stockDisponible,
+                stockVendible
+            };
         } catch (error) {
-            return { stockTotal: 0, stockReservado: 0, stockDisponible: 0 };
+            logger.error({ error: error.message, tipo, id }, '❌ [ReservaRepo] Error getStockDisponible');
+            return { stockTotal: 0, stockReservado: 0, stockDisponible: 0, stockVendible: 0 };
         }
     }
 
@@ -184,6 +282,27 @@ class ReservaRepository {
             return result?.cantidad || 0;
         } catch (error) {
             return 0;
+        }
+    }
+
+    /**
+     * Obtener idproducto_stock desde idcarta_lista (para productos de almacén)
+     */
+    static async getIdProductoStock(idcarta_lista) {
+        try {
+            const [result] = await sequelize.query(`
+                SELECT idproducto_stock 
+                FROM carta_lista 
+                WHERE idcarta_lista = ?
+            `, {
+                replacements: [idcarta_lista],
+                type: QueryTypes.SELECT
+            });
+
+            return result?.idproducto_stock || null;
+        } catch (error) {
+            logger.error({ error: error.message, idcarta_lista }, '❌ [ReservaRepo] Error obteniendo idproducto_stock');
+            return null;
         }
     }
 

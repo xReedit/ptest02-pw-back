@@ -12,12 +12,14 @@ const logger = require('../../utilitarios/logger');
 class ItemAnalyzer {
 
     /**
-     * Analiza un item y retorna su información de stock
+     * Analiza un item y retorna su información de stock (versión síncrona)
      * IMPORTANTE: iditem2 contiene el ID real del producto, iditem puede ser idcarta_lista
      */
     static analizar(item) {
         // Usar iditem2 si existe (es el ID real), sino usar iditem
         const iditemReal = item.iditem2 || item.iditem;
+        const isND = this.esItemND(item);
+        const tieneSubitemsSeleccionados = this.tieneSubitemsConStock(item);
         
         return {
             iditem: iditemReal,
@@ -25,11 +27,80 @@ class ItemAnalyzer {
             idcarta_lista: item.idcarta_lista || item.iditem,
             idproducto_stock: item.idproducto_stock || null,
             cantidad: Math.abs(item.cantidadSumar || 1),
-            isND: item.cantidad === 'ND' || item.isporcion === 'ND',
+            isND: isND,
             isSP: item.isporcion === 'SP',
-            tieneSubitems: this.tieneSubitemsConStock(item),
+            tieneSubitems: isND || tieneSubitemsSeleccionados, // ND implica que tiene subitems
+            tieneSubitemsSeleccionados: tieneSubitemsSeleccionados,
             esAlmacen: item.isalmacen === 1
         };
+    }
+
+    /**
+     * Analiza un item consultando la BD para determinar si es ND (versión async)
+     * Usa carta_lista para verificar la cantidad real cuando no es SP
+     * @param {Object} item - Item a analizar
+     * @param {Object} ReservaRepository - Repositorio para consultas BD
+     */
+    static async analizarConBD(item, ReservaRepository) {
+        const iditemReal = item.iditem2 || item.iditem;
+        const isSP = item.isporcion === 'SP';
+        const tieneSubitemsSeleccionados = this.tieneSubitemsConStock(item);
+        const idcarta_lista = item.idcarta_lista || item.iditem;
+
+        // Si es SP, no consultar carta_lista (usa receta)
+        // Si no es SP, consultar carta_lista para saber si es ND
+        let isND;
+        if (isSP) {
+            isND = false; // SP nunca es ND, tiene receta
+        } else {
+            isND = await ReservaRepository.esItemNDEnCartaLista(idcarta_lista);
+        }
+
+        return {
+            iditem: iditemReal,
+            iditemOriginal: item.iditem,
+            idcarta_lista: idcarta_lista,
+            idproducto_stock: item.idproducto_stock || null,
+            cantidad: Math.abs(item.cantidadSumar || 1),
+            isND: isND,
+            isSP: isSP,
+            tieneSubitems: isND || tieneSubitemsSeleccionados,
+            tieneSubitemsSeleccionados: tieneSubitemsSeleccionados,
+            esAlmacen: item.isalmacen === 1
+        };
+    }
+
+    /**
+     * Detecta si un item es de tipo ND (control de stock por subitems)
+     * Un item es ND si:
+     *   - cantidad === 'ND' o isporcion === 'ND'
+     *   - cantidad >= 9999 o stock_actual >= 9999
+     *   - Tiene estructura de subitems con opciones pero NINGUNO seleccionado
+     */
+    static esItemND(item) {
+        // Verificación directa por string 'ND'
+        if (item.cantidad === 'ND' || item.isporcion === 'ND') {
+            return true;
+        }
+
+        // Regla simple por cantidad del item:
+        // - cantidad >= 1 && < 9999 → numérico (NO es ND)
+        // - cantidad === 0 || >= 9999 → ND
+        const cantidad = parseFloat(item.cantidad);
+        
+        // Si es un número válido entre 1 y 9998, NO es ND
+        if (!isNaN(cantidad) && cantidad >= 1 && cantidad < 9999) {
+            return false;
+        }
+
+        // También verificar stock_actual si viene (para confirmar pedido)
+        const stockActual = parseFloat(item.stock_actual);
+        if (!isNaN(stockActual) && stockActual >= 1 && stockActual < 9999) {
+            return false;
+        }
+
+        // Cantidad === 0, >= 9999, NaN, o vacía → es ND
+        return true;
     }
 
     /**

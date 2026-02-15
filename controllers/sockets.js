@@ -324,11 +324,13 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 		socket.on('itemModificado', async function(item) {
-
-			logger.debug({ item }, '==========> llego itemModificado');
+			
 
 			item.idsede = dataCliente.idsede;
 			item.idusuario = dataCliente.idusuario;
+			// item.isND = item.cantidad === 'ND';
+
+			logger.debug({ item }, '==========> llego itemModificado');
 			logger.debug({ iditem: item.iditem, sumar: item.sumar, isporcion: item.isporcion, from_monitor: item.from_monitor }, '📥 [STOCK-1] itemModificado recibido');			
 			// Verificar si es del monitor
 			if (item?.from_monitor === true) {
@@ -355,6 +357,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			
 			// la cantidad viene 999 cuando es nd y la porcion si viene nd
 			// si isporcion es undefined entonces es un subtitem agregado desde venta rapida, colocamos ND
+			// item.isND = item.cantidad === 'ND';
 			item.cantidad = parseInt(item.cantidad) >= 9999 ? item.isporcion || 'ND' : item.cantidad;
 			if (item.cantidad != 'ND') {				
 				// var _cantItem = parseFloat(item.cantidad);
@@ -978,6 +981,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			try {
 				const pBody = data?.p_body || null;				
 				const idsede = data?.idsede || null;
+
+				console.log('restobar-confirmar-pedido-reservar-stock', pBody);
 
 				logger.debug({ socketId: socket.id, idsede }, '📦 [Socket] confirmar-pedido recibido');
 				

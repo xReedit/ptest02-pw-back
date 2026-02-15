@@ -173,6 +173,8 @@ class RecetaService {
         }
 
         // 4. Si NO es SP y NO es ND → agregar carta_lista
+        // carta_lista se descuenta siempre que tenga cantidad numérica (no ND)
+        // Los subitems se procesan ADEMÁS de carta_lista, no en vez de
         if (!itemInfo.isSP && !itemInfo.isND && itemInfo.idcarta_lista) {
             componentes.push({
                 tipo: 'carta_lista',

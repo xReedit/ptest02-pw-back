@@ -81,7 +81,15 @@ async function updateStockAllSubitems(allItems, transaction = null) {
         // CASO 1: Es una porción - Usar función SOLID centralizada
         if (allItems.idporcion && allItems.idporcion > 0) {
             // Validación: solo procesar si hay cambio real
-            if (cantidadAjuste !== 0) {
+            if (cantidadAjuste !== 0) {     
+                           
+                // let tipoMovimiento;
+                // if (allItems.from_monitor) {
+                //     tipoMovimiento = 'MODIFICACION_MONITOR';
+                // } else {
+                //     const esSalida = cantidadAjuste < 0;
+                //     tipoMovimiento = esSalida ? 'VENTA' : 'VENTA_DEVOLUCION';
+                // }
                 const esSalida = cantidadAjuste < 0;
                 const tipoMovimiento = esSalida ? 'VENTA' : 'VENTA_DEVOLUCION';
 
@@ -153,6 +161,13 @@ async function updateStockAllSubitems(allItems, transaction = null) {
                 if (ingrediente.idporcion && ingrediente.idporcion > 0) {
                     // Validación: solo procesar si hay cambio real
                     if (cantidadIngrediente !== 0) {
+                        // let tipoMovimiento;
+                        // if (allItems.from_monitor) {
+                        //     tipoMovimiento = 'MODIFICACION_MONITOR';
+                        // } else {
+                        //     const esSalida = cantidadAjuste < 0;
+                        //     tipoMovimiento = esSalida ? 'VENTA' : 'VENTA_DEVOLUCION';
+                        // }
                         const esSalida = cantidadAjuste < 0;
                         const tipoMovimiento = esSalida ? 'VENTA' : 'VENTA_DEVOLUCION';
 

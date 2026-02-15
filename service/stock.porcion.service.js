@@ -42,7 +42,10 @@ const CONFIG = {
         VENTA: { id: 3, nombre: 'VENTA' },
         COMPRA: { id: 4, nombre: 'COMPRA' },
         RECUPERA: { id: 5, nombre: 'RECUPERA' },
-        VENTA_DEVOLUCION: { id: 6, nombre: 'VENTA DEVOLUCION' }
+        VENTA_DEVOLUCION: { id: 6, nombre: 'VENTA DEVOLUCION' },
+        DESPACHO_SOLICITUD: { id: 7, nombre: 'DESPACHO SOLICITUD' },
+        RECEPCION_SOLICITUD: { id: 8, nombre: 'RECEPCION SOLICITUD' },
+        MODIFICACION_MONITOR: { id: 9, nombre: 'MODIFICACION MONITOR' }
     }
 };
 
@@ -839,6 +842,8 @@ class StockPorcionService {
 
             const { idsede, idusuario, idpedido, iditem } = metadata;
             const tipoMovConfig = CONFIG.TIPO_MOVIMIENTO[tipoMovimiento] || CONFIG.TIPO_MOVIMIENTO.VENTA;
+
+            console.log('tipoMovConfig =====>>> ', tipoMovConfig);
 
             await sequelize.query(
                 `INSERT INTO porcion_historial (

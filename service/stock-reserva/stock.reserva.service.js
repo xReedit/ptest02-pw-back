@@ -64,8 +64,8 @@ class StockReservaService {
         const reservas = [];
         
         try {
-            // Analizar item
-            const itemInfo = ItemAnalyzer.analizar(item);
+            // Analizar item (consulta BD para verificar si es ND)
+            const itemInfo = await ItemAnalyzer.analizarConBD(item, ReservaRepository);
             const subitems = ItemAnalyzer.extraerSubitems(item);
 
             logger.debug({
@@ -73,8 +73,21 @@ class StockReservaService {
                 isSP: itemInfo.isSP,
                 isND: itemInfo.isND,
                 tieneSubitems: itemInfo.tieneSubitems,
+                tieneSubitemsSeleccionados: itemInfo.tieneSubitemsSeleccionados,
                 cantidad: itemInfo.cantidad
             }, '📦 [StockReserva] Analizando item para reserva');
+
+            // Si es ND pero no tiene subitems seleccionados, pasar de frente
+            if (itemInfo.isND && !itemInfo.tieneSubitemsSeleccionados) {
+                logger.debug({ iditem: itemInfo.iditem }, '⏭️ [StockReserva] Item ND sin subitems seleccionados, pasando de frente');
+                return {
+                    success: true,
+                    operaciones: [],
+                    cantidad: 'ND',
+                    listItemsPorcion: '[]',
+                    listSubItems: []
+                };
+            }
 
             // Expandir a componentes de stock
             const componentes = await RecetaService.expandirAComponentes(itemInfo, subitems);
@@ -95,7 +108,10 @@ class StockReservaService {
             }
 
             // Obtener stock disponible del componente principal
-            const stockDisponible = await this._getStockDisponiblePrincipal(componentes, idsede);
+            // Solo devolver "ND" si el item es realmente ND (no tiene cantidad numérica)
+            const stockDisponible = itemInfo.isND 
+                ? 'ND' 
+                : await this._getStockDisponiblePrincipal(componentes, idsede);
 
             logger.debug({
                 totalReservas: reservas.length,
@@ -120,8 +136,13 @@ class StockReservaService {
         const liberaciones = [];
         
         try {
-            const itemInfo = ItemAnalyzer.analizar(item);
+            const itemInfo = await ItemAnalyzer.analizarConBD(item, ReservaRepository);
             const subitems = ItemAnalyzer.extraerSubitems(item);
+
+            // Si es ND pero no tiene subitems seleccionados, pasar de frente
+            if (itemInfo.isND && !itemInfo.tieneSubitemsSeleccionados) {
+                return { success: true, operaciones: [], cantidad: 'ND', listItemsPorcion: '[]', listSubItems: [] };
+            }
 
             // Expandir a componentes
             const componentes = await RecetaService.expandirAComponentes(itemInfo, subitems);
@@ -140,7 +161,10 @@ class StockReservaService {
             }
 
             // Obtener stock disponible del componente principal
-            const stockDisponible = await this._getStockDisponiblePrincipal(componentes, idsede);
+            // Solo devolver "ND" si el item es realmente ND (no tiene cantidad numérica)
+            const stockDisponible = itemInfo.isND 
+                ? 'ND' 
+                : await this._getStockDisponiblePrincipal(componentes, idsede);
 
             return this._respuestaExitosa(item, liberaciones, listItemsPorcion, stockDisponible);
 
@@ -165,8 +189,9 @@ class StockReservaService {
 
         try {
             // Determinar la cantidad según el modo
+            // Para confirmar: usar cantidad_seleccionada (PWA) o cantidad (restobar)
             const cantidad = modo === 'confirmar'
-                ? Math.abs(parseFloat(item.cantidad_seleccionada) || 1)
+                ? Math.abs(parseFloat(item.cantidad_seleccionada) || parseFloat(item.cantidad) || 1)
                 : Math.abs(parseFloat(item.cantidad_reset) || 0);
 
             if (cantidad === 0) {
@@ -186,8 +211,13 @@ class StockReservaService {
                 cantidadSumar: cantidad
             };
 
-            const itemInfo = ItemAnalyzer.analizar(itemModificado);
+            const itemInfo = await ItemAnalyzer.analizarConBD(itemModificado, ReservaRepository);
             itemInfo.cantidad = cantidad;
+
+            // Si es ND pero no tiene subitems seleccionados, pasar de frente
+            if (itemInfo.isND && !itemInfo.tieneSubitemsSeleccionados) {
+                return { success: true, operaciones: [], cantidad: 'ND', listItemsPorcion: '[]', listSubItems: [] };
+            }
 
             const subitems = ItemAnalyzer.extraerSubitems(item);
             const componentes = await RecetaService.expandirAComponentes(itemInfo, subitems);
@@ -234,7 +264,10 @@ class StockReservaService {
             }
 
             // Obtener stock disponible del componente principal
-            const stockDisponible = await this._getStockDisponiblePrincipal(componentes, idsede);
+            // Solo devolver "ND" si el item es realmente ND (no tiene cantidad numérica)
+            const stockDisponible = itemInfo.isND 
+                ? 'ND' 
+                : await this._getStockDisponiblePrincipal(componentes, idsede);
 
             logger.debug({
                 modo,
@@ -302,7 +335,9 @@ class StockReservaService {
 
             for (const item of items) {
                 try {
-                    if (parseFloat(item.cantidad_seleccionada) === 0) continue;
+                    // cantidad_seleccionada (PWA) o cantidad (restobar)
+                    const cantidadItem = parseFloat(item.cantidad_seleccionada) || parseFloat(item.cantidad) || 0;
+                    if (cantidadItem === 0) continue;
 
                     const resultado = await this.confirmarItem(item, idsede, metadata);
                     resultados.push({ iditem: item.iditem, ...resultado });
@@ -382,7 +417,20 @@ class StockReservaService {
             return null;
         }
 
-        // Buscar primera porción
+        // PRIMERO: Buscar carta_lista (items con cantidad numérica)
+        // Cuando el item tiene carta_lista, ese es el stock principal a mostrar
+        const carta = componentes.find(c => c.tipo === 'carta_lista');
+        if (carta) {
+            const stock = await ReservaRepository.getStockDisponible('carta_lista', carta.id, idsede, 1);
+            logger.debug({
+                tipo: 'carta_lista',
+                id: carta.id,
+                stockVendible: stock.stockVendible
+            }, '📊 [StockReserva] Stock vendible carta_lista (principal)');
+            return stock.stockVendible;
+        }
+
+        // Buscar primera porción (para items SP o ND)
         const porcion = componentes.find(c => c.tipo === 'porcion');
         if (porcion) {
             const cantidadReceta = porcion.cantidadReceta || 1;
@@ -410,7 +458,7 @@ class StockReservaService {
             return stock.stockVendible;
         }
 
-        // Buscar producto_almacen (misma lógica que porciones - stock en producto_stock)
+        // Buscar producto_almacen
         const almacen = componentes.find(c => c.tipo === 'producto_almacen');
         if (almacen) {
             const cantidadReceta = almacen.cantidadReceta || 1;
@@ -421,13 +469,6 @@ class StockReservaService {
                 cantidadReceta,
                 stockVendible: stock.stockVendible
             }, '📊 [StockReserva] Stock vendible producto almacén');
-            return stock.stockVendible;
-        }
-
-        // Buscar carta_lista (items regulares)
-        const carta = componentes.find(c => c.tipo === 'carta_lista');
-        if (carta) {
-            const stock = await ReservaRepository.getStockDisponible('carta_lista', carta.id, idsede, 1);
             return stock.stockVendible;
         }
 

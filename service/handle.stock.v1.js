@@ -440,7 +440,8 @@ const processItemPorcion = async (sanitizedItem, op) => {
             iditem2: sanitizedItem.iditem2,
             idsede: sanitizedItem.idsede,
             idusuario: sanitizedItem.idusuario,
-            op: op // Pasar op para detectar si es RECUPERA
+            op: op, // Pasar op para detectar si es RECUPERA
+            from_monitor: sanitizedItem.from_monitor
         };
         
         return await retryOperation(() => ItemService.processItemPorcion(itemPorcion));
@@ -504,7 +505,8 @@ const processRegularItem = async (sanitizedItem, idsede) => {
         idcarta_lista: sanitizedItem.idcarta_lista,
         cantidadSumar: sanitizedItem.cantidadSumar,
         cantidad_reset: sanitizedItem.cantidad_reset || 0,
-        isporcion: sanitizedItem.isporcion
+        isporcion: sanitizedItem.isporcion,
+        from_monitor: sanitizedItem.from_monitor 
     };
     
     return await retryOperation(() => ItemService.processItem(itemProcess, idsede));
@@ -523,6 +525,34 @@ const updateStock = async (op, item, idsede) => {
     const sanitizedItem = sanitizeObject(item);
     
     try {
+
+        // ========== MONITOR DE STOCK: SET DIRECTO, SIN RESERVAS ==========
+        if (sanitizedItem.from_monitor === true) {
+            logger.debug({
+                iditem: sanitizedItem.iditem,
+                cantidad: sanitizedItem.cantidad,
+                cantidadSumar: sanitizedItem.cantidadSumar,
+                idsede
+            }, '🖥️ [STOCK] Modificación desde monitor - sin reservas');
+            
+            // Para monitor: establecer cantidad_reset con el valor de cantidad (SET directo)
+            sanitizedItem.cantidad_reset = sanitizedItem.cantidad;
+            sanitizedItem.cantidadSumar = 0; // No sumar/restar, solo SET
+
+            // Flujo legacy directo (SET stock en carta_lista)
+            if (sanitizedItem.isalmacen === 1) {
+                return await processAlmacenItem(op, sanitizedItem);
+            }
+
+            await processSubitems(sanitizedItem, item);        
+
+            if (sanitizedItem.isporcion === 'SP') {
+                return await processItemPorcion(sanitizedItem, op);
+            } else {
+                return await processRegularItem(sanitizedItem, idsede);
+            }
+        }
+
         // ========== SISTEMA DE RESERVAS POR SEDE ==========
         // Verificar si esta sede tiene activado el sistema de reservas (solo por sede, sin toggle global)
         const useReservasParaSede = await sedeUsaReservas(idsede);

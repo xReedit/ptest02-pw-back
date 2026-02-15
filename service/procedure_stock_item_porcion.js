@@ -112,30 +112,57 @@ async function updateStockItemPorcion(item, transaction = null) {
 
         // Paso 1.5: Actualizar porciones relacionadas EXACTAMENTE como el procedimiento almacenado (líneas 117-125)
         // Actualizar porciones
-        await sequelize.query(`
-            UPDATE porcion AS p
-                LEFT JOIN item_ingrediente AS ii USING (idporcion)
-                SET p.stock = ROUND(p.stock + (? * ii.cantidad), 2)
-            WHERE ii.iditem = ?
-                AND (p.stock + (? * (ii.cantidad)) >= 0)
-        `, {
-            replacements: [cantidadAjuste, _iditem, cantidadAjuste],
-            type: QueryTypes.UPDATE,
-            transaction
-        });
+        if (item.from_monitor === true) {
+            // Monitor: SET directo del stock (sin multiplicar por cantidad_receta)
+            await sequelize.query(`
+                UPDATE porcion AS p
+                    LEFT JOIN item_ingrediente AS ii USING (idporcion)
+                    SET p.stock = ? * ii.cantidad
+                WHERE ii.iditem = ?
+                `, {
+                replacements: [cantidadAjuste, _iditem],
+                type: QueryTypes.UPDATE,
+                transaction
+            });
+        } else {
+            await sequelize.query(`
+                UPDATE porcion AS p
+                    LEFT JOIN item_ingrediente AS ii USING (idporcion)
+                    SET p.stock = ROUND(p.stock + (? * ii.cantidad), 2)
+                WHERE ii.iditem = ?
+                    AND (p.stock + (? * (ii.cantidad)) >= 0)
+            `, {
+                replacements: [cantidadAjuste, _iditem, cantidadAjuste],
+                type: QueryTypes.UPDATE,
+                transaction
+            });
+        }
         
         // Actualizar productos relacionados
-        await sequelize.query(`
-            UPDATE producto_stock AS ps
-                LEFT JOIN item_ingrediente AS ii USING (idproducto_stock)
-                SET ps.stock = ps.stock + (? * (ii.cantidad))
-            WHERE ii.iditem = ?
+        if (item.from_monitor === true) {
+            await sequelize.query(`
+                UPDATE producto_stock AS ps
+                    LEFT JOIN item_ingrediente AS ii USING (idproducto_stock)
+                    SET ps.stock = ? * ii.cantidad
+                WHERE ii.iditem = ?
+            `, {
+                replacements: [cantidadAjuste, _iditem],
+                type: QueryTypes.UPDATE,
+                transaction
+            });
+        } else {
+            await sequelize.query(`
+                UPDATE producto_stock AS ps
+                    LEFT JOIN item_ingrediente AS ii USING (idproducto_stock)
+                    SET ps.stock = ps.stock + (? * (ii.cantidad))
+                WHERE ii.iditem = ?
                 AND (ps.stock + (? * (ii.cantidad)) >= 0)
-        `, {
-            replacements: [cantidadAjuste, _iditem, cantidadAjuste],
-            type: QueryTypes.UPDATE,
-            transaction
-        });
+            `, {
+                replacements: [cantidadAjuste, _iditem, cantidadAjuste],
+                type: QueryTypes.UPDATE,
+                transaction
+            });
+        }
 
         // Paso 2: Obtener @ids_receta EXACTAMENTE como el procedimiento almacenado
         // Obtiene los IDs de items que usan las mismas porciones o productos que este item

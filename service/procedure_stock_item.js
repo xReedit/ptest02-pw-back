@@ -58,7 +58,45 @@ async function updateStockItem(item, idsede, transaction = null) {
             esReset,
             cantidadAjuste,
             operacion: esReset ? 'RESET' : (cantidadAjuste >= 0 ? 'SUMA' : 'RESTA')
-        }, '📦 [procedure_stock_item.js] Actualizando stock item');
+        }, '📦 [procedure_stock_item.js] Actualizando stock item');        
+
+
+        // ✅ Si viene del monitor, hacer SET directo sin validaciones
+        if (item.from_monitor === true) {
+            logger.debug({
+                idcarta_lista: item.idcarta_lista,
+                cantidadAjuste
+            }, '🖥️ [procedure_stock_item.js] Monitor: SET directo sin validaciones');
+
+            // Actualizar directamente sin validar si es numérico
+            await sequelize.query(`
+                UPDATE carta_lista 
+                SET cantidad = ? 
+                WHERE idcarta_lista = ?
+            `, {
+                replacements: [cantidadAjuste, item.idcarta_lista],
+                type: QueryTypes.UPDATE,
+                transaction
+            });
+
+            // Retornar el valor actualizado
+            const [result] = await sequelize.query(
+                `SELECT cantidad, idcarta_lista FROM carta_lista WHERE idcarta_lista = ?`,
+                {
+                    replacements: [item.idcarta_lista],
+                    type: QueryTypes.SELECT,
+                    transaction
+                }
+            );
+
+            logger.debug({
+                idcarta_lista: item.idcarta_lista,
+                cantidadFinal: result?.cantidad,
+                executionTime: `${Date.now() - startTime}ms`
+            }, '✅ [procedure_stock_item.js] Stock actualizado correctamente desde monitor');
+
+            return [result || { cantidad: cantidadAjuste, idcarta_lista: item.idcarta_lista }];
+        }
 
         // Verificar si la cantidad es numérica (no 'ND' o 'SP')
         const [cantidadInfo] = await sequelize.query(

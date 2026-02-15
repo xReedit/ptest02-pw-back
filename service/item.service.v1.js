@@ -47,7 +47,8 @@ class ItemService {
             cantidad_reset: item.cantidad_reset || 0,
             cantidadSumar: item.cantidadSumar || 0,
             isporcion: item.isporcion || null,
-            iditem2: item.iditem2 || item.iditem || null
+            iditem2: item.iditem2 || item.iditem || null,
+            from_monitor: item.from_monitor || false
         };
 
         logger.debug({ item: _item }, '🟡 [item.v1] Item procesado');
@@ -302,7 +303,8 @@ class ItemService {
                 isporcion: item.isporcion,
                 iditem2: item.iditem2,
                 idsede: item.idsede,
-                idusuario: item.idusuario
+                idusuario: item.idusuario,
+                from_monitor: item.from_monitor
             };
             
             // Validar que el objeto no sea null
@@ -358,7 +360,9 @@ class ItemService {
                 //     tipoMovimiento = 'VENTA_DEVOLUCION'; // Cancelación/devolución (aumenta)
                 // }
 
-                if (esSalida) {
+                if (item.from_monitor === true) {
+                    tipoMovimiento = 'MODIFICACION_MONITOR'; // ✅ Tipo 9
+                } else if (esSalida) {
                     tipoMovimiento = 'VENTA';
                 } else if (esReset || (item.cantidadSumar > 0)) {
                     // Solo si es reset EXPLÍCITO o cantidadSumar POSITIVA

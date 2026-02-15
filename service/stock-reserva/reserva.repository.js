@@ -423,6 +423,43 @@ class ReservaRepository {
             return [];
         }
     }
+
+    /**
+     * Consultar si un item es ND verificando carta_lista
+     * @param {string} idcarta_lista - ID del item en carta_lista
+     * @returns {Promise<boolean>} - true si es ND, false si tiene cantidad numérica
+     */
+    static async esItemNDEnCartaLista(idcarta_lista) {
+        if (!idcarta_lista) return true; // Sin ID, asumir ND
+
+        try {
+            const result = await sequelize.query(`
+                SELECT cantidad FROM carta_lista WHERE idcarta_lista = ? LIMIT 1
+            `, {
+                replacements: [idcarta_lista],
+                type: QueryTypes.SELECT
+            });
+
+            if (!result || result.length === 0) {
+                return true; // No encontrado, asumir ND
+            }
+
+            const cantidad = result[0].cantidad;
+            
+            // Es ND si cantidad es 'ND' o >= 9999
+            if (cantidad === 'ND') return true;
+            
+            const cantidadNum = parseFloat(cantidad);
+            if (isNaN(cantidadNum) || cantidadNum >= 9999 || cantidadNum < 1) {
+                return true;
+            }
+
+            return false; // Tiene cantidad numérica válida
+        } catch (error) {
+            logger.error({ error: error.message, idcarta_lista }, '❌ [ReservaRepo] Error verificando ND');
+            return true; // En error, asumir ND por seguridad
+        }
+    }
 }
 
 module.exports = ReservaRepository;

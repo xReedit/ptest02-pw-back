@@ -10,6 +10,7 @@ var btoa = require('btoa');
 const { collectionGroup } = require('firebase/firestore');
 const handleStock = require('../service/handle.stock.v1');
 const logger = require('../utilitarios/logger');
+const socketBot = require('./socketBot.js');
 
 
 
@@ -64,10 +65,25 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		const dataCliente = dataSocket;
 
+		// para el bot de mensajeria
 		if (dataCliente.isMensajeria === '1') {
 			const roomMensajeria = `mensajeria_${dataCliente.roomId}`;
 			logger.debug({ roomMensajeria }, 'Conectado a mensajeria');
 			socket.join(roomMensajeria);
+
+			// Registrar listeners del bot (puente WhatsApp ↔ n8n)
+			socketBot.connection(dataCliente, socket, io);
+			return;
+		}
+
+		// para el front-end del chabot mensajeria
+		if (dataCliente.isFrontMensajeria === '1') {
+			const roomMensajeria = `mensajeria_${dataCliente.roomId}`;
+			logger.debug({ roomMensajeria }, 'Frontend conectado a room mensajeria');
+			socket.join(roomMensajeria);
+
+			// Registrar listeners del bot para el frontend
+			socketBot.connection(dataCliente, socket, io);
 			return;
 		}
 
@@ -118,21 +134,78 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		});
 
 		// ping al servicio de mensajeria
+		// socket.on('ping-mensajeria', async (data) => {
+		// 	const roomMensajeria = `mensajeria_${data.roomId}`;
+		// 	const pingId = `${roomMensajeria}_${Date.now()}`;
+
+		// 	logger.debug({ roomMensajeria }, 'Connectando ping a roomMensajeria');
+			
+		// 	socket.to(roomMensajeria).timeout(5000).emit('ping', { pingId }, (err, responses) => {
+		// 		logger.debug({ responses }, 'Respuesta recibida de mensajeria', responses);
+		// 		if (responses && responses.length > 0 && responses[0].success){
+		// 			const isWspConectado = responses[0].whatsappConnected ? responses[0].whatsappConnected : true;
+		// 			socket.emit('pong-mensajeria', { pingId, success: isWspConectado, conectado: isWspConectado, instalado: true });
+		// 		}
+		// 	});
+		// });
+
 		socket.on('ping-mensajeria', async (data) => {
 			const roomMensajeria = `mensajeria_${data.roomId}`;
 			const pingId = `${roomMensajeria}_${Date.now()}`;
 
 			logger.debug({ roomMensajeria }, 'Connectando ping a roomMensajeria');
-			
-			socket.to(roomMensajeria).timeout(5000).emit('ping', { pingId }, (err, responses) => {
-				logger.debug({ responses }, 'Respuesta recibida de mensajeria', responses);
-				if (responses && responses.length > 0 && responses[0].success){
-					const isWspConectado = responses[0].whatsappConnected ? responses[0].whatsappConnected : true;
-					socket.emit('pong-mensajeria', { pingId, success: isWspConectado });
+
+			let responded = false;
+
+			// Escuchar el evento 'pong' que el cliente emite como evento separado
+			const onPong = (responseData) => {
+				if (responded) return;
+				responded = true;
+
+				logger.debug({ responseData }, 'Respuesta pong recibida de mensajeria');
+				const isWspConectado = responseData.whatsappConnected || false;
+				socket.emit('pong-mensajeria', {
+					pingId,
+					success: isWspConectado,
+					conectado: isWspConectado,
+					instalado: true,
+					whatsapp: responseData.whatsapp || null
+				});
+			};
+
+			// Escuchar 'pong' en todos los sockets del room
+			const socketsInRoom = await io.in(roomMensajeria).allSockets();
+			socketsInRoom.forEach(socketId => {
+				const targetSocket = io.sockets.sockets.get(socketId);
+				if (targetSocket && targetSocket.id !== socket.id) {
+					targetSocket.once('pong', onPong);
 				}
 			});
+
+			// Emitir ping al room
+			socket.to(roomMensajeria).emit('ping', { pingId });
+
+			// Timeout: si no responde en 5s
+			setTimeout(() => {
+				if (!responded) {
+					responded = true;
+					// Limpiar listeners
+					socketsInRoom.forEach(socketId => {
+						const targetSocket = io.sockets.sockets.get(socketId);
+						if (targetSocket) targetSocket.off('pong', onPong);
+					});
+					logger.debug({ roomMensajeria }, 'Timeout ping mensajeria - sin respuesta');
+					socket.emit('pong-mensajeria', { pingId, success: false, conectado: false, instalado: false });
+				}
+			}, 5000);
 		});
 
+		// Frontend envia actualización de números bloqueados al cliente WhatsApp
+		// socket.on('bot-update-number-blocked', (data) => {
+		// 	const roomMensajeria = `mensajeria_${data.roomId}`;
+		// 	logger.debug({ data, roomMensajeria }, '🤖 [Bot] Frontend envió actualización de números bloqueados');
+		// 	io.to(roomMensajeria).emit('bot-update-number-blocked', data);
+		// });
 
 		/// repartidor
 		if (dataCliente.isRepartidor) {

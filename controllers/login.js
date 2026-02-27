@@ -216,7 +216,7 @@ const loggerUsPrintServer = async function (req, res) {
         const usuario = req.body.nomusuario;
         const pass = req.body.pass;
 
-        const sql = `select u.idorg, u.idsede, u.usuario nom_usuario, s.nombre nom_sede, u.pass from usuario u 
+        const sql = `select u.idorg, u.idsede, u.usuario nom_usuario, s.nombre nom_sede, u.pass, s.show_chatbot from usuario u 
                         inner join sede s using(idsede) WHERE u.usuario = ? AND u.estado = 0 and s.estado=0`;
 
         const rows = await QueryServiceV1.ejecutarConsulta(sql, [usuario], 'SELECT', 'loggerUsPrintServer');

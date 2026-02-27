@@ -87,7 +87,7 @@ async function getPrinterMarcaInHolding(idsede_marca) {
             	INNER JOIN sede AS s ON cp.idsede = s.idsede
             	LEFT join conf_print_otros cpo on cpo.idsede = s.idsede and cpo.idtipo_otro = -3
             	LEFT join impresora i on i.idimpresora = cpo.idimpresora
-			WHERE (cp.idsede=${idsede_marca})`;
+			WHERE (cp.idsede=${idsede_marca}) and cp.estado=0`;
     return await queryService.emitirRespuesta(xquery);
     
     // return [{"idimpresora":1, "ip": "192.168.1.114","var_margen_iz": 0,"var_size_font": 0,"local": 0,"num_copias": 1,"var_size_font_tall_comanda": 0,"copia_local": 0,"img64": "","papel_size": 0,"pie_pagina": "Gracias por su preferencia. Estamos trabajando para brindarle un mejor servicio.","pie_pagina_comprobante": "Representación impresa del Comprobante de Venta Electrónico puede ser consultada en www.papaya.com.pe Bienes transferdios a la amazonia para ser consumidos en la misma."}];

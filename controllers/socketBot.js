@@ -1,6 +1,7 @@
 const logger = require('../utilitarios/logger');
 const config = require('../_config');
 const QueryServiceV1 = require('../service/query.service.v1');
+const fetch = require("node-fetch");
 
 // URL del webhook de n8n (configurar en variables de entorno)
 const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/whatsapp-pedidos';
@@ -62,7 +63,7 @@ const connection = async function (dataCliente, socket, io) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data.whatsapp_message_received),
-                signal: AbortSignal.timeout(30000) // 30s timeout
+                timeout: 30000
             });
 
             if (!response.ok) {

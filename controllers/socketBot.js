@@ -24,12 +24,13 @@ const connection = async function (dataCliente, socket, io) {
     // Verificar si la sede tiene chatbot habilitado y enviar números bloqueados
     try {
         const sedeRows = await QueryServiceV1.ejecutarConsulta(
-            'SELECT show_chatbot FROM sede WHERE idsede = ?',
+            'SELECT show_chatbot, chatbot_run FROM sede WHERE idsede = ?',
             [idsede], 'SELECT', 'socketBot-showChatbot'
         );
 
         const showChatbot = sedeRows?.[0]?.show_chatbot;
-        logger.debug({ idsede, showChatbot }, '🤖 [Bot] show_chatbot de la sede');
+        const chatbotRun = sedeRows?.[0]?.chatbot_run;
+        logger.debug({ idsede, showChatbot, chatbotRun }, '🤖 [Bot] show_chatbot de la sede');
 
         if (parseInt(showChatbot) === 1) {
             const bloqueados = await QueryServiceV1.ejecutarConsulta(
@@ -39,6 +40,8 @@ const connection = async function (dataCliente, socket, io) {
 
             logger.debug({ idsede, total: bloqueados.length }, '🤖 [Bot] Números bloqueados enviados al cliente');
             socket.emit('bot-list-number-blocked', { idsede, bloqueados });
+
+            socket.emit('bot-init-variables', { showChatbot, chatbotRun });
         }
     } catch (error) {
         logger.error({ error: error.message, idsede }, '🤖 [Bot] Error consultando chatbot/bloqueados');

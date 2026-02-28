@@ -167,6 +167,14 @@ const connection = async function (dataCliente, socket, io) {
         io.to(roomMensajeria).emit('bot-update-number-blocked', data);
         // socket.emit('bot-update-number-blocked', data);
     });
+
+    // ecuchar cuando se pone run o stop al chatbot
+    socket.on('run-chatbot', (data) => {
+        const roomMensajeria = `mensajeria_${data.roomId}`;
+        logger.debug({ data, roomMensajeria }, '🤖 [Bot] Frontend envió comando para ejecutar chatbot');
+        io.to(roomMensajeria).emit('run-chatbot', data);
+        // socket.emit('run-chatbot', data);
+    });
 };
 
 module.exports = {

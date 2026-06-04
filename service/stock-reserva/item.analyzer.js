@@ -121,7 +121,8 @@ class ItemAnalyzer {
         if (item.subitems_view && Array.isArray(item.subitems_view)) {
             for (const grupo of item.subitems_view) {
                 const opciones = grupo.subitems || grupo.opciones || [];
-                if (opciones.some(o => o && o.selected && (o.idporcion || o.idproducto || o.idsubreceta))) {
+                // if (opciones.some(o => o && o.selected && (o.idporcion || o.idproducto || o.idsubreceta))) {
+                if (opciones.some(o => o && (o.idporcion || o.idproducto || o.idsubreceta))) {
                     return true;
                 }
             }
@@ -188,6 +189,49 @@ class ItemAnalyzer {
         }
 
         return subitems;
+    }
+
+    /**
+   * Extrae subitems COMPLETOS para confirmar/resetear pedido.
+   * Usa subitems_view = registro completo de TODOS los grupos de seleccion.
+   * Las cantidades retornadas son ABSOLUTAS (ya incluyen la cantidad de platos):
+   *   cantidad = grupo.cantidad_seleccionada * (opcion.cantidad_selected || 1) * descuenta
+   *
+   * NO filtra por `selected`: el array de cada grupo solo contiene opciones
+   * elegidas, pero el flag llega mutado a false desde la app (modo contador).
+   *
+   * NO usa subitems_selected porque solo contiene el ULTIMO grupo seleccionado
+   * (si un item tiene 2 platos con selecciones distintas, el ultimo se
+   * descontaba x2 y el primero x0).
+   */
+    static extraerSubitemsCompletos(item) {
+        const subitems = [];
+
+        if (item.subitems_view && Array.isArray(item.subitems_view) && item.subitems_view.length > 0) {
+            for (const grupo of item.subitems_view) {
+                if (!grupo) continue;
+                const cantGrupo = Math.abs(parseFloat(grupo.cantidad_seleccionada)) || 1;
+                const opciones = grupo.subitems || grupo.opciones || [];
+                for (const o of opciones) {
+                    if (!o || !this._tieneStock(o)) continue;
+                    const cantOpcion = Math.abs(parseFloat(o.cantidad_selected)) || 1;
+                    const descuenta = parseFloat(o.descuenta) || 1;
+                    subitems.push({
+                        idporcion: o.idporcion || 0,
+                        idproducto: o.idproducto || 0,
+                        idsubreceta: o.idsubreceta || 0,
+                        cantidad_selected: cantGrupo * cantOpcion * descuenta,
+                        descuenta: descuenta,
+                        des: o.des || o.descripcion || '',
+                        cantidadAbsoluta: true   // ya incluye la cantidad de platos
+                    });
+                }
+            }
+            return subitems;
+        }
+
+        // Fallback: sin subitems_view (estructura antigua/restobar web) → comportamiento actual
+        return this.extraerSubitems(item);
     }
 
     /**

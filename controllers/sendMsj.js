@@ -629,7 +629,7 @@ const sendPushNotificactionOneRepartidor = async function (
 	}
 
 	// 3) No hay data de push
-	logger.log('Repartidor sin pwa_code_verification ni fcm_token, no se envía push.');
+	logger.debug('Repartidor sin pwa_code_verification ni fcm_token, no se envía push.');
 };
 
 module.exports.sendPushNotificactionOneRepartidor = sendPushNotificactionOneRepartidor;

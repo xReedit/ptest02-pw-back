@@ -731,7 +731,7 @@ const getConsultaDatosCliente = async function (req, res) {
     const onlySede = req.body.only_sede || false;
     const doc = req.body.documento;    
     // const _str_only_sede = onlySede ? ' and idsede = ' + idsede : ''; 
-    var read_query = '';
+    // var read_query = '';
 
     if ( onlySede ) {
         // read_query = `SELECT * FROM cliente c 
@@ -814,12 +814,12 @@ module.exports.getIdSedeFromNickName = getIdSedeFromNickName;
 
 const getAreasMesas = async function (req, res) {	
     const idsede = req.body.idsede;
-    const tipo_mesa = req.body.tipo_mesa === '1' ? 'alfanumerica' : 'numeric';
+    const tipo_mesa = req.body.tipo_mesa === '1' ? 'alfanumerica' : 'numerica';
     const query = `select am.titulo, am.num_mesa_ini, am.num_mesa_fin, am.tipo_mesa, am.prefijo_mesa from area_mesa am where idsede=? and estado=0 and tipo_mesa=?`;	
     const rows = await QueryServiceV1.ejecutarConsulta(query, [idsede, tipo_mesa], 'SELECT', 'getAreasMesas');
 
     if (rows.length === 0) {
-        const query2 = `select mesas as cant from mesa where idsede=? and estado=0`;
+        const query2 = `select mesas as cant from sede where idsede=? and estado=0`;
         const rows2 = await QueryServiceV1.ejecutarConsulta(query2, [idsede], 'SELECT', 'getAreasMesas');
         
         rows.push({

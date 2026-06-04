@@ -98,7 +98,11 @@ class RecetaService {
 
         // 2. Expandir subitems
         for (const subitem of subitems) {
-            const cantidadSubitem = itemInfo.cantidad * subitem.cantidad_selected;
+            // const cantidadSubitem = itemInfo.cantidad * subitem.cantidad_selected;
+            const cantidadSubitem = subitem.cantidadAbsoluta
+            ? subitem.cantidad_selected
+            : itemInfo.cantidad * subitem.cantidad_selected;
+
             // Para subitems, cantidadReceta es cantidad_selected (descuenta)
             const cantidadRecetaSubitem = subitem.cantidad_selected || 1;
 

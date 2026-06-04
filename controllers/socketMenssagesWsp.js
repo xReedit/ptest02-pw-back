@@ -159,8 +159,11 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 		// 1: verificar telefono
 		// 2: notifica al cliente el repartidor que acepto pedido	
 		let roomNameMensajeria = '';
+		let numSocketsMensajeria=0;
 		if (dataSocket != null) {			
 			roomNameMensajeria = `mensajeria_${dataSocket.idorg}${dataSocket.idsede}`;
+
+			numSocketsMensajeria = io.sockets.adapter.rooms.get(roomNameMensajeria)?.size || 0;
 		}	
 
 
@@ -475,9 +478,14 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 
 		logger.debug('_sendServerMsj === ', _sendServerMsj);
 
-	if (tipo !== 3 && tipo !== 7) { // no comprobantes
+	if (tipo == 3 || tipo == 7) { // si tiene conectado su propio numero no envia
+		if ( numSocketsMensajeria  === 0) { // no hay sockets en mensajeria
+			io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
+		}
+	} else {
 		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
 	}
+	// }
 
 }
 

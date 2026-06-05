@@ -474,17 +474,20 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 			_sendServerMsj.tipo = 7;
 			_sendServerMsj.telefono = dataMsj.telefono;
 			_sendServerMsj.msj = dataMsj.msj
+			
+			io.to(roomNameMensajeria).emit('send_message', listMessages);
 		}
 
 		logger.debug('_sendServerMsj === ', _sendServerMsj);
 
-	if (tipo == 3 || tipo == 7) { // si tiene conectado su propio numero no envia
-		if ( numSocketsMensajeria  === 0) { // no hay sockets en mensajeria
+	if (tipo !== 3 && tipo !== 7) { // si tiene conectado su propio numero no envia
+		// if ( numSocketsMensajeria  === 0) { // no hay sockets en mensajeria
 			io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
-		}
-	} else {
-		io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
+		// }
 	}
+	// } else {
+	// 	io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
+	// }
 	// }
 
 }

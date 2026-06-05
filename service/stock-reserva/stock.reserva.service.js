@@ -219,7 +219,9 @@ class StockReservaService {
                 return { success: true, operaciones: [], cantidad: 'ND', listItemsPorcion: '[]', listSubItems: [] };
             }
 
-            const subitems = ItemAnalyzer.extraerSubitems(item);
+            // FIX 3.2: confirmar/resetear deben leer TODOS los grupos elegidos (subitems_view),
+            // no solo el ultimo (subitems_selected). Ver test/FIX-STOCK-SUBITEMS-SELECCIONABLES.md
+            const subitems = ItemAnalyzer.extraerSubitemsCompletos(item);
             const componentes = await RecetaService.expandirAComponentes(itemInfo, subitems);
 
             if (!componentes || componentes.length === 0) {

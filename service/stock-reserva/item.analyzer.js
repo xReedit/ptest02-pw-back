@@ -209,10 +209,11 @@ class ItemAnalyzer {
 
         if (item.subitems_view && Array.isArray(item.subitems_view) && item.subitems_view.length > 0) {
             for (const grupo of item.subitems_view) {
-                if (!grupo) continue;
+                // SOLO grupo.subitems (los ELEGIDOS). NO leer grupo.opciones:
+                // es el catalogo completo de la carta y descontaria opciones no vendidas.
+                if (!grupo || !Array.isArray(grupo.subitems)) continue;
                 const cantGrupo = Math.abs(parseFloat(grupo.cantidad_seleccionada)) || 1;
-                const opciones = grupo.subitems || grupo.opciones || [];
-                for (const o of opciones) {
+                for (const o of grupo.subitems) {
                     if (!o || !this._tieneStock(o)) continue;
                     const cantOpcion = Math.abs(parseFloat(o.cantidad_selected)) || 1;
                     const descuenta = parseFloat(o.descuenta) || 1;

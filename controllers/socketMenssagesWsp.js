@@ -480,7 +480,7 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 
 		logger.debug('_sendServerMsj === ', _sendServerMsj);
 
-	if (tipo !== 3 && tipo !== 7) { // si tiene conectado su propio numero no envia
+	if (tipo === 0 || tipo === 1 || tipo === 6) { // solo si tipo es igual a: 0,1,6
 		// if ( numSocketsMensajeria  === 0) { // no hay sockets en mensajeria
 			io.to('SERVERMSJ').emit('enviado-send-msj', _sendServerMsj);
 		// }

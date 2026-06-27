@@ -139,6 +139,10 @@ socketsController.socketsOn(io);
 const stockCleanupJob = require('./service/stock.cleanup.job');
 stockCleanupJob.iniciarJob();
 
+// Recordatorios de confirmación de pedido (opt-in: RECORDATORIOS_PEDIDO_ENABLED=true)
+const recordatorioPedido = require('./controllers/recordatorioPedido');
+recordatorioPedido.runRecordatorios(io);
+
 // ejecutar servicio de envio de comprobantes electronicos
 // apiServiceSendCPE.activarEnvioCpe(); // servicio propio
 // apiServiceTimerChangeCosto.runTimerCosto()

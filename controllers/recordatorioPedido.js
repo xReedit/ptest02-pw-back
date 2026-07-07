@@ -17,16 +17,16 @@ const QueryServiceV1 = require('../service/query.service.v1');
 
 // ── Config ───────────────────────────────────────────────────────────────────
 const INTERVALO_MS = 60 * 1000;   // cada cuánto revisa la tabla (1 min)
-const ESPERA_MIN = 3;             // minutos sin respuesta antes de cada recordatorio
+const ESPERA_MIN = 5;             // minutos sin respuesta antes de cada recordatorio
 const MAX_RECORDATORIOS = 3;      // máximo de recordatorios antes de la despedida
 
 // Plantillas amables (índice = recordatorios ya enviados: 0 → 1.º, 1 → 2.º, 2 → 3.º).
 const RECORDATORIOS = [
     '¡Hola! 👋 Tu pedido quedó listo, solo falta tu confirmación para empezar a prepararlo. ¿Lo confirmamos? 😊',
-    'Seguimos por aquí 🙌 Tu pedido sigue esperando tu confirmación para mandarlo a cocina. Responde *sí* y lo dejamos en marcha 🍽️',
+    'Tu pedido sigue esperando tu confirmación. Responde *sí* para procesarlo 🍽️',
     'Última llamadita 🛎️ ¿Confirmamos tu pedido? Responde *sí* y lo preparamos de una vez 😉',
 ];
-const DESPEDIDA = 'Por ahora cerramos tu pedido para no hacerte esperar 🙏 Cuando quieras, escríbeme y lo armamos al toque. ¡Te esperamos la próxima! 🧡';
+const DESPEDIDA = 'Por ahora cerramos tu pedido para no hacerte esperar 🙏 Cuando quieras, escríbeme y lo armamos al toque. 🧡';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

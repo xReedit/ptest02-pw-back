@@ -12,15 +12,31 @@ const logger = require('../../utilitarios/logger');
 class ItemAnalyzer {
 
     /**
+     * Determina si el item es producto de almacén (bodega).
+     * - isalmacen puede venir numérico (socket) o string (p_body persistido) → comparación flexible.
+     * - Los items del POS web (venta rápida/m_panel) NO traen isalmacen en p_body: se infiere
+     *   por procede ('0' = almacén). Solo se usa procede como fallback porque en algunos
+     *   flujos del mozo procede viene invertido al reconstruir desde cuenta.
+     */
+    static esItemAlmacen(item) {
+        if (item.isalmacen !== undefined && item.isalmacen !== null && item.isalmacen !== '') {
+            return parseInt(item.isalmacen, 10) === 1;
+        }
+        return item.procede !== undefined && item.procede !== null && String(item.procede) === '0';
+    }
+
+    /**
      * Analiza un item y retorna su información de stock (versión síncrona)
      * IMPORTANTE: iditem2 contiene el ID real del producto, iditem puede ser idcarta_lista
      */
     static analizar(item) {
         // Usar iditem2 si existe (es el ID real), sino usar iditem
         const iditemReal = item.iditem2 || item.iditem;
-        const isND = this.esItemND(item);
+        const esAlmacen = this.esItemAlmacen(item);
+        // almacén: idcarta_lista es un idproducto_stock, nunca es ND (descuenta producto_stock directo)
+        const isND = esAlmacen ? false : this.esItemND(item);
         const tieneSubitemsSeleccionados = this.tieneSubitemsConStock(item);
-        
+
         return {
             iditem: iditemReal,
             iditemOriginal: item.iditem, // Guardar el original por si se necesita
@@ -31,7 +47,7 @@ class ItemAnalyzer {
             isSP: item.isporcion === 'SP',
             tieneSubitems: isND || tieneSubitemsSeleccionados, // ND implica que tiene subitems
             tieneSubitemsSeleccionados: tieneSubitemsSeleccionados,
-            esAlmacen: item.isalmacen === 1
+            esAlmacen: esAlmacen
         };
     }
 
@@ -46,12 +62,16 @@ class ItemAnalyzer {
         const isSP = item.isporcion === 'SP';
         const tieneSubitemsSeleccionados = this.tieneSubitemsConStock(item);
         const idcarta_lista = item.idcarta_lista || item.iditem;
+        const esAlmacen = this.esItemAlmacen(item);
 
         // Si es SP, no consultar carta_lista (usa receta)
-        // Si no es SP, consultar carta_lista para saber si es ND
+        // Si es ALMACÉN, tampoco: su idcarta_lista es un idproducto_stock (PK de producto_stock),
+        // no un id de carta_lista — la consulta ND daba resultado aleatorio (sin fila → ND → no
+        // descontaba nunca; con fila ajena de otra sede → seguía). Almacén nunca es ND.
+        // Si no es SP ni almacén, consultar carta_lista para saber si es ND
         let isND;
-        if (isSP) {
-            isND = false; // SP nunca es ND, tiene receta
+        if (isSP || esAlmacen) {
+            isND = false;
         } else {
             isND = await ReservaRepository.esItemNDEnCartaLista(idcarta_lista);
         }
@@ -66,7 +86,7 @@ class ItemAnalyzer {
             isSP: isSP,
             tieneSubitems: isND || tieneSubitemsSeleccionados,
             tieneSubitemsSeleccionados: tieneSubitemsSeleccionados,
-            esAlmacen: item.isalmacen === 1
+            esAlmacen: esAlmacen
         };
     }
 

@@ -137,8 +137,8 @@ class ReservaRepository {
             const whereClause = tipo === 'porcion' ? `${config.pk} = ? AND idsede = ?` : `${config.pk} = ?`;
             const replacements = tipo === 'porcion' ? [cantidad, id, idsede] : [cantidad, id];
 
-            await sequelize.query(`
-                UPDATE ${config.tabla} 
+            const [, updMeta] = await sequelize.query(`
+                UPDATE ${config.tabla}
                 SET ${config.stock} = GREATEST(0, ${config.stock} - ?)
                 WHERE ${whereClause}
             `, {
@@ -146,6 +146,15 @@ class ReservaRepository {
                 type: QueryTypes.UPDATE,
                 transaction
             });
+
+            // red de seguridad: si el UPDATE no afectó filas, el stock real NO se descontó
+            // (id inexistente en la tabla destino, p.ej. vínculo legacy) — dejar rastro siempre
+            const affectedStock = updMeta?.affectedRows ?? updMeta ?? 0;
+            if (!affectedStock) {
+                logger.warn({
+                    tipo, id, cantidad, idsede, tabla: config.tabla, pk: config.pk
+                }, '⚠️ [ReservaRepo] Confirmación SIN descuento real: la fila de stock no existe');
+            }
 
             // 2. Restar de la reserva
             await sequelize.query(`

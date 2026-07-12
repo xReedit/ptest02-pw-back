@@ -19,6 +19,11 @@ const QueryServiceV1 = require('../service/query.service.v1');
 const INTERVALO_MS = 60 * 1000;   // cada cuánto revisa la tabla (1 min)
 const ESPERA_MIN = 5;             // minutos sin respuesta antes de cada recordatorio
 const MAX_RECORDATORIOS = 3;      // máximo de recordatorios antes de la despedida
+// Solo perseguimos conversaciones ACTIVAS: previews creados hace poco. El ciclo
+// completo dura ESPERA_MIN*(MAX_RECORDATORIOS+1) ≈ 20 min; fuera de esa ventana
+// (+ margen) el preview es de una conversación pasada y NO se le recuerda.
+// ponytail: ventana por created_at; subir si se quiere perseguir más tiempo.
+const VENTANA_ACTIVA_MIN = 60;
 
 // Plantillas amables (índice = recordatorios ya enviados: 0 → 1.º, 1 → 2.º, 2 → 3.º).
 const RECORDATORIOS = [
@@ -54,6 +59,7 @@ async function revisar(io) {
         SELECT id, recordatorios
         FROM pedido_preview
         WHERE estado = 'pending'
+          AND created_at > (NOW() - INTERVAL ${VENTANA_ACTIVA_MIN} MINUTE)
           AND COALESCE(last_recordatorio_at, created_at) < (NOW() - INTERVAL ${ESPERA_MIN} MINUTE)
         LIMIT 200`;
 

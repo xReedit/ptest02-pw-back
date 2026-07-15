@@ -39,8 +39,13 @@ app.use('/v3',appV3);
 var routesPinPad = require('./routes/routesPinPad'); 
 app.use('/pinpad', routesPinPad);
 
-var routesHolding = require('./routes/routesHolding'); 
+var routesHolding = require('./routes/routesHolding');
 app.use('/v3/holding', routesHolding);
+
+// Canal de salida del chatbot (chatbot-go no puede iniciar conversación por su
+// cuenta; nos pide que emitamos por el socket del gateway de WhatsApp).
+var routesChatbot = require('./routes/routesChatbot');
+app.use('/chatbot', routesChatbot);
 
 app.use(function(req, res, next) {    
     var err = new Error('Not Found');
@@ -139,9 +144,13 @@ socketsController.socketsOn(io);
 const stockCleanupJob = require('./service/stock.cleanup.job');
 stockCleanupJob.iniciarJob();
 
-// Recordatorios de confirmación de pedido (opt-in: RECORDATORIOS_PEDIDO_ENABLED=true)
-const recordatorioPedido = require('./controllers/recordatorioPedido');
-recordatorioPedido.runRecordatorios(io);
+// Los recordatorios de confirmación se movieron al chatbot (repo chatbot-go,
+// internal/nudge) y se encienden desde el switch de su dashboard. Vivían aquí
+// como controllers/recordatorioPedido.js, pero solo perseguían filas de
+// pedido_preview, o sea pedidos que YA habían llegado al resumen: los abandonos
+// reales ocurren antes (falta el método de pago o la hora de recojo), y para
+// esos nunca nacía la fila. El chatbot sí tiene la conversación, así que decide
+// allá y nos pide emitir por /chatbot/emitir.
 
 // ejecutar servicio de envio de comprobantes electronicos
 // apiServiceSendCPE.activarEnvioCpe(); // servicio propio

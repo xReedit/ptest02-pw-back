@@ -843,7 +843,7 @@ class StockPorcionService {
             const { idsede, idusuario, idpedido, iditem } = metadata;
             const tipoMovConfig = CONFIG.TIPO_MOVIMIENTO[tipoMovimiento] || CONFIG.TIPO_MOVIMIENTO.VENTA;
 
-            console.log('tipoMovConfig =====>>> ', tipoMovConfig);
+            // console.log('tipoMovConfig =====>>> ', tipoMovConfig);
 
             await sequelize.query(
                 `INSERT INTO porcion_historial (

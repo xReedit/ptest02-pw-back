@@ -74,11 +74,21 @@ const connection = async function (dataCliente, socket, io) {
 
             logger.debug({ n8nResponse, 'roomMensajeria': roomMensajeria }, '🤖 [Bot] Respuesta recibida de n8n');
 
+            // Respuesta vacía = el bot decidió no contestar (un 👍/"gracias" sin
+            // nada pendiente). NO emitimos: el cliente Baileys no filtra mensajes
+            // vacíos y mandaría un WhatsApp en blanco. Así se corta el ping-pong
+            // de cortesías sin tocar el cliente (que se actualiza a mano por local).
+            const mensajeBot = n8nResponse && n8nResponse.response;
+            if (!mensajeBot || !String(mensajeBot).trim()) {
+                logger.debug({ roomMensajeria }, '🤖 [Bot] respuesta vacía, el bot eligió no contestar (no se emite)');
+                return;
+            }
+
             // Enviar respuesta de vuelta al cliente WhatsApp
             io.to(roomMensajeria).emit('bot-response-message', {
                 success: true,
                 whatsapp_message_received: data.whatsapp_message_received,
-                message: n8nResponse.response
+                message: mensajeBot
             });
 
         } catch (error) {

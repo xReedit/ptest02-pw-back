@@ -84,6 +84,30 @@ const connection = async function (dataCliente, socket, io) {
                 return;
             }
 
+            // Respuesta con imagen (ticket del resumen): un solo mensaje
+            // imagen+caption por el canal legacy send_message — el cliente
+            // Baileys ya lo procesa (mismo camino que los comprobantes PDF).
+            const media = n8nResponse && n8nResponse.media;
+            if (media && media.tipo === 'imagen' && media.url) {
+                const numero = data.whatsapp_message_received?.from;
+                if (!numero) {
+                    logger.debug({ roomMensajeria }, '🤖 [Bot] No se pudo obtener número de teléfono, usando bot-response-message de texto');
+                    io.to(roomMensajeria).emit('bot-response-message', {
+                        success: true,
+                        whatsapp_message_received: data.whatsapp_message_received,
+                        message: mensajeBot
+                    });
+                    return;
+                }
+                logger.debug({ roomMensajeria, url: media.url }, '🤖 [Bot] Respuesta con ticket imagen');
+                io.to(roomMensajeria).emit('send_message', [{
+                    numero,
+                    tipo: 'imagen',
+                    archivo: { url: media.url, caption: mensajeBot }
+                }]);
+                return;
+            }
+
             // Enviar respuesta de vuelta al cliente WhatsApp
             io.to(roomMensajeria).emit('bot-response-message', {
                 success: true,

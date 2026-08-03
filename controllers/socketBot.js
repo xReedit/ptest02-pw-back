@@ -42,7 +42,15 @@ const connection = async function (dataCliente, socket, io) {
             logger.debug({ idsede, total: bloqueados.length }, '🤖 [Bot] Números bloqueados enviados al cliente');
             socket.emit('bot-list-number-blocked', { idsede, bloqueados });
 
-            socket.emit('bot-init-variables', { showChatbot, chatbotRun });
+            // Debounce de entrantes centralizado: si el server define
+            // CHATBOT_INCOMING_DEBOUNCE_MS, todos los clientes Baileys lo
+            // adoptan al conectarse (la env local de cada PC tiene prioridad).
+            const incomingDebounceMs = Number.parseInt(process.env.CHATBOT_INCOMING_DEBOUNCE_MS || '', 10);
+            socket.emit('bot-init-variables', {
+                showChatbot,
+                chatbotRun,
+                ...(Number.isFinite(incomingDebounceMs) && incomingDebounceMs > 0 ? { incomingDebounceMs } : {})
+            });
         }
     } catch (error) {
         logger.error({ error: error.message, idsede }, '🤖 [Bot] Error consultando chatbot/bloqueados');

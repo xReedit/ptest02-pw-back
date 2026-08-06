@@ -114,6 +114,10 @@ async function xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComp
         
     } else {
 
+        // fix: variables inexistentes crasheaban esta rama (sedes gravadas).
+        const _base = parseFloat(importe_total_pagar) - parseFloat(importe_total_igv);
+        // total venta = total a pagar.
+        const importe_total_pagar_calc_igv = parseFloat(importe_total_pagar);
         const total_operaciones_gravadas = descuentoEnTotal > 0 ? (importe_total_pagar_calc_igv - parseFloat(importe_total_igv)) + descuentoEnTotal : xArraySubTotales[0].importe; // el subtotal
         // const total_operaciones_gravadas = xArraySubTotales[0].importe; // el subtotal
         const _total_valor = descuentoEnTotal > 0 ? _base - descuentoEnTotal : importe_total_pagar - parseFloat(importe_total_igv);
@@ -261,9 +265,12 @@ function xJsonSunatCocinarItemDetalle(orden, ValorIGV, isExoneradoIGV) {
 
 
               codigo_tipo_afectacion_igv = "10";
-              total_igv = parseFloat(parseFloat(x.precio_total) * procentaje_IGV).toFixed(2);
-              _valor_unitario = parseFloat(_precio_unitario) - (parseFloat(_precio_unitario) * procentaje_IGV); 
-              total_base_igv = parseFloat(_precio_unitario) * x.cantidad;
+              // El precio ya INCLUYE IGV: se extrae (total*(igv/(100+igv))),
+              // no se suma encima. Asi la suma de IGV por item cuadra con el
+              // IGV de cabecera y SUNAT no rechaza el documento.
+              total_igv = parseFloat(parseFloat(x.precio_total) - (parseFloat(x.precio_total) / (1 + procentaje_IGV))).toFixed(2);
+              _valor_unitario = parseFloat(_precio_unitario) / (1 + procentaje_IGV);
+              total_base_igv = parseFloat((parseFloat(x.precio_total) / (1 + procentaje_IGV)).toFixed(2));
               total_valor_item = _valor_unitario *  x.cantidad;
             } else {
                 total_base_igv = parseFloat(x.precio_total); // cambio x error 3105 IGV
@@ -279,7 +286,7 @@ function xJsonSunatCocinarItemDetalle(orden, ValorIGV, isExoneradoIGV) {
                 "codigo_producto_gsl": "90101500",
                 "unidad_de_medida": "NIU",
                 "cantidad": x.cantidad,
-                "valor_unitario": parseFloat(_val_unitario).toFixed(2), //parseFloat(x.punitario).toFixed(2),
+                "valor_unitario": parseFloat(_valor_unitario).toFixed(2), // sin IGV en gravadas; igual al precio en exoneradas
                 "codigo_tipo_precio": "01",
                 "precio_unitario": parseFloat(_val_unitario).toFixed(2), // parseFloat(x.punitario).toFixed(2),
                 "codigo_tipo_afectacion_igv": codigo_tipo_afectacion_igv,

@@ -21,6 +21,7 @@ const auth = require('../middleware/autentificacion');
 
 const apiSpeech = require('../controllers/speech');
 const pedidoBot = require('../controllers/pedidoBot');
+const botComprobante = require('../controllers/botComprobante');
 
 const apiFireBase = require('../controllers/apiFireBase');
 
@@ -62,6 +63,7 @@ routerV3.post('/firebase/update-idpedidos-repartidor', apiFireBase.updateIdPedid
 // PEDIDO BOT
 routerV3.post('/bot/send-bot-pedido', pedidoBot.setPedidoBot);
 routerV3.post('/bot/send-bot-solicitud-permiso', pedidoBot.setAceptaSolicitudRemotoBot);
+routerV3.post('/bot/generar-comprobante', botComprobante.generarComprobanteBot);
 
 
 // version app

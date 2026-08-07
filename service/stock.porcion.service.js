@@ -45,7 +45,8 @@ const CONFIG = {
         VENTA_DEVOLUCION: { id: 6, nombre: 'VENTA DEVOLUCION' },
         DESPACHO_SOLICITUD: { id: 7, nombre: 'DESPACHO SOLICITUD' },
         RECEPCION_SOLICITUD: { id: 8, nombre: 'RECEPCION SOLICITUD' },
-        MODIFICACION_MONITOR: { id: 9, nombre: 'MODIFICACION MONITOR' }
+        MODIFICACION_MONITOR: { id: 9, nombre: 'MODIFICACION MONITOR' },
+        AJUSTE_CIERRE: { id: 10, nombre: 'AJUSTE CIERRE' } // conciliacion automatica (migracion 019)
     }
 };
 

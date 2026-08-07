@@ -27,6 +27,7 @@ const apiFireBase = require('../controllers/apiFireBase');
 
 const apiWebhook = require('../controllers/webhook');
 const apiMensajeria = require('../controllers/apiMensajeria');
+const apiStockConciliacion = require('../controllers/apiStockConciliacion');
 // var cors = require('cors')
 
 // var whitelist = ['http://example1.com', 'http://example2.com', 'http://localhost/*']
@@ -56,6 +57,9 @@ routerV3.get('/', function (req, res, next) {
 });
 
 // firebase
+// Conciliacion de stock sincrona: la llama el PHP del cierre de caja ANTES del SP
+routerV3.post('/stock/conciliar-cierre', apiStockConciliacion.conciliarCierre);
+
 routerV3.post('/firebase/add-repartidor', apiFireBase.addRepartidor);
 routerV3.post('/firebase/update-repartidor', apiFireBase.updateRepartidor);
 routerV3.post('/firebase/update-idpedidos-repartidor', apiFireBase.updateIdPedidosRepartidor);

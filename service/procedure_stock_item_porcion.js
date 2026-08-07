@@ -27,6 +27,7 @@ const { sequelize, Sequelize } = require('../config/database');
 const { QueryTypes } = Sequelize;
 const logger = require('../utilitarios/logger');
 const errorManager = require('./error.manager');
+const { registrarMovimientoProducto } = require('./producto.movements.service');
 
 /**
  * Actualiza el stock de un item con porciones
@@ -99,10 +100,11 @@ async function updateStockItemPorcion(item, transaction = null) {
         
         // 🆕 PRIMERO: Lock las porciones que vamos a actualizar
         await sequelize.query(`
-            SELECT p.idporcion, p.stock 
+            SELECT p.idporcion, p.stock
             FROM porcion AS p
             LEFT JOIN item_ingrediente AS ii USING (idporcion)
             WHERE ii.iditem = ?
+                AND ii.estado = 0
             FOR UPDATE
         `, {
             replacements: [_iditem],
@@ -112,6 +114,9 @@ async function updateStockItemPorcion(item, transaction = null) {
 
         // Paso 1.5: Actualizar porciones relacionadas EXACTAMENTE como el procedimiento almacenado (líneas 117-125)
         // Actualizar porciones
+        // IMPORTANTE: filtrar ii.estado = 0 igual que _obtenerRecetaItem (historial).
+        // Sin el filtro, un ingrediente ELIMINADO de la receta seguia descontando stock
+        // y el historial (que si filtra estado=0) no registraba nada: stock bajaba sin rastro.
         if (item.from_monitor === true) {
             // Monitor: SET directo del stock (sin multiplicar por cantidad_receta)
             await sequelize.query(`
@@ -119,6 +124,7 @@ async function updateStockItemPorcion(item, transaction = null) {
                     LEFT JOIN item_ingrediente AS ii USING (idporcion)
                     SET p.stock = ? * ii.cantidad
                 WHERE ii.iditem = ?
+                    AND ii.estado = 0
                 `, {
                 replacements: [cantidadAjuste, _iditem],
                 type: QueryTypes.UPDATE,
@@ -130,6 +136,7 @@ async function updateStockItemPorcion(item, transaction = null) {
                     LEFT JOIN item_ingrediente AS ii USING (idporcion)
                     SET p.stock = ROUND(p.stock + (? * ii.cantidad), 2)
                 WHERE ii.iditem = ?
+                    AND ii.estado = 0
                     AND (p.stock + (? * (ii.cantidad)) >= 0)
             `, {
                 replacements: [cantidadAjuste, _iditem, cantidadAjuste],
@@ -137,14 +144,15 @@ async function updateStockItemPorcion(item, transaction = null) {
                 transaction
             });
         }
-        
-        // Actualizar productos relacionados
+
+        // Actualizar productos relacionados (mismo filtro estado=0 que el historial)
         if (item.from_monitor === true) {
             await sequelize.query(`
                 UPDATE producto_stock AS ps
                     LEFT JOIN item_ingrediente AS ii USING (idproducto_stock)
                     SET ps.stock = ? * ii.cantidad
                 WHERE ii.iditem = ?
+                    AND ii.estado = 0
             `, {
                 replacements: [cantidadAjuste, _iditem],
                 type: QueryTypes.UPDATE,
@@ -156,12 +164,38 @@ async function updateStockItemPorcion(item, transaction = null) {
                     LEFT JOIN item_ingrediente AS ii USING (idproducto_stock)
                     SET ps.stock = ps.stock + (? * (ii.cantidad))
                 WHERE ii.iditem = ?
+                AND ii.estado = 0
                 AND (ps.stock + (? * (ii.cantidad)) >= 0)
             `, {
                 replacements: [cantidadAjuste, _iditem, cantidadAjuste],
                 type: QueryTypes.UPDATE,
                 transaction
             });
+
+            // Trazabilidad: registrar en producto_historial cada producto de la receta
+            if (cantidadAjuste !== 0) {
+                const productosReceta = await sequelize.query(`
+                    SELECT ii.idproducto_stock, ii.cantidad AS cantidad_receta
+                    FROM item_ingrediente ii
+                    WHERE ii.iditem = ?
+                        AND ii.estado = 0
+                        AND ii.idproducto_stock > 0
+                `, {
+                    replacements: [_iditem],
+                    type: QueryTypes.SELECT,
+                    transaction
+                });
+
+                for (const pr of productosReceta) {
+                    await registrarMovimientoProducto({
+                        idproductoStock: pr.idproducto_stock,
+                        cantidad: cantidadAjuste * pr.cantidad_receta,
+                        idsede: item.idsede,
+                        idusuario: item.idusuario,
+                        idpedido: item.idpedido || null
+                    }, transaction);
+                }
+            }
         }
 
         // Paso 2: Obtener @ids_receta EXACTAMENTE como el procedimiento almacenado

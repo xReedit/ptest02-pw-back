@@ -144,6 +144,11 @@ socketsController.socketsOn(io);
 const stockCleanupJob = require('./service/stock.cleanup.job');
 stockCleanupJob.iniciarJob();
 
+// Conciliación automática de stock contra pedidos (Capa 2) - cada 10 min en sedes quietas
+// Plan: test/CONCILIACION-STOCK-CIERRE-PLAN.md · Kill-switch: CONCILIACION_STOCK=0
+const stockConciliacionJob = require('./service/stock.conciliacion.job');
+stockConciliacionJob.iniciarJob();
+
 // Los recordatorios de confirmación se movieron al chatbot (repo chatbot-go,
 // internal/nudge) y se encienden desde el switch de su dashboard. Vivían aquí
 // como controllers/recordatorioPedido.js, pero solo perseguían filas de

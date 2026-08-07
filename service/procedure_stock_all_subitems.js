@@ -28,6 +28,7 @@ const { QueryTypes } = Sequelize;
 const logger = require('../utilitarios/logger');
 const errorManager = require('./error.manager');
 const StockPorcionService = require('./stock.porcion.service');
+const { registrarMovimientoProducto } = require('./producto.movements.service');
 
 /**
  * Actualiza el stock de subitems (porciones, productos o items)
@@ -204,6 +205,15 @@ async function updateStockAllSubitems(allItems, transaction = null) {
                         transaction
                     });
 
+                    // Trazabilidad: registrar el movimiento en producto_historial
+                    await registrarMovimientoProducto({
+                        idproductoStock: ingrediente.idproducto_stock,
+                        cantidad: cantidadIngrediente,
+                        idsede,
+                        idusuario: allItems.idusuario,
+                        idpedido: allItems.idpedido || null
+                    }, transaction);
+
                     logger.debug({
                         idproducto_stock: ingrediente.idproducto_stock,
                         cantidadIngrediente
@@ -237,7 +247,18 @@ async function updateStockAllSubitems(allItems, transaction = null) {
                 type: QueryTypes.UPDATE,
                 transaction
             });
-            
+
+            // Trazabilidad: registrar el movimiento en producto_historial
+            if (cantidadAjuste !== 0) {
+                await registrarMovimientoProducto({
+                    idproductoStock: allItems.idproducto,
+                    cantidad: cantidadAjuste,
+                    idsede,
+                    idusuario: allItems.idusuario,
+                    idpedido: allItems.idpedido || null
+                }, transaction);
+            }
+
             // Obtener stock actualizado
             const [result] = await sequelize.query(
                 'SELECT stock as cantidad FROM producto_stock WHERE idproducto_stock = ? LIMIT 1',

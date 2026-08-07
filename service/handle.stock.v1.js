@@ -14,6 +14,9 @@ const logger = require('../utilitarios/logger');
 // Sistema de reservas SOLID
 const { StockReservaService, sedeUsaReservas } = require('./stock-reserva');
 
+// Historial de movimientos de productos de almacen (trazabilidad)
+const { registrarMovimientoProducto } = require('./producto.movements.service');
+
 // Ya NO hay toggle global. La verificación es SOLO por sede (campo use_reservas_stock en tabla sede)
 // sedeUsaReservas(idsede) consulta la BD (con caché) para determinar si la sede usa reservas
 
@@ -207,15 +210,30 @@ const sanitizeJsonForProcedure = (obj) => {
 const processAlmacenItem = async (op, sanitizedItem) => {
     // console.log('es de almacen');
     const _item = {
-        cantidadSumar: sanitizedItem.cantidadSumar,        
+        cantidadSumar: sanitizedItem.cantidadSumar,
         cantidad_reset: sanitizedItem.cantidad_reset,
         idcarta_lista: sanitizedItem.idcarta_lista
     };
-    
+
     const itemJson = sanitizeJsonForProcedure(_item);
     const query = `CALL porcedure_pwa_update_cantidad_only_producto(${op}, '${itemJson}')`;
-    
-    return await retryOperation(() => ResponseService.emitirRespuestaSP(query));
+
+    const resultado = await retryOperation(() => ResponseService.emitirRespuestaSP(query));
+
+    // Trazabilidad: el SP suma cantidadSumar (op=0) o cantidad_reset a producto_stock
+    // (idproducto_stock = idcarta_lista) sin dejar rastro; registramos el movimiento.
+    const delta = parseFloat(op == 0 ? sanitizedItem.cantidadSumar : sanitizedItem.cantidad_reset) || 0;
+    if (delta !== 0) {
+        await registrarMovimientoProducto({
+            idproductoStock: sanitizedItem.idcarta_lista,
+            cantidad: delta,
+            idsede: sanitizedItem.idsede,
+            idusuario: sanitizedItem.idusuario,
+            idpedido: sanitizedItem.idpedido || null
+        });
+    }
+
+    return resultado;
 };
 
 /**
@@ -440,6 +458,9 @@ const processItemPorcion = async (sanitizedItem, op) => {
             iditem2: sanitizedItem.iditem2,
             idsede: sanitizedItem.idsede,
             idusuario: sanitizedItem.idusuario,
+            // Sin idpedido, porcion_historial queda con idpedido NULL y los movimientos
+            // no se pueden cruzar contra el pedido que los origino.
+            idpedido: sanitizedItem.idpedido || null,
             op: op, // Pasar op para detectar si es RECUPERA
             from_monitor: sanitizedItem.from_monitor
         };

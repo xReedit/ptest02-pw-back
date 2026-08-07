@@ -351,11 +351,15 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		})
 
 		// cola de procesamiento
-		const queue = async.queue((item, callback) => {			
+		// Concurrencia 1: con 4, las ventas/devoluciones del MISMO POS sobre la misma
+		// porcion corrian en paralelo -> deadlock en el lock de porcion -> tras 3 reintentos
+		// el fallback de processItemPorcion devolvia cantidad SIN descontar (venta perdida).
+		// Caso Cazador 2026-08-04 20:30: 3 VENTA + 3 DEVOLUCION en 4s, neto 0 con plato cobrado.
+		const queue = async.queue((item, callback) => {
 			apiPwa.processAndEmitItem(item, chanelConect, io, dataCliente.idsede)
 				.then(() => callback())
 				.catch(callback);
-		}, 4);
+		}, 1);
 
 		
 		socket.on('itemAllModificado', async (items) => {

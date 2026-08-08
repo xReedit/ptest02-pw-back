@@ -15,7 +15,7 @@ const getComandosVoz = async function (req, res) {
 module.exports.getComandosVoz = getComandosVoz;
 
 function emitirRespuesta_RES(xquery, res) {
-	console.log(xquery);
+	// console.log(xquery);
 	return sequelize.query(xquery, {type: sequelize.QueryTypes.SELECT})
 	.then(function (rows) {
 		

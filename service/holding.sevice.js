@@ -4,7 +4,7 @@ const cocinarArrayPrinter = require('../service/cocinar.array.printer')
 const logger = require('../utilitarios/logger');
 
 async function proccessSavePedidoHolding(dataSend, io) {    
-    console.log('object dataSend', JSON.stringify(dataSend));  
+    // console.log('object dataSend', JSON.stringify(dataSend));  
     const arrPedidosAgrupados = await agruparPedidosHolding(dataSend);        
     return await savePedidosAgrupados(arrPedidosAgrupados, dataSend.dataPedido.p_subtotales, io)    
 }

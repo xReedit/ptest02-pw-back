@@ -4,11 +4,11 @@ const {repartidorCollection, addDoc, setDoc, doc, updateDoc, getDoc} = require('
 // add repartidor
 const addRepartidor = async function (req, res) {
     const repartidorData = req.body;
-    console.log('data', repartidorData);    
+    // console.log('data', repartidorData);    
     try {
         const repartidorDoc = doc(repartidorCollection, String(repartidorData.userid));
         await setDoc(repartidorDoc, repartidorData);
-        console.log('Documento escrito con ID:', repartidorData.userid);
+        // console.log('Documento escrito con ID:', repartidorData.userid);
         res.status(200).send('Documento añadido correctamente');
     } catch (error) {
         console.error('Error añadido documento:', error);
@@ -24,7 +24,7 @@ const updateRepartidor = async function (req, res) {
         const repartidorDoc = doc(repartidorCollection, String(userid));        
         await updateDoc(repartidorDoc, dataToUpdate);
 
-        console.log('Documento actualizado con ID:', userid);
+        // console.log('Documento actualizado con ID:', userid);
         res.status(200).send('Documento actualizado correctamente');
     } catch (error) {
         console.error('Error actualizando documento:', error);
@@ -46,10 +46,10 @@ const updateIdPedidosRepartidor = async function (req, res) {
                 : idpedidos;
 
             await updateDoc(repartidorDoc, { idpedidos: updatedIdpedidos });
-            console.log('Documento actualizado con ID:', userid);
+            // console.log('Documento actualizado con ID:', userid);
             res.status(200).send('Documento actualizado correctamente');
         } else {
-            console.log('No existe el documento');
+            // console.log('No existe el documento');
             res.status(404).send('No existe el documento');
         }
     } catch (error) {
@@ -72,7 +72,7 @@ const updateShowPedido = async function (userid, show_pedido, idpedidos='') {
         const repartidorDoc = doc(repartidorCollection, String(userid));        
         await updateDoc(repartidorDoc, dataToUpdate);
 
-        console.log('Documento actualizado con ID:', userid);
+        // console.log('Documento actualizado con ID:', userid);
         res.status(200).send('Documento actualizado correctamente');
     } catch (error) {
         console.error('Error actualizando documento:', error);

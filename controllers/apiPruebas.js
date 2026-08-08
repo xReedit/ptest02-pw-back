@@ -21,7 +21,7 @@ const getSinToken = async function (req, res) {
 	// const efectivo = req.body.efectivo;      
 	// const online = req.body.online;     
 
-	console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
+	// console.log('llego a funcion setEfectivoMano idrepartidor', idrepartidor);
 	
     const read_query = `update repartidor set efectivo_mano = 1, online = 1 where idrepartidor = 1`;
 

@@ -1059,7 +1059,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 				const pBody = data?.p_body || null;				
 				const idsede = data?.idsede || null;
 
-				console.log('restobar-confirmar-pedido-reservar-stock', pBody);
+				
 
 				logger.debug({ socketId: socket.id, idsede }, '📦 [Socket] confirmar-pedido recibido');
 				

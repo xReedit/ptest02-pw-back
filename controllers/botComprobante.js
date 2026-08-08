@@ -17,7 +17,7 @@ const logger = require('../utilitarios/logger');
 const URL_DESCARGA_CPE = 'https://apifac.papaya.com.pe/downloads/document';
 // Servicio de consulta DNI/RUC (mismo que usa apiConsultaDniRuc.js).
 const URL_SERVICE_CONSULTA = process.env.URL_SERVICE_CONSULTA_DNIRUC || 'https://restobar.papaya.com.pe/consulta/';
-const TOKEN_CONSULTA = process.env.TOKEN_CONSULTA_DNIRUC || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.BX0t4nmgikjpVjZUTSJaj06R3i2Wn-dRwlAMntb_drI';
+const TOKEN_CONSULTA = process.env.TOKEN_CONSULTA_DNIRUC;
 
 const pad7 = (n) => {
     let s = String(n ?? '');

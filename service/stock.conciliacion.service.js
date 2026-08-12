@@ -108,6 +108,21 @@ const validarDescuenta = (d) => {
 };
 
 /**
+ * Items que se venden en modo SP segun la CARTA (fuente de verdad del modo de venta).
+ * pedido_detalle.procede_tabla NO es confiable: cada pagina del POS guarda su propio
+ * valor (caso real: 1/8 broaster con receta guardado con procede_tabla=1 -> el
+ * esperado quedaba en 0 y la conciliacion "devolvia" cada venta. Sede 6, 2026-08-08).
+ */
+async function itemsModoSP(iditems, transaction) {
+    if (!iditems.length) return new Set();
+    const rows = await sequelize.query(`
+        SELECT DISTINCT iditem FROM carta_lista
+        WHERE iditem IN (:ids) AND cantidad = 'SP'
+    `, { replacements: { ids: iditems }, type: QueryTypes.SELECT, transaction });
+    return new Set(rows.map(r => r.iditem));
+}
+
+/**
  * Expande recetas (item_ingrediente directo + subrecetas) para un set de items.
  * Devuelve { [iditem]: [{idporcion, idproducto_stock, cantidad}] }
  */
@@ -173,8 +188,14 @@ async function calcularEsperado(idsede, desdeIdPedido, hastaIdPedido, transactio
         transaction
     });
 
-    // Prefetch de recetas para los items SP (procede_tabla=2)
-    const itemsSP = [...new Set(detalles.filter(d => d.procede_tabla === 2).map(d => d.iditem))];
+    // Prefetch: modo de venta segun la carta + recetas de los items SP.
+    // Un item es SP si la carta lo dice O si procede_tabla=2 (union de ambas señales;
+    // procede_tabla solo no basta: es inconsistente entre paginas del POS).
+    const todosIditems = [...new Set(detalles.map(d => d.iditem).filter(Boolean))];
+    const spPorCarta = await itemsModoSP(todosIditems, transaction);
+    const itemsSP = [...new Set(detalles
+        .filter(d => d.procede_tabla === 2 || spPorCarta.has(d.iditem))
+        .map(d => d.iditem))];
     const recetas = await expandirRecetas(itemsSP, transaction);
 
     // Primera pasada: acumular directo + juntar subrecetas de subitems
@@ -188,8 +209,8 @@ async function calcularEsperado(idsede, desdeIdPedido, hastaIdPedido, transactio
             acumular(productos, d.idcarta_lista, cant);
         }
 
-        // Item con receta (SP)
-        if (d.procede_tabla === 2) {
+        // Item con receta (SP segun carta o procede_tabla)
+        if (d.procede_tabla === 2 || spPorCarta.has(d.iditem)) {
             for (const ing of (recetas[d.iditem] || [])) {
                 if (ing.idporcion > 0) acumular(porciones, ing.idporcion, cant * num(ing.cantidad));
                 if (ing.idproducto_stock > 0) acumular(productos, ing.idproducto_stock, cant * num(ing.cantidad));
@@ -255,10 +276,13 @@ async function calcularRegistradoPorciones(idsede, desdeId, hastaId, transaction
     const conSetManual = new Set();
     for (const r of rows) {
         const t = r.idtipo;
-        if (t === 9) { conSetManual.add(r.idporcion); continue; }
+        // Movimiento MANUAL en la ventana (1 Aumenta, 2 Disminuye, 9 Set del monitor):
+        // un humano ya intervino esa porcion -> el sistema NO ajusta encima.
+        // (caso real: PCJUVENAL cuadro el fisico a mano y la conciliacion lo piso)
+        if (t === 9 || t === 1 || t === 2) { conSetManual.add(r.idporcion); continue; }
         if (t === 3) acumular(neto, r.idporcion, num(r.total));
         else if (t === 6 || t === 5) acumular(neto, r.idporcion, -num(r.total));
-        // 1,2,4,7,8,10 y legacy NULL: fuera de los flujos de venta
+        // 4,7,8,10 y legacy NULL: fuera de los flujos de venta
     }
     return { neto, conSetManual };
 }
@@ -300,7 +324,9 @@ async function aplicarAjustePorcion(idporcion, diferencia, idsede, transaction) 
         idporcion,
         -diferencia,
         'AJUSTE_CIERRE',
-        { idsede, idusuario: 1, idpedido: null, iditem: 0 },
+        // idusuario 0 = proceso automatico; la pagina de porciones lo muestra como
+        // "SISTEMA" (con 1 salia el primer usuario de la BD, ej. mramirez -> confusion)
+        { idsede, idusuario: 0, idpedido: null, iditem: 0 },
         transaction
     );
     return r && r.success;
@@ -316,7 +342,7 @@ async function aplicarAjusteProducto(idproductoStock, diferencia, idsede, transa
         cantidad: -diferencia,
         tipoMovimiento: 'AJUSTE CIERRE',
         idsede,
-        idusuario: 1,
+        idusuario: 0, // SISTEMA
         idpedido: null
     }, transaction);
     return true;
@@ -414,6 +440,12 @@ async function conciliarSede(idsede, opts = {}) {
 
                 if (excluidas && excluidas.has(id)) {
                     estado = 'manual_set';
+                } else if (esp === 0 && reg > 0) {
+                    // SALVAGUARDA ESTRUCTURAL: ventas registradas con esperado en CERO
+                    // es casi siempre un flujo que el esperado no cubre, no un huerfano.
+                    // Jamas se ajusta a ciegas: solo se reporta para diagnostico.
+                    // (bug real sede 6: procede_tabla inconsistente -> se "devolvian" ventas)
+                    estado = 'esperado_incompleto';
                 } else if (Math.abs(dif) > CONFIG.MAX_AJUSTE_ABS) {
                     estado = 'excede_limite';
                 } else if (!soloReporte) {

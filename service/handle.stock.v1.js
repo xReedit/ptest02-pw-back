@@ -477,17 +477,11 @@ const processItemPorcion = async (sanitizedItem, op) => {
                 origen: 'processItemPorcion'
             };
             errorManager.logError(dataError);
-            
-            // En lugar de throw, retornar fallback con cantidad calculada
-            // console.log('🟡 [stock.v1] Usando fallback por error SQL en processItemPorcion');
-            return [{
-                cantidad: Math.max(0, (sanitizedItem.cantidad || 0) - (sanitizedItem.cantidadSumar || 0)),
-                listItemsPorcion: [],
-                listSubItems: []
-            }];
+            // Sin fallback: inventar una cantidad ocultaba que el descuento NO se hizo
+            // (venta perdida invisible). El catch central de updateStock responde.
+            throw error;
         }
-        
-        // Para otros errores, también registrar y usar fallback
+
         const dataError = {
             incidencia: {
                 message: "Error general en processItemPorcion",
@@ -497,13 +491,7 @@ const processItemPorcion = async (sanitizedItem, op) => {
             origen: 'processItemPorcion'
         };
         errorManager.logError(dataError);
-        
-        // console.log('🟡 [stock.v1] Usando fallback por error general en processItemPorcion');
-        return [{
-            cantidad: Math.max(0, (sanitizedItem.cantidad || 0) - (sanitizedItem.cantidadSumar || 0)),
-            listItemsPorcion: [],
-            listSubItems: []
-        }];
+        throw error;
     }
 };
 
@@ -527,7 +515,11 @@ const processRegularItem = async (sanitizedItem, idsede) => {
         cantidadSumar: sanitizedItem.cantidadSumar,
         cantidad_reset: sanitizedItem.cantidad_reset || 0,
         isporcion: sanitizedItem.isporcion,
-        from_monitor: sanitizedItem.from_monitor 
+        from_monitor: sanitizedItem.from_monitor,
+        // metadata para el historial de carta_lista (trigger migracion 021)
+        idpedido: sanitizedItem.idpedido || null,
+        idusuario: sanitizedItem.idusuario || null,
+        op: sanitizedItem.op
     };
     
     return await retryOperation(() => ItemService.processItem(itemProcess, idsede));
@@ -631,12 +623,17 @@ const updateStock = async (op, item, idsede) => {
             origen: 'updateStock'
         };
         errorManager.logError(dataError);
-        
-        // Retornar resultado por defecto en caso de error
+
+        // El contrato es no lanzar (el flujo del monitor llama sin try/catch), pero
+        // NO se inventa una cantidad post-descuento: se devuelve el stock que el
+        // cliente ya tenia (la BD no cambio) marcado con stockError para que el
+        // emisor notifique en vez de fingir exito.
         return [{
-            cantidad: Math.max(0, (sanitizedItem.cantidad || 0) - (sanitizedItem.cantidadSumar || 0)),
-            listItemsPorcion: [],
-            listSubItems: []
+            cantidad: sanitizedItem.cantidad !== undefined && sanitizedItem.cantidad !== null
+                ? sanitizedItem.cantidad : 'ND',
+            listItemsPorcion: '[]', // string: el monitor le hace JSON.parse sin try/catch
+            listSubItems: [],
+            stockError: true
         }];
     }
 };

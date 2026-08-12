@@ -11,6 +11,7 @@ const { sequelize, Sequelize } = require('../../config/database');
 const { QueryTypes } = Sequelize;
 const logger = require('../../utilitarios/logger');
 const CONFIG = require('./reserva.config');
+const { conStockCtx } = require('../carta.stock.ctx');
 
 class ReservaRepository {
 
@@ -125,8 +126,12 @@ class ReservaRepository {
 
     /**
      * Confirmar reserva: descuenta stock real Y resta de reserva
+     * @param {Object} [metadata] - {idpedido, idusuario} para el historial de carta (migracion 021).
+     *   En sedes con reservas ESTE es el descuento real de la venta y el unico punto
+     *   del sistema donde el idpedido existe con certeza: sin esto el historial de
+     *   carta_lista queda sin pedido (o hereda el de otra transaccion).
      */
-    static async confirmar(tipo, id, cantidad, idsede, transaction = null) {
+    static async confirmar(tipo, id, cantidad, idsede, transaction = null, metadata = {}) {
         const config = this.getConfig(tipo);
         if (!config || !id || id <= 0 || !cantidad || cantidad <= 0) {
             return { success: true, skipped: true };
@@ -137,7 +142,7 @@ class ReservaRepository {
             const whereClause = tipo === 'porcion' ? `${config.pk} = ? AND idsede = ?` : `${config.pk} = ?`;
             const replacements = tipo === 'porcion' ? [cantidad, id, idsede] : [cantidad, id];
 
-            const [, updMeta] = await sequelize.query(`
+            const ejecutarUpdate = () => sequelize.query(`
                 UPDATE ${config.tabla}
                 SET ${config.stock} = GREATEST(0, ${config.stock} - ?)
                 WHERE ${whereClause}
@@ -146,6 +151,15 @@ class ReservaRepository {
                 type: QueryTypes.UPDATE,
                 transaction
             });
+
+            // Solo carta_lista tiene trigger de historial; los demas tipos no lo necesitan
+            const [, updMeta] = tipo === 'carta_lista'
+                ? await conStockCtx(
+                    { tipo: 'VENTA', idpedido: metadata.idpedido, idusuario: metadata.idusuario },
+                    transaction,
+                    ejecutarUpdate
+                )
+                : await ejecutarUpdate();
 
             // red de seguridad: si el UPDATE no afectó filas, el stock real NO se descontó
             // (id inexistente en la tabla destino, p.ej. vínculo legacy) — dejar rastro siempre

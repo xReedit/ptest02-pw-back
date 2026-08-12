@@ -242,8 +242,9 @@ class StockReservaService {
             for (const comp of componentes) {
                 let res;
                 if (modo === 'confirmar') {
-                    // Quita reserva + descuenta stock real
-                    res = await ReservaRepository.confirmar(comp.tipo, comp.id, comp.cantidad, idsede, transaction);
+                    // Quita reserva + descuenta stock real. metadata lleva idpedido/idusuario
+                    // al historial de carta (migracion 021).
+                    res = await ReservaRepository.confirmar(comp.tipo, comp.id, comp.cantidad, idsede, transaction, metadata);
                 } else {
                     // Solo quita reserva
                     res = await ReservaRepository.quitar(comp.tipo, comp.id, comp.cantidad, idsede);

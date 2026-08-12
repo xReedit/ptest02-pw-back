@@ -24,8 +24,10 @@ const logger = require('../utilitarios/logger');
  * Configuración del servicio
  */
 const CONFIG = {
-    // Isolation level óptimo para evitar dirty reads pero permitir concurrencia
-    ISOLATION_LEVEL: Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+    // READ COMMITTED + SELECT FOR UPDATE (ya usado en cada update) protege el stock
+    // sin el costo de SERIALIZABLE, que multiplicaba deadlocks bajo concurrencia y
+    // alimentaba los fallbacks por reintentos agotados (mismo nivel que stock.unified).
+    ISOLATION_LEVEL: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED,
     
     // Retry logic para deadlocks
     MAX_RETRIES: 3,
@@ -880,7 +882,7 @@ class StockPorcionService {
                     replacements: {
                         tipoMovimiento: tipoMovConfig.nombre,
                         cantidad: Math.abs(cantidad),
-                        idusuario: idusuario || 1,
+                        idusuario: idusuario ?? 1, // 0 = SISTEMA (conciliacion), valido
                         idporcion,
                         idsede: idsede || 1,
                         stockActual,

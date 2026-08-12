@@ -25,6 +25,7 @@ const { sequelize, Sequelize } = require('../config/database');
 const { QueryTypes } = Sequelize;
 const logger = require('../utilitarios/logger');
 const errorManager = require('./error.manager');
+const { derivarTipoMovimiento, conStockCtx } = require('./carta.stock.ctx');
 
 /**
  * Actualiza el stock de un item en carta_lista
@@ -68,16 +69,22 @@ async function updateStockItem(item, idsede, transaction = null) {
                 cantidadAjuste
             }, '🖥️ [procedure_stock_item.js] Monitor: SET directo sin validaciones');
 
-            // Actualizar directamente sin validar si es numérico
-            await sequelize.query(`
-                UPDATE carta_lista 
-                SET cantidad = ? 
-                WHERE idcarta_lista = ?
-            `, {
-                replacements: [cantidadAjuste, item.idcarta_lista],
-                type: QueryTypes.UPDATE,
-                transaction
-            });
+            // Contexto para el trigger de auditoria carta_stock_historial_au (migracion 021).
+            // conStockCtx limpia en finally: si el UPDATE lanza, la conexion NO vuelve
+            // al pool con el idpedido/idusuario de esta sede.
+            await conStockCtx(
+                { tipo: 'MONITOR', idpedido: item.idpedido, idusuario: item.idusuario },
+                transaction,
+                () => sequelize.query(`
+                    UPDATE carta_lista
+                    SET cantidad = ?
+                    WHERE idcarta_lista = ?
+                `, {
+                    replacements: [cantidadAjuste, item.idcarta_lista],
+                    type: QueryTypes.UPDATE,
+                    transaction
+                })
+            );
 
             // Retornar el valor actualizado
             const [result] = await sequelize.query(
@@ -151,12 +158,21 @@ async function updateStockItem(item, idsede, transaction = null) {
             updateParams = [cantidadAjuste, item.idcarta_lista];
         }
 
-        // Ejecutar UPDATE
-        await sequelize.query(updateQuery, {
-            replacements: updateParams,
-            type: QueryTypes.UPDATE,
-            transaction
-        });
+        // Contexto para el trigger de auditoria carta_stock_historial_au (migracion 021).
+        // conStockCtx limpia en finally (ver nota en carta.stock.ctx.js).
+        await conStockCtx(
+            {
+                tipo: derivarTipoMovimiento({ esReset, delta: cantidadAjuste, op: item.op }),
+                idpedido: item.idpedido,
+                idusuario: item.idusuario
+            },
+            transaction,
+            () => sequelize.query(updateQuery, {
+                replacements: updateParams,
+                type: QueryTypes.UPDATE,
+                transaction
+            })
+        );
 
         // Obtener la cantidad actualizada
         const selectQuery = `

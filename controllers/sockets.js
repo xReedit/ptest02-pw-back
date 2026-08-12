@@ -29,8 +29,25 @@ const socketBot = require('./socketBot.js');
 
 // hora
 var d = new Date();
-var n = d.toLocaleTimeString(); 
+var n = d.toLocaleTimeString();
 const nameRoomMozo = 'MOZO';
+
+/**
+ * Parsea listItemsPorcion sin tumbar el proceso.
+ * Los productores devuelven a veces string JSON y a veces array ([] en las ramas de
+ * error), y JSON.parse([]) lanza SyntaxError. Como los handlers que lo usaban son
+ * async y se invocan sin catch, esa excepcion mataba el proceso Node completo.
+ */
+const parseListItemsPorcion = (valor) => {
+	if (Array.isArray(valor)) return valor;
+	if (typeof valor !== 'string' || valor === '') return [];
+	try {
+		return JSON.parse(valor);
+	} catch (error) {
+		logger.error({ error, valor }, '❌ [Socket] listItemsPorcion no es JSON valido');
+		return [];
+	}
+};
 // var socketMaster; 
 
 
@@ -411,7 +428,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			logger.debug({ iditem: item.iditem, sumar: item.sumar, isporcion: item.isporcion, from_monitor: item.from_monitor }, '📥 [STOCK-1] itemModificado recibido');			
 			// Verificar si es del monitor
 			if (item?.from_monitor === true) {
-				socketItemModificadoAfter(item);
+				// .catch obligatorio: es async y sin await; una excepcion aqui era una
+				// promesa rechazada sin handler -> en Node moderno tumba el proceso
+				// (instances:1 en PM2 => se caen los sockets de TODAS las sedes).
+				socketItemModificadoAfter(item)
+					.catch(error => logger.error({ error, iditem: item?.iditem }, '❌ [Socket] Error en socketItemModificadoAfter'));
 				return;
 			}
 			
@@ -446,11 +467,20 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 
 				const rptCantidad = await apiPwa.setItemCartaAfter(0, item, dataCliente.idsede);
-				logger.debug({ cantidad: rptCantidad[0]?.cantidad }, '📤 [STOCK-2] Monitor: SP ejecutado');
+				logger.debug({ cantidad: rptCantidad?.[0]?.cantidad }, '📤 [STOCK-2] Monitor: SP ejecutado');
+
+				// El stock NO se guardo: no difundir la cantidad tecleada como si fuera real
+				// (todos los POS venderian contra un stock que la BD no tiene).
+				if (!rptCantidad || !rptCantidad[0] || rptCantidad[0].stockError) {
+					logger.error({ iditem: item?.iditem, idsede: dataCliente.idsede },
+						'❌ [Socket] Monitor: el stock no se actualizo, se avisa solo al emisor');
+					socket.emit('stock-no-actualizado', { iditem: item?.iditem, message: 'No se pudo actualizar el stock, reintente' });
+					return;
+				}
 
 				// if ( item.isporcion != 'SP' ) {
 				item.cantidad = rptCantidad[0].cantidad;
-				//}				
+				//}
 
 								
 
@@ -476,7 +506,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 				const rpt = {
 					item : item,
-					listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,	
+					listItemPorcion: item.isporcion === 'SP' ? parseListItemsPorcion(rptCantidad[0].listItemsPorcion) : null,	
 					listSubItems: rptCantidad[0].listSubItems				
 				}
 
@@ -513,7 +543,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('resetPedido', (listPedido) => {
 			logger.debug({ listPedido }, 'Reset pedido');
 			// recibe items
-			listPedido.map(async (item) => {				
+			// El .catch por item es obligatorio: son promesas sin await; una excepcion
+			// sin handler tumba el proceso Node y con el los sockets de todas las sedes.
+			listPedido.map(async (item) => {
 				// si la cantidad seleccionada es 0 entonces continua al siguiente
 				if ( parseFloat(item.cantidad_seleccionada) === 0 ) {
 					return;
@@ -535,6 +567,15 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					
 										
 					const rptCantidad = await apiPwa.setItemCarta(1, item, dataCliente.idsede);
+
+					// Si el stock no se guardo, no difundir la cantidad como si fuera real
+					if (!rptCantidad || !rptCantidad[0] || rptCantidad[0].stockError) {
+						logger.error({ iditem: item?.iditem, idsede: dataCliente.idsede },
+							'❌ [Socket] resetPedido: el stock no se actualizo');
+						socket.emit('stock-no-actualizado', { iditem: item?.iditem, message: 'No se pudo actualizar el stock, reintente' });
+						return;
+					}
+
 					item.cantidad = rptCantidad[0].cantidad;
 
 					// subitems
@@ -565,7 +606,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					
 					const rpt = {
 						item : item,
-						listItemPorcion: item.isporcion === 'SP' ? JSON.parse(rptCantidad[0].listItemsPorcion) : null,
+						listItemPorcion: item.isporcion === 'SP' ? parseListItemsPorcion(rptCantidad[0].listItemsPorcion) : null,
 						listSubItems: rptCantidad[0].listSubItems					
 					}
 
@@ -573,7 +614,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 					io.to(chanelConect).emit('itemResetCant', item);
 					io.to(chanelConect).emit('itemResetCant-pwa', rpt);
 				}
-			});
+			}).forEach(p => p && p.catch && p.catch(error =>
+				logger.error({ error }, '❌ [Socket] Error procesando item en resetPedido')));
 		});
 
 		// buscar subitems del item seleccionado

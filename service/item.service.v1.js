@@ -48,7 +48,11 @@ class ItemService {
             cantidadSumar: item.cantidadSumar || 0,
             isporcion: item.isporcion || null,
             iditem2: item.iditem2 || item.iditem || null,
-            from_monitor: item.from_monitor || false
+            from_monitor: item.from_monitor || false,
+            // metadata para el historial de carta_lista (trigger migracion 021)
+            idpedido: item.idpedido || null,
+            idusuario: item.idusuario || null,
+            op: item.op
         };
 
         logger.debug({ item: _item }, '🟡 [item.v1] Item procesado');
@@ -194,16 +198,20 @@ class ItemService {
             
         } catch (error) {
             logger.error({ error, item }, '❌ [item.v1] Error en processItem');
-            
+
             errorManager.logError({
-                incidencia: { 
-                    message: `Error en processItem: ${error.message}`, 
+                incidencia: {
+                    message: `Error en processItem: ${error.message}`,
                     data: { item, error: error.toString() }
                 },
                 origen: 'ItemService.v1.processItem'
             });
-            
-            return result;
+
+            // Se relanza a proposito: devolver `result` con cantidad null hacia que
+            // updateStock creyera exito y difundiera un stock que la BD nunca guardo
+            // (venta perdida invisible, caso INKA COLA). El catch central de
+            // handle.stock.v1.updateStock responde con stockError:true.
+            throw error;
         }
     }
 
@@ -304,7 +312,10 @@ class ItemService {
                 iditem2: item.iditem2,
                 idsede: item.idsede,
                 idusuario: item.idusuario,
-                from_monitor: item.from_monitor
+                from_monitor: item.from_monitor,
+                // metadata para el historial de carta_lista (trigger migracion 021)
+                idpedido: item.idpedido || null,
+                op: item.op
             };
             
             // Validar que el objeto no sea null
@@ -341,57 +352,52 @@ class ItemService {
             // 🆕 SOLID: Registrar SOLO historial (el stock ya lo actualizó procedure_stock_item_porcion.js)
             // Responsabilidad única: stock.porcion.service.js solo registra historial, no actualiza stock
             try {
+                // Los `return;` que habia aqui salian de TODA la funcion (no solo de este
+                // bloque de historial) devolviendo undefined -> el monitor reventaba en
+                // rptCantidad[0].cantidad y tumbaba el proceso. Ahora es un if/else.
                 // Solo registrar si hay una operación real
-                if (!item.cantidadSumar && !item.cantidad_reset) {
-                    // No hay operación, no registrar nada
-                    return;
-                }
+                if (item.cantidadSumar || item.cantidad_reset) {
 
-                // Determinar tipo de movimiento:
-                // - Si cantidadSumar < 0: VENTA (disminuye stock desde venta)
-                // - Si cantidad_reset > 0 o cantidadSumar > 0: VENTA_DEVOLUCION (devuelve/cancela venta, aumenta stock)
-                const esSalida = (item.cantidadSumar || 0) < 0;
-                const esReset = (item.cantidad_reset || 0) > 0;
-                
-                let tipoMovimiento;
-                // if (esSalida) {
-                //     tipoMovimiento = 'VENTA'; // Venta normal (disminuye)
-                // } else {
-                //     tipoMovimiento = 'VENTA_DEVOLUCION'; // Cancelación/devolución (aumenta)
-                // }
+                    // Determinar tipo de movimiento:
+                    // - Si cantidadSumar < 0: VENTA (disminuye stock desde venta)
+                    // - Si cantidad_reset > 0 o cantidadSumar > 0: VENTA_DEVOLUCION (devuelve/cancela venta, aumenta stock)
+                    const esSalida = (item.cantidadSumar || 0) < 0;
+                    const esReset = (item.cantidad_reset || 0) > 0;
 
-                if (item.from_monitor === true) {
-                    tipoMovimiento = 'MODIFICACION_MONITOR'; // ✅ Tipo 9
-                } else if (esSalida) {
-                    tipoMovimiento = 'VENTA';
-                } else if (esReset || (item.cantidadSumar > 0)) {
-                    // Solo si es reset EXPLÍCITO o cantidadSumar POSITIVA
-                    tipoMovimiento = 'VENTA_DEVOLUCION';
-                } else {
-                    // No hay operación válida, no registrar
-                    return;
-                }
-                
-                logger.debug({ 
-                    iditem: item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem,
-                    cantidadProducto: Math.abs(item.cantidadSumar || item.cantidad_reset || 1),
-                    tipoMovimiento: tipoMovimiento
-                }, '📦 [item.v1] Llamando a registrarSoloHistorial (SOLID)');
-                
-                // SOLID: Solo registrar historial, NO actualizar stock (ya lo hizo procedure_stock_item_porcion.js)
-                const resultadoPorciones = await StockPorcionService.registrarSoloHistorial({
-                    iditem: item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem,
-                    cantidadProducto: Math.abs(item.cantidadSumar || item.cantidad_reset || 1),
-                    idsede: item.idsede || 1,
-                    idusuario: item.idusuario || 1,
-                    idpedido: item.idpedido || null,
-                    tipoMovimiento: tipoMovimiento,
-                    esReset: esReset
-                });
-                
-                if (!resultadoPorciones.success) {
-                    logger.warn({ error: resultadoPorciones.error }, '⚠️ [item.v1] No se pudo registrar historial de porciones');
-                    // No lanzamos error para no romper el flujo, pero logueamos
+                    let tipoMovimiento = null;
+
+                    if (item.from_monitor === true) {
+                        tipoMovimiento = 'MODIFICACION_MONITOR'; // ✅ Tipo 9
+                    } else if (esSalida) {
+                        tipoMovimiento = 'VENTA';
+                    } else if (esReset || (item.cantidadSumar > 0)) {
+                        // Solo si es reset EXPLÍCITO o cantidadSumar POSITIVA
+                        tipoMovimiento = 'VENTA_DEVOLUCION';
+                    }
+
+                    if (tipoMovimiento) {
+                        logger.debug({
+                            iditem: item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem,
+                            cantidadProducto: Math.abs(item.cantidadSumar || item.cantidad_reset || 1),
+                            tipoMovimiento: tipoMovimiento
+                        }, '📦 [item.v1] Llamando a registrarSoloHistorial (SOLID)');
+
+                        // SOLID: Solo registrar historial, NO actualizar stock (ya lo hizo procedure_stock_item_porcion.js)
+                        const resultadoPorciones = await StockPorcionService.registrarSoloHistorial({
+                            iditem: item.iditem === item.idcarta_lista ? item.iditem2 : item.iditem,
+                            cantidadProducto: Math.abs(item.cantidadSumar || item.cantidad_reset || 1),
+                            idsede: item.idsede || 1,
+                            idusuario: item.idusuario || 1,
+                            idpedido: item.idpedido || null,
+                            tipoMovimiento: tipoMovimiento,
+                            esReset: esReset
+                        });
+
+                        if (!resultadoPorciones.success) {
+                            logger.warn({ error: resultadoPorciones.error }, '⚠️ [item.v1] No se pudo registrar historial de porciones');
+                            // No lanzamos error para no romper el flujo, pero logueamos
+                        }
+                    }
                 }
             } catch (porcionError) {
                 logger.error({ error: porcionError, item }, '❌ [item.v1] Error al registrar historial de porciones');
@@ -409,15 +415,10 @@ class ItemService {
                     },
                     origen: 'ItemService.v1.processItemPorcion.validation'
                 });
-                
-                // Retornar fallback en lugar de throw
-                const cantidadFallback = Math.max(0, (item.cantidad || 0) - (item.cantidadSumar || 0));
-                result[0] = {
-                    cantidad: cantidadFallback,
-                    listItemsPorcion: [],
-                    listSubItems: []
-                };
-                return result;
+
+                // Sin fallback: el stock pudo no actualizarse; inventar cantidad ocultaba
+                // la venta perdida. updateStock responde con stockError:true.
+                throw new Error('procedure_stock_item_porcion retorno resultado invalido');
             }
 
             // Verificar que listItemsPorcion exista en el resultado
@@ -431,15 +432,9 @@ class ItemService {
                     },
                     origen: 'ItemService.v1.processItemPorcion.validation'
                 });
-                
-                // Retornar fallback en lugar de throw
-                const cantidadFallback = Math.max(0, (item.cantidad || 0) - (item.cantidadSumar || 0));
-                result[0] = {
-                    cantidad: cantidadFallback,
-                    listItemsPorcion: [],
-                    listSubItems: []
-                };
-                return result;
+
+                // Sin fallback (ver nota arriba): mejor avisar que fingir un stock.
+                throw new Error('procedure_stock_item_porcion no retorno listItemsPorcion');
             }
 
             // Procesar resultado
@@ -478,20 +473,12 @@ class ItemService {
                 },
                 origen: 'ItemService.v1.processItemPorcion'
             });
-            
-            // En lugar de throw error, retornar fallback seguro
-            logger.warn({ item: _itemProcessPorcion }, '🟡 [item.v1] Usando fallback por error en procedimiento');
-            
-            // Calcular cantidad usando lógica de fallback
-            const cantidadFallback = Math.max(0, (item.cantidad || 0) - (item.cantidadSumar || 0));
-            
-            result[0] = {
-                cantidad: cantidadFallback,
-                listItemsPorcion: [],
-                listSubItems: []
-            };
-            
-            return result;
+
+            // Se relanza a proposito. El fallback que habia aqui devolvia
+            // Math.max(0, cantidad - cantidadSumar): en una venta cantidadSumar es
+            // NEGATIVO, asi que AUMENTABA el stock mostrado mientras la BD no cambiaba.
+            // El catch central de handle.stock.v1.updateStock responde con stockError:true.
+            throw error;
         }
     }
     

@@ -22,6 +22,7 @@ const { sequelize, Sequelize } = require('../config/database');
 const { QueryTypes } = Sequelize;
 const logger = require('../utilitarios/logger');
 const errorManager = require('./error.manager');
+const { derivarTipoMovimiento, conStockCtx } = require('./carta.stock.ctx');
 
 // Configuracion
 const CONFIG = {
@@ -683,27 +684,40 @@ class StockUnifiedService {
                 esReset
             }, '📦 [stock.unified] Actualizando carta_lista (item con cantidad fija)');
 
-            if (esReset) {
-                await sequelize.query(`
-                    UPDATE carta_lista
-                    SET cantidad = :cantidad
-                    WHERE idcarta_lista = :idcarta_lista
-                `, {
-                    replacements: { cantidad: cantidadAjuste, idcarta_lista: item.idcarta_lista },
-                    type: QueryTypes.UPDATE,
-                    transaction
-                });
-            } else {
-                await sequelize.query(`
-                    UPDATE carta_lista
-                    SET cantidad = GREATEST(0, cantidad + :cantidad)
-                    WHERE idcarta_lista = :idcarta_lista
-                `, {
-                    replacements: { cantidad: cantidadAjuste, idcarta_lista: item.idcarta_lista },
-                    type: QueryTypes.UPDATE,
-                    transaction
-                });
-            }
+            // Contexto para el trigger de auditoria carta_stock_historial_au (migracion 021).
+            // conStockCtx limpia en finally (ver nota en carta.stock.ctx.js).
+            await conStockCtx(
+                {
+                    tipo: derivarTipoMovimiento({
+                        esReset,
+                        fromMonitor: item.from_monitor === true,
+                        delta: cantidadAjuste,
+                        op: item.op
+                    }),
+                    idpedido: item.idpedido,
+                    idusuario: item.idusuario
+                },
+                transaction,
+                () => esReset
+                    ? sequelize.query(`
+                        UPDATE carta_lista
+                        SET cantidad = :cantidad
+                        WHERE idcarta_lista = :idcarta_lista
+                    `, {
+                        replacements: { cantidad: cantidadAjuste, idcarta_lista: item.idcarta_lista },
+                        type: QueryTypes.UPDATE,
+                        transaction
+                    })
+                    : sequelize.query(`
+                        UPDATE carta_lista
+                        SET cantidad = GREATEST(0, cantidad + :cantidad)
+                        WHERE idcarta_lista = :idcarta_lista
+                    `, {
+                        replacements: { cantidad: cantidadAjuste, idcarta_lista: item.idcarta_lista },
+                        type: QueryTypes.UPDATE,
+                        transaction
+                    })
+            );
 
             // Obtener cantidad actualizada
             const [cantidadActualizada] = await sequelize.query(`

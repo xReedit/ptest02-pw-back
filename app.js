@@ -137,6 +137,20 @@ server.listen(config.port, function () {
 // server.listen(config.port, function () {
 // });
 
+// Red de seguridad. Produccion corre Node 16.14.2, donde el default de
+// --unhandled-rejections es 'throw': una promesa rechazada sin handler se eleva a
+// excepcion no capturada y MATA el proceso. Con PM2 en instances:1 eso desconecta
+// los sockets de TODAS las sedes a mitad de servicio.
+// Registrar este handler desactiva ese 'throw': Node emite el evento en vez de
+// abortar. Es una red, no un permiso para dejar promesas sueltas: cada punto
+// conocido (sockets.js) ya tiene su .catch propio.
+process.on('unhandledRejection', (reason) => {
+    logger.error({ err: reason }, '❌ [proceso] Promesa rechazada sin handler (no se cae el proceso)');
+});
+process.on('uncaughtException', (error) => {
+    logger.error({ err: error }, '❌ [proceso] Excepcion no capturada (no se cae el proceso)');
+});
+
 socketManager.setIO(io);
 socketsController.socketsOn(io);
 

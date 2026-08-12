@@ -1913,8 +1913,17 @@ async function processAndEmitItem(item, chanelConect, io, idsede, notificar = tr
         if (item.cantidad !== 'ND' || item.isExistSubItemsWithCantidad) {
             logger.debug({ iditem: item.iditem, sumar: item.sumar, isporcion: item.isporcion }, '📦 [STOCK-2] PWA: llamando setItemCarta');
             const rptCantidad = await setItemCarta(0, item, idsede);
-            logger.debug({ cantidad: rptCantidad[0]?.cantidad }, '📤 [STOCK-3] PWA: stock actualizado');                        
+            logger.debug({ cantidad: rptCantidad[0]?.cantidad }, '📤 [STOCK-3] PWA: stock actualizado');
             item.cantidad = rptCantidad[0].cantidad;
+
+            // El descuento fallo (updateStock devolvio el stock sin cambiar): avisar al
+            // canal en vez de fingir exito. La incidencia ya quedo registrada.
+            if (rptCantidad[0].stockError && notificar) {
+                io.to(chanelConect).emit('error', {
+                    message: 'No se pudo actualizar el stock del item',
+                    iditem: item.iditem
+                });
+            }
             // item.cantidad = _existSubItemsWithCantidadInND ? 'ND' : rptCantidad[0].cantidad;
 
             // Check if rptCantidad[0] and listSubItems exist before using them

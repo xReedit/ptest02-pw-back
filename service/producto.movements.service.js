@@ -68,7 +68,7 @@ async function registrarMovimientoProducto(datos, transaction = null) {
         const baseRepl = [
             tipoMovimiento,
             String(Math.abs(cantidad)),
-            idusuario || 1,
+            idusuario ?? 1, // 0 = SISTEMA (conciliacion), valido
             idsede || 1,
             ps.idproducto,
             ps.idalmacen

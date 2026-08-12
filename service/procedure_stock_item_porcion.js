@@ -28,6 +28,7 @@ const { QueryTypes } = Sequelize;
 const logger = require('../utilitarios/logger');
 const errorManager = require('./error.manager');
 const { registrarMovimientoProducto } = require('./producto.movements.service');
+const { derivarTipoMovimiento, conStockCtx } = require('./carta.stock.ctx');
 
 /**
  * Actualiza el stock de un item con porciones
@@ -89,11 +90,27 @@ async function updateStockItemPorcion(item, transaction = null) {
 
             if (updateQuery) {
                 logger.debug({ updateQuery, updateParams }, '📦 [procedure_stock_item_porcion.js] Actualizando stock item principal');
-                await sequelize.query(updateQuery, {
-                    replacements: updateParams,
-                    type: QueryTypes.UPDATE,
-                    transaction
-                });
+
+                // Contexto para el trigger de auditoria carta_stock_historial_au (migracion 021).
+                // conStockCtx limpia en finally (ver nota en carta.stock.ctx.js).
+                await conStockCtx(
+                    {
+                        tipo: derivarTipoMovimiento({
+                            esReset,
+                            fromMonitor: item.from_monitor === true,
+                            delta: cantidadAjuste,
+                            op: item.op
+                        }),
+                        idpedido: item.idpedido,
+                        idusuario: item.idusuario
+                    },
+                    transaction,
+                    () => sequelize.query(updateQuery, {
+                        replacements: updateParams,
+                        type: QueryTypes.UPDATE,
+                        transaction
+                    })
+                );
             }
         }
         

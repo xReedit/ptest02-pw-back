@@ -118,11 +118,11 @@ async function syncOfflineSede(sede, dias) {
 				// estado_sunat NO se toca aca: la verdad la pone syncEstados
 				// leyendo el estado real del API (aceptado solo con CDR/resumen).
 				const external_id = rpt_cpe.data?.external_id || '';
-				const setExternal = external_id ? `, external_id='${external_id}'` : '';
+				const setExternal = external_id ? `, external_id='${sqlEscape(external_id)}'` : '';
 				await emitirRespuesta(`update ce set estado_api=0, msj='Registrado', pdf=1, xml=1 ${setExternal} where idce=${el_cpe.idce}`);
 				rpt.ok++;
 			} else {
-				await emitirRespuesta(`update ce set msj='${sqlEscape(descripcion || 'Error al registrar')}' where idce=${el_cpe.idce}`);
+				await emitirRespuesta(`update ce set msj='${sqlMsj(descripcion || 'Error al registrar')}' where idce=${el_cpe.idce}`);
 				rpt.error++;
 			}
 		} catch (e) {
@@ -174,7 +174,7 @@ async function updateEstadoCe(idsede, rec) {
 			estado_api = ${parseInt(rec.estado_api, 10) || 0},
 			estado_sunat = ${parseInt(rec.estado_sunat, 10) || 0},
 			cdr = ${rec.cdr === '1' ? 1 : 0},
-			msj = '${sqlEscape(rec.msj || '')}'
+			msj = '${sqlMsj(rec.msj || '')}'
 		where idsede = ${idsede} and (
 			${matchExternal}(SUBSTRING_INDEX(numero,'-',1) = '${serie}'
 				and CAST(SUBSTRING_INDEX(numero,'-',-1) AS UNSIGNED) = ${numInt}
@@ -251,6 +251,22 @@ async function sendOneCpe(json_xml, token) {
 
 function sqlEscape(str) {
 	return String(str).replace(/\\/g, '\\\\').replace(/'/g, "''");
+}
+
+// ce.msj es varchar(200) en todas las sedes. Desde 2026-08 el API devuelve el
+// motivo REAL de SUNAT en ese campo, y esos mensajes se pasan de largo:
+//   "2255 - El XML no contiene el tag PaidAmount - Detalle: value='ticket: ...'"
+// son ~250 caracteres. Sin recortar, el UPDATE muere con 1406 (Data too long)
+// en modo estricto y el cajero se queda sin ver justo el rechazo mas informativo.
+// Se recorta ANTES de escapar: cortar despues partiria un '' a la mitad.
+const MSJ_MAX = 200;
+module.exports.sqlMsj = sqlMsj; // export solo para test/cpe-sqlmsj.test.js
+function sqlMsj(str) {
+	let s = String(str == null ? '' : str);
+	if (s.length > MSJ_MAX) {
+		s = s.slice(0, MSJ_MAX - 3) + '...';
+	}
+	return sqlEscape(s);
 }
 
 // 04:00 limpia la tabla para mantenerla ligera

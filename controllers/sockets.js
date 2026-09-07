@@ -10,6 +10,7 @@ var btoa = require('btoa');
 const { collectionGroup } = require('firebase/firestore');
 const handleStock = require('../service/handle.stock.v1');
 const logger = require('../utilitarios/logger');
+const idempotencia = require('../service/idempotencia');
 const socketBot = require('./socketBot.js');
 
 
@@ -631,74 +632,76 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('nuevoPedido', async (dataSend, callback) => {
 			var telefonoComercio = '';
 
-
 			if ( typeof dataSend === 'string' ) {
 				dataSend = JSON.parse(dataSend);
 			}
-			
-			
 
-			/// <<<<< 250124 >>>> //
-			// si es holding ///					
+			// responde por ack (callback) y por evento; el ack es lo que usa la app mozo
+			const responder = (rpt) => {
+				io.to(socket.id).emit('nuevoPedidoRes', rpt);
+				if ( callback ) { callback(rpt); }
+			};
 
 			// chequeamos si el header tiene paymentMozo.success
 			const _savePedidoAndPago = dataSend.dataPedido.p_header.paymentMozo ? dataSend.dataPedido.p_header.paymentMozo.isPaymentSuccess : false;
+			const isHolding = dataSend.dataPedido.p_header.is_holding == 1;
 
-			
-			if (dataSend.dataPedido.p_header.is_holding == 1) {				
-				const rptPedidoHolding = await apiHoldingServices.proccessSavePedidoHolding(dataSend, io);
-				
-				// Confirmar reservas de stock (descuenta stock real) - fire-and-forget
-				if (dataSend.dataPedido.p_body) {
-					handleStock.confirmarStockPedido(
-						dataSend.dataPedido.p_body,
-						dataCliente.idsede,
-						{ idpedido: rptPedidoHolding?.[0]?.idpedido, idusuario: dataCliente.idusuario }
-					).catch(err => logger.error({ error: err.message }, '❌ Error confirmando reservas de stock (holding)'));
-				}
+			// clave de idempotencia generada por la app: un reintento con la misma clave no vuelve a guardar
+			const idem = dataSend.dataPedido.p_header.idem;
+			const repetida = idempotencia.esRepetida(idem);
+			if ( repetida ) { logger.warn({ idem }, 'nuevoPedido repetido, se responde el resultado anterior'); }
 
-				io.to(socket.id).emit('nuevoPedidoRes', rptPedidoHolding)
-				if ( callback ) {
-					callback(rptPedidoHolding);	
-				}
-				return;	
-			} 
-			else if (_savePedidoAndPago) {
-				logger.debug({ _savePedidoAndPago }, '_savePedidoAndPago');
+			let rpt;
+			try {
+				rpt = await idempotencia.unaVez(idem, async () => {
+					/// <<<<< 250124 >>>> //
+					// si es holding ///
+					if (isHolding) {
+						const rptPedidoHolding = await apiHoldingServices.proccessSavePedidoHolding(dataSend, io);
 
-				// si el mesero confirmo el pago // no holding
-				const rptPedidoSave = await apiHoldingServices.savePedidosAgrupados([dataSend], dataSend.dataPedido.p_subtotales, io, _savePedidoAndPago);
-				
-				// Confirmar reservas de stock (descuenta stock real) - fire-and-forget
-				if (dataSend.dataPedido.p_body) {
-					handleStock.confirmarStockPedido(
-						dataSend.dataPedido.p_body,
-						dataCliente.idsede,
-						{ idpedido: rptPedidoSave?.[0]?.idpedido, idusuario: dataCliente.idusuario }
-					).catch(err => logger.error({ error: err.message }, '❌ Error confirmando reservas de stock (pago)'));
-				}
+						// Confirmar reservas de stock (descuenta stock real) - fire-and-forget
+						if (dataSend.dataPedido.p_body) {
+							handleStock.confirmarStockPedido(
+								dataSend.dataPedido.p_body,
+								dataCliente.idsede,
+								{ idpedido: rptPedidoHolding?.[0]?.idpedido, idusuario: dataCliente.idusuario }
+							).catch(err => logger.error({ error: err.message }, '❌ Error confirmando reservas de stock (holding)'));
+						}
+						return rptPedidoHolding;
+					}
 
-				io.to(socket.id).emit('nuevoPedidoRes', rptPedidoSave)
-				if ( callback ) {
-					callback(rptPedidoSave);	
-				}
-				return;	
-			}
-			
-			const rpt = await apiPwa.setNuevoPedido(dataCliente, dataSend);
-			logger.debug({ rpt }, 'Rpt');
-									
-			io.to(socket.id).emit('nuevoPedidoRes', rpt)
+					if (_savePedidoAndPago) {
+						logger.debug({ _savePedidoAndPago }, '_savePedidoAndPago');
 
-			if ( callback ) {
-				callback(rpt);			
-			}
-			
+						// si el mesero confirmo el pago // no holding
+						const rptPedidoSave = await apiHoldingServices.savePedidosAgrupados([dataSend], dataSend.dataPedido.p_subtotales, io, _savePedidoAndPago);
 
-			// error
-			if ( rpt === false ) {
+						// Confirmar reservas de stock (descuenta stock real) - fire-and-forget
+						if (dataSend.dataPedido.p_body) {
+							handleStock.confirmarStockPedido(
+								dataSend.dataPedido.p_body,
+								dataCliente.idsede,
+								{ idpedido: rptPedidoSave?.[0]?.idpedido, idusuario: dataCliente.idusuario }
+							).catch(err => logger.error({ error: err.message }, '❌ Error confirmando reservas de stock (pago)'));
+						}
+						return rptPedidoSave;
+					}
+
+					return await apiPwa.setNuevoPedido(dataCliente, dataSend);
+				});
+			} catch (error) {
+				logger.error({ error, idem }, '❌ [Socket] Error guardando nuevoPedido');
+				responder(false);
 				return;
-			}			
+			}
+
+			logger.debug({ rpt }, 'Rpt');
+			responder(rpt);
+
+			// holding y pago-mozo terminan aqui; una repeticion solo responde, no vuelve a notificar/imprimir
+			if ( isHolding || _savePedidoAndPago || repetida || rpt === false ) {
+				return;
+			}
 
 			dataSend.dataPedido.idpedido = rpt[0].idpedido; // para buscar el pedido en comercio
 

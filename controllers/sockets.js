@@ -632,22 +632,29 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('nuevoPedido', async (dataSend, callback) => {
 			var telefonoComercio = '';
 
-			if ( typeof dataSend === 'string' ) {
-				dataSend = JSON.parse(dataSend);
-			}
-
 			// responde por ack (callback) y por evento; el ack es lo que usa la app mozo
 			const responder = (rpt) => {
 				io.to(socket.id).emit('nuevoPedidoRes', rpt);
 				if ( callback ) { callback(rpt); }
 			};
 
-			// chequeamos si el header tiene paymentMozo.success
-			const _savePedidoAndPago = dataSend.dataPedido.p_header.paymentMozo ? dataSend.dataPedido.p_header.paymentMozo.isPaymentSuccess : false;
-			const isHolding = dataSend.dataPedido.p_header.is_holding == 1;
-
-			// clave de idempotencia generada por la app: un reintento con la misma clave no vuelve a guardar
-			const idem = dataSend.dataPedido.p_header.idem;
+			// un payload malformado no debe dejar a la app esperando: siempre se responde
+			let _savePedidoAndPago, isHolding, idem;
+			try {
+				if ( typeof dataSend === 'string' ) {
+					dataSend = JSON.parse(dataSend);
+				}
+				const header = dataSend.dataPedido.p_header;
+				// chequeamos si el header tiene paymentMozo.success
+				_savePedidoAndPago = header.paymentMozo ? header.paymentMozo.isPaymentSuccess : false;
+				isHolding = header.is_holding == 1;
+				// clave de idempotencia generada por la app: un reintento con la misma clave no vuelve a guardar
+				idem = header.idem;
+			} catch (error) {
+				logger.error({ error }, '❌ [Socket] nuevoPedido con payload invalido');
+				responder(false);
+				return;
+			}
 			const repetida = idempotencia.esRepetida(idem);
 			if ( repetida ) { logger.warn({ idem }, 'nuevoPedido repetido, se responde el resultado anterior'); }
 

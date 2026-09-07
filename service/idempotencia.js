@@ -17,7 +17,9 @@ function unaVez(clave, fn) {
   return p;
 }
 
-const esFallo = (r) => !r || (Array.isArray(r) && (r.length === 0 || r.some(x => x && x.success === false)));
+// Un lote (holding: un pedido por sede) cuenta como fallo solo si NO se guardo nada;
+// si una parte se guardo, la clave se mantiene para que un reintento no duplique lo ya guardado.
+const esFallo = (r) => !r || (Array.isArray(r) && (r.length === 0 || r.every(x => x && x.success === false)));
 
 const esRepetida = (clave) => !!clave && enCurso.has(clave);
 

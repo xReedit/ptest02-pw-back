@@ -208,7 +208,16 @@ const getDataSede = async (dataCliente) => {
     // const query = `CALL procedure_pwa_pedido_dataorg(${idorg}, ${idsede})`;
     // return await emitirRespuestaSP(query);
     const query = `CALL procedure_pwa_pedido_dataorg(?, ?)`;
-    return await QueryServiceV1.ejecutarProcedimiento(query, [idorg, idsede], 'getDataSede');
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [idorg, idsede], 'getDataSede');
+
+    // opciones de sede que usa la app mozo (sede_opciones no entra en el procedure)
+    const datossede = rows && rows[0] && rows[0].datossede && rows[0].datossede[0];
+    if (datossede) {
+        const op = await QueryServiceV1.ejecutarConsulta(
+            'SELECT mozo_num_personas FROM sede_opciones WHERE idsede = ?', [idsede], 'SELECT', 'getDataSede.opciones');
+        datossede.mozo_num_personas = (op && op[0] && op[0].mozo_num_personas) || '1'; // sin fila = opcional
+    }
+    return rows;
 };
 module.exports.getDataSede = getDataSede;
 

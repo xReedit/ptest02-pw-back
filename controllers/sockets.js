@@ -12,6 +12,7 @@ const handleStock = require('../service/handle.stock.v1');
 const logger = require('../utilitarios/logger');
 const idempotencia = require('../service/idempotencia');
 const socketBot = require('./socketBot.js');
+const pushMozo = require('../service/push.mozo.service');
 
 
 
@@ -293,6 +294,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		logger.debug({ chanelConect }, 'Conectado al room');
 
 		socket.join(chanelConect);
+
+		// app mozo: marca que sigue usando la app (filtro del push de llamado de mesa)
+		if (dataCliente.iscliente !== 'true') pushMozo.setMozoActivo(dataCliente.idusuario);
 
 
 		// Servidor de Impresion 070222
@@ -990,6 +994,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			apiPwa.saveCallClientMesa(_dataSend,0);
 
 			socket.broadcast.to(chanelConect).emit('notificar-cliente-llamado', numMesa);
+
+			// push a los mozos de la sede que no tienen la app abierta
+			pushMozo.sendLlamadoMesa(dataCliente.idsede, numMesa);
 		});
 
 		socket.on('notificar-cliente-llamado-voy', (numMesa) => {			

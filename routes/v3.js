@@ -16,6 +16,7 @@ const apiServiceFacturacion = require('../controllers/serviceFacturacion');
 const apiServiceSendCPE = require('../controllers/serviceSendCPE');
 
 const apiPwaSMS = require('../controllers/sendMsj');
+const pushMozo = require('../service/push.mozo.service');
 const login = require('../controllers/login');
 const auth = require('../middleware/autentificacion');
 
@@ -181,6 +182,8 @@ routerV3.post('/delivery/get-cliente-telefono-chatbot', apiPwaAppDelivery.getTel
 // guardar suscripcion
 routerV3.post('/push/suscripcion', apiPwaSMS.pushSuscripcion);
 routerV3.post('/push/send-notification', apiPwaSMS.sendPushNotificaction);
+// app mozo: token FCM del dispositivo (set/del)
+routerV3.post('/mozo/push-token', auth.verificarToken, pushMozo.setPushToken);
 	
 // routerV3.post('/pago/set-data-transaction', apiPwaAppPedidos.setDataTransaction); // gurdamos datos de la transacion
 // routerV3.post('/pago/get-data-transaction', apiPwaAppPedidos.getDataTransaction); // obtenemos datos de la transaccion

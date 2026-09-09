@@ -30,12 +30,8 @@ BEGIN
   SET xIdPedido = xobj->>'$.idpedido';
   SET xIdRepartidor = xobj->>'$.idrepartidor';
 
-  SET @isIdCliente = JSON_TYPE(xobj->>'$.idcliente');
-  IF ( @isIdCliente = 'NULL' ) THEN
-    SET xIdCliente = (SELECT idcliente FROM pedido WHERE idpedido = xIdPedido);
-  ELSE
-    SET xIdCliente = xobj->>'$.idcliente';
-  END IF;
+  -- la app 2.0 no manda idcliente ni operacion: se toman del pedido / vacío (las columnas son NOT NULL)
+  SET xIdCliente = COALESCE(NULLIF(xobj->>'$.idcliente', 'null'), (SELECT idcliente FROM pedido WHERE idpedido = xIdPedido));
 
   SET @isComercioAfiliado = (SELECT pwa_comercio_afiliado FROM sede WHERE idsede = xobj->>'$.idsede');
 
@@ -43,7 +39,8 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM repartidor_pedido_entregado WHERE idpedido = xIdPedido AND idrepartidor = xIdRepartidor)
      AND EXISTS (SELECT 1 FROM pedido WHERE idpedido = xIdPedido AND idrepartidor = xIdRepartidor) THEN
     INSERT INTO repartidor_pedido_entregado ( idrepartidor, idpedido, idcliente, idsede, comercio_afiliado, fecha, operacion )
-    VALUES ( xIdRepartidor, xIdPedido, xIdCliente, xobj->>'$.idsede', @isComercioAfiliado, NOW(), xobj->>'$.operacion' );
+    VALUES ( xIdRepartidor, xIdPedido, xIdCliente, COALESCE(xobj->>'$.idsede', (SELECT idsede FROM pedido WHERE idpedido = xIdPedido)),
+             @isComercioAfiliado, NOW(), COALESCE(xobj->'$.operacion', JSON_OBJECT()) );
   END IF;
 
   -- v1 solo guardaba el tiempo; el estado lo cambiaba un socket que se perdía. Aquí queda todo en la misma llamada.

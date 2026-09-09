@@ -347,7 +347,12 @@ describe('loop v2: colocarPedidoEnRepartidor', () => {
         ];
         await v2.colocarPedidoEnRepartidor(mockIo, 0);
         expect(sqlLlamadas('SET flag_paso_pedido = 0, pedido_por_aceptar = NULL WHERE flag_paso_pedido = ?')).toHaveLength(0);
-        expect(sqlLlamadas('procedure_delivery_set_pedido_repartidor(')[0].params[1]).toBe(7);
+        // renovar no pasa por el SP (sumaría pedidos_reasignados al holder): solo corre expira_en
+        expect(sqlLlamadas('procedure_delivery_set_pedido_repartidor(')).toHaveLength(0);
+        const renov = sqlLlamadas('UPDATE repartidor SET pedido_por_aceptar = ?, flag_paso_pedido = ? WHERE idrepartidor = ?');
+        expect(renov).toHaveLength(1);
+        expect(renov[0].params[2]).toBe(7);
+        expect(JSON.parse(renov[0].params[0]).expira_en).toBeGreaterThan(Date.now());
         expect(mockEmitidos.some(e => e.evento === 'repartidor-notifica-server-quita-pedido')).toBe(false); // a sí mismo no se le quita
         expect(logs('oferta_renovada')).toHaveLength(1);
     });
@@ -373,6 +378,10 @@ describe('loop v2: colocarPedidoEnRepartidor', () => {
         expect(mockEmitidos).toContainEqual({ room: 'MONITOR', evento: 'notifica-server-quita-pedido-repartidor', data: 3 });
         expect(logs('oferta_quitada')).toHaveLength(1);
         expect(logs('oferta_enviada')).toHaveLength(1);
+        // el anterior queda con flag_paso_pedido = 0 (el SP solo limpia pedido_por_aceptar); si no, nunca vuelve a ser candidato
+        const reset = mockConsultas.find(c => c.sql.includes('flag_paso_pedido = 0') && c.sql.includes('idrepartidor != ?'));
+        expect(reset).toBeDefined();
+        expect(reset.params).toEqual([10, 7]);
     });
 
     test('agrupa pedidos de la misma sede y los pedidos que recoge el cliente no se ofrecen', async () => {

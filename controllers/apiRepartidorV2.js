@@ -315,11 +315,17 @@ module.exports.asignarmePedido = asignarmePedido;
 // POST /repartidor2/set-efectivo-mano  (mismo handler v1, pero con token y sin poder tocar a otro repartidor)
 // ---------------------------------------------------------------------------------------------
 
-const setEfectivoMano = function (req, res) {
+const setEfectivoMano = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req, 'idrepartidor');
 	if (!idrepartidor) return ReE(res, 'token sin idrepartidor', 401);
 	req.body.idrepartidor = idrepartidor;
 	logEvento(idrepartidor, null, Number(req.body.online) === 1 ? 'online' : 'offline', 'http', { efectivo: req.body.efectivo });
+	if (req.body.efectivo === undefined || req.body.efectivo === null) {
+		// solo cambio de estado (sync al abrir la app): no tocar el efectivo declarado
+		const ok = await QueryServiceV1.ejecutarConsulta(`UPDATE repartidor SET online = ? WHERE idrepartidor = ?`,
+			[Number(req.body.online) === 1 ? 1 : 0, idrepartidor], 'UPDATE', 'setOnlineV2');
+		return ReS(res, { data: ok });
+	}
 	return apiRepartidor.setEfectivoMano(req, res);
 };
 module.exports.setEfectivoMano = setEfectivoMano;
@@ -376,10 +382,27 @@ const enviarOferta = async function (listRepartidores, dataPedido, io) {
 	dataPedido.expira_en = Date.now() + OFERTA_VENTANA_MS;
 
 	// await: el push y el socket salen después de que la BD tenga la oferta (antes salían antes y la app leía vacío)
-	await QueryServiceV1.ejecutarProcedimiento(
-		`CALL procedure_delivery_set_pedido_repartidor(?, ?, ?)`,
-		[idPedidoPrincipal, candidato.idrepartidor, JSON.stringify(dataPedido)],
-		'setAsignaTemporalPedidoARepartidorV2');
+	if (renovar) {
+		// misma oferta, mismo repartidor: solo se corre el vencimiento. El SP sumaría pedidos_reasignados
+		// en cada renovación y a la séptima el SP de candidatos lo excluiría para siempre.
+		await QueryServiceV1.ejecutarConsulta(
+			`UPDATE repartidor SET pedido_por_aceptar = ?, flag_paso_pedido = ? WHERE idrepartidor = ?`,
+			[JSON.stringify(dataPedido), idPedidoPrincipal, candidato.idrepartidor], 'UPDATE', 'renovarOfertaV2');
+	} else {
+		await QueryServiceV1.ejecutarProcedimiento(
+			`CALL procedure_delivery_set_pedido_repartidor(?, ?, ?)`,
+			[idPedidoPrincipal, candidato.idrepartidor, JSON.stringify(dataPedido)],
+			'setAsignaTemporalPedidoARepartidorV2');
+	}
+
+	// el SP limpia pedido_por_aceptar del anterior pero no su flag_paso_pedido; sin esto el anterior queda
+	// excluido de procedure_delivery_get_repartidor (exige flag_paso_pedido = 0) hasta que algo lo resetee
+	if (!renovar) {
+		await QueryServiceV1.ejecutarConsulta(
+			`UPDATE repartidor SET flag_paso_pedido = 0, pedido_por_aceptar = NULL
+			  WHERE flag_paso_pedido = ? AND idrepartidor != ? AND ocupado = 0`,
+			[idPedidoPrincipal, candidato.idrepartidor], 'UPDATE', 'resetAnteriorV2');
+	}
 
 	const destino = await datosNotificacion(candidato.idrepartidor);
 	io.to('MONITOR').emit('notifica-server-pedido-por-aceptar', [destino, dataPedido, listRepartidores]);
@@ -490,7 +513,9 @@ const colocarPedidoEnRepartidor = async function (io, idsede) {
 				`SELECT idrepartidor FROM repartidor
 				  WHERE flag_paso_pedido = ? AND ocupado = 0
 				    AND CAST(COALESCE(pedido_por_aceptar->>'$.expira_en', '0') AS UNSIGNED) > ?`,
-				[_group.pedidos[0], Date.now()], 'SELECT', 'ofertaViva');
+				// +1 s: la oferta vence en el mismo segundo en que corre el tick; sin margen se la considera viva
+				// por unos ms y la reasignación se atrasa un minuto entero
+				[_group.pedidos[0], Date.now() + 1000], 'SELECT', 'ofertaViva');
 			if (ofertaViva.length > 0) {
 				logger.debug('loopV2: oferta viva, no se reasigna', { idpedido: _group.pedidos[0], idrepartidor: ofertaViva[0].idrepartidor });
 				continue;

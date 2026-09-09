@@ -20,10 +20,14 @@ const logEvento = (idrepartidor, evento, detalle) => {
 		[idrepartidor, evento, JSON.stringify(detalle)], 'INSERT', 'logEventoSocket');
 };
 
-const attach = function (io) {
+const MAX_INTENTOS_ATTACH = 20;
+
+const attach = function (io, intento = 1) {
 	if (attached) return;
 	io = io || (() => { try { return socketManager.getIO(); } catch (e) { return null; } })();
 	if (!io) {
+		// app.js crea io en el mismo tick que carga las rutas; si algún día eso cambia, reintentamos un rato
+		if (intento < MAX_INTENTOS_ATTACH) return void setTimeout(() => attach(null, intento + 1), 500);
 		logger.error('repartidor.socket.hooks: io no inicializado, hooks no instalados');
 		return;
 	}
@@ -43,9 +47,13 @@ const attach = function (io) {
 			await QueryServiceV1.ejecutarConsulta(
 				`UPDATE repartidor SET socketid = NULL WHERE idrepartidor = ? AND socketid = ?`,
 				[idrepartidor, socket.id], 'UPDATE', 'repartidorDisconnect');
+			logEvento(idrepartidor, 'socket_desconectado', { socketid: socket.id, reason });
+
+			// si ya reconectó con otro socket (red móvil), no es un offline real: no molestar al monitor
+			const actual = await QueryServiceV1.ejecutarConsulta(`SELECT socketid FROM repartidor WHERE idrepartidor = ?`, [idrepartidor], 'SELECT', 'repartidorDisconnect');
+			if (actual[0] && actual[0].socketid) return;
 			// el monitor solo escucha 'notifica-repartidor-online'; recibe el mismo objeto con online = 0
 			io.to('MONITOR').emit('notifica-repartidor-online', { ...q, idrepartidor, online: 0, socketid: null });
-			logEvento(idrepartidor, 'socket_desconectado', { socketid: socket.id, reason });
 		});
 	});
 

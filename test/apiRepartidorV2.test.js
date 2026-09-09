@@ -110,6 +110,7 @@ describe('getMiEstado', () => {
 describe('setAsignarPedido (aceptar)', () => {
     test('acepta cuando todos los pedidos quedaron a nombre del repartidor y quita la oferta a otros', async () => {
         mockRespuestasSelect = [
+            [{ pedido_por_aceptar: { pedidos: [10, 11] } }],   // mi oferta
             [{ n: 2 }],                                        // COUNT mios
             [{ idrepartidor: 9, socketid: 'sock-otro' }]       // otros con la misma oferta
         ];
@@ -119,15 +120,24 @@ describe('setAsignarPedido (aceptar)', () => {
         expect(r.body).toEqual({ data: true, success: true });
         const update = sqlLlamadas('UPDATE pedido SET idrepartidor')[0];
         expect(update.params).toEqual([7, [10, 11], 7]);
-        expect(update.sql).toContain('COALESCE(idrepartidor, 0) = 0 OR idrepartidor = ?');
+        expect(update.sql).toContain('estado != 3 AND (COALESCE(idrepartidor, 0) = 0 OR idrepartidor = ?)');
         expect(sqlLlamadas('SET ocupado = 1, pedido_paso_va = 1, flag_paso_pedido = 0')).toHaveLength(1);
         expect(mockEmitidos).toContainEqual({ room: 'sock-otro', evento: 'repartidor-estado-cambio', data: undefined });
         expect(logs('aceptado')).toHaveLength(1);
         expect(logs('oferta_quitada')).toHaveLength(1);
     });
 
+    test('responde 409 si intenta aceptar un pedido que no está en su oferta', async () => {
+        mockRespuestasSelect = [[{ pedido_por_aceptar: { pedidos: [10] } }]];
+        const r = res();
+        await v2.setAsignarPedido(req({ idpedido: '10,99' }), r);
+        expect(r.statusCode).toBe(409);
+        expect(sqlLlamadas('UPDATE pedido SET idrepartidor')).toHaveLength(0);
+        expect(logs('aceptar_rechazado')).toHaveLength(1);
+    });
+
     test('responde 409 y limpia la oferta propia si otro repartidor ya tomó el pedido', async () => {
-        mockRespuestasSelect = [[{ n: 1 }]]; // solo 1 de 2 quedó a mi nombre
+        mockRespuestasSelect = [[{ pedido_por_aceptar: null }], [{ n: 1 }]]; // sin oferta registrada; solo 1 de 2 quedó a mi nombre
         const r = res();
         await v2.setAsignarPedido(req({ idpedido: '10,11' }), r);
         expect(r.statusCode).toBe(409);
@@ -147,6 +157,7 @@ describe('setAsignarPedido (aceptar)', () => {
 
 describe('setFinPedidoEntregado (entregar)', () => {
     test('llama al SP v2, notifica comercio/restobar/monitor y libera cuando no quedan activos', async () => {
+        mockRespuestasSelect = [[{ idrepartidor: 7 }]]; // el pedido es mío
         mockRespuestasSP = [[{ comercio_afiliado: 1, pedidos_activos: 0 }]];
         const r = res();
         await v2.setFinPedidoEntregado(req({ idpedido: 10, idsede: 26, idorg: 23, time_line: { paso: 3 } }), r);
@@ -164,6 +175,7 @@ describe('setFinPedidoEntregado (entregar)', () => {
     });
 
     test('con pedidos activos restantes no emite grupo finalizado', async () => {
+        mockRespuestasSelect = [[{ idrepartidor: 7 }]];
         mockRespuestasSP = [[{ comercio_afiliado: 0, pedidos_activos: 2 }]];
         const r = res();
         await v2.setFinPedidoEntregado(req({ idpedido: 10, idsede: 26, idorg: 23 }), r);
@@ -176,6 +188,30 @@ describe('setFinPedidoEntregado (entregar)', () => {
         await v2.setFinPedidoEntregado(req({}), r);
         expect(r.statusCode).toBe(400);
         expect(sqlLlamadas('procedure_pwa_delivery_pedido_entregado_v2')).toHaveLength(0);
+    });
+
+    test('rechaza con 403 entregar un pedido de otro repartidor e ignora el idrepartidor del body', async () => {
+        mockRespuestasSelect = [[{ idrepartidor: 9 }]];
+        const r = res();
+        await v2.setFinPedidoEntregado(req({ idpedido: 10, idrepartidor: 9 }), r);
+        expect(r.statusCode).toBe(403);
+        expect(sqlLlamadas('procedure_pwa_delivery_pedido_entregado_v2')).toHaveLength(0);
+        expect(logs('entregar_rechazado')).toHaveLength(1);
+    });
+
+    test('si la BD falla responde 500 y no dice que entregó', async () => {
+        mockRespuestasSelect = [[{ idrepartidor: 7 }]];
+        mockRespuestasSP = [null];
+        const r = res();
+        await v2.setFinPedidoEntregado(req({ idpedido: 10 }), r);
+        expect(r.statusCode).toBe(500);
+        expect(mockEmitidos).toHaveLength(0);
+    });
+
+    test('sin idrepartidor en el token responde 401 aunque venga en el body', async () => {
+        const r = res();
+        await v2.setFinPedidoEntregado(req({ idpedido: 10, idrepartidor: 7 }, null), r);
+        expect(r.statusCode).toBe(401);
     });
 });
 
@@ -210,6 +246,15 @@ describe('setPedidoCanceladoRepartidor (liberar)', () => {
         const upd = sqlLlamadas('UPDATE repartidor SET pedido_por_aceptar = ? WHERE idrepartidor = ?')[0];
         expect(JSON.parse(upd.params[0])).toEqual({ pedidos: [11], cantidad_pedidos_aceptados: 1 });
         expect(sqlLlamadas('ocupado = 0')).toHaveLength(0);
+    });
+});
+
+describe('setPedidoCanceladoRepartidor sin token', () => {
+    test('responde 401 aunque el body traiga idrepartidor', async () => {
+        const r = res();
+        await v2.setPedidoCanceladoRepartidor(req({ idpedido: 10, idrepartidor: 7, motivo: 'x' }, null), r);
+        expect(r.statusCode).toBe(401);
+        expect(mockConsultas).toHaveLength(0);
     });
 });
 
@@ -349,5 +394,19 @@ describe('loop v2: colocarPedidoEnRepartidor', () => {
         await v2.colocarPedidoEnRepartidor(mockIo, 0);
         expect(mockConsultas).toHaveLength(0);
         expect(mockEmitidos).toHaveLength(0);
+    });
+
+    test('dos ticks a la vez no se solapan: el segundo se omite mientras corre el primero', async () => {
+        let liberar;
+        mockApiRepartidor.getPedidosEsperaRepartidor.mockImplementationOnce(() => new Promise(r => { liberar = () => r([]); }));
+        const primero = v2.colocarPedidoEnRepartidor(mockIo, 0);
+        await new Promise(r => setTimeout(r, 5));
+        await v2.colocarPedidoEnRepartidor(mockIo, 0); // omitido
+        expect(mockApiRepartidor.getPedidosEsperaRepartidor).toHaveBeenCalledTimes(1);
+        liberar();
+        await primero;
+        mockApiRepartidor.getPedidosEsperaRepartidor.mockResolvedValueOnce([]);
+        await v2.colocarPedidoEnRepartidor(mockIo, 0); // ya libre
+        expect(mockApiRepartidor.getPedidosEsperaRepartidor).toHaveBeenCalledTimes(2);
     });
 });

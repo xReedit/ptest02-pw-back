@@ -40,17 +40,19 @@ BEGIN
   SET @isComercioAfiliado = (SELECT pwa_comercio_afiliado FROM sede WHERE idsede = xobj->>'$.idsede');
 
   -- idempotente: entregar dos veces no duplica el registro
-  IF NOT EXISTS (SELECT 1 FROM repartidor_pedido_entregado WHERE idpedido = xIdPedido AND idrepartidor = xIdRepartidor) THEN
+  IF NOT EXISTS (SELECT 1 FROM repartidor_pedido_entregado WHERE idpedido = xIdPedido AND idrepartidor = xIdRepartidor)
+     AND EXISTS (SELECT 1 FROM pedido WHERE idpedido = xIdPedido AND idrepartidor = xIdRepartidor) THEN
     INSERT INTO repartidor_pedido_entregado ( idrepartidor, idpedido, idcliente, idsede, comercio_afiliado, fecha, operacion )
     VALUES ( xIdRepartidor, xIdPedido, xIdCliente, xobj->>'$.idsede', @isComercioAfiliado, NOW(), xobj->>'$.operacion' );
   END IF;
 
   -- v1 solo guardaba el tiempo; el estado lo cambiaba un socket que se perdía. Aquí queda todo en la misma llamada.
+  -- solo si el pedido es de este repartidor (el endpoint ya lo valida; aquí se refuerza)
   UPDATE pedido
      SET pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, NOW()),
          pwa_delivery_status = '4',
          pwa_estado = 'E'
-   WHERE idpedido = xIdPedido;
+   WHERE idpedido = xIdPedido AND idrepartidor = xIdRepartidor;
 
   UPDATE cliente SET pwa_last_pedido_calificar = xIdPedido WHERE idcliente = xIdCliente;
 

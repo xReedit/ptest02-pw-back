@@ -110,8 +110,19 @@ const setAsignarPedido = async function (req, res) {
 	if (!idrepartidor || listIdPedido.length === 0) return ReE(res, 'idpedido requerido', 400);
 
 	try {
+		// si el repartidor tiene una oferta registrada, solo puede aceptar los pedidos de esa oferta
+		const rep = await QueryServiceV1.ejecutarConsulta(`SELECT pedido_por_aceptar FROM repartidor WHERE idrepartidor = ?`, [idrepartidor], 'SELECT', 'setAsignarPedidoV2');
+		const ofertaActual = parseJson(rep?.[0]?.pedido_por_aceptar);
+		if (ofertaActual && Array.isArray(ofertaActual.pedidos) && ofertaActual.pedidos.length > 0) {
+			const ofrecidos = ofertaActual.pedidos.map(Number);
+			if (!listIdPedido.every(id => ofrecidos.includes(id))) {
+				logEvento(idrepartidor, listIdPedido[0], 'aceptar_rechazado', 'http', { pedidos: listIdPedido, motivo: 'fuera_de_oferta' });
+				return ReE(res, 'El pedido no está en tu oferta actual', 409);
+			}
+		}
+
 		await QueryServiceV1.ejecutarConsulta(
-			`UPDATE pedido SET idrepartidor = ? WHERE idpedido IN (?) AND (COALESCE(idrepartidor, 0) = 0 OR idrepartidor = ?)`,
+			`UPDATE pedido SET idrepartidor = ? WHERE idpedido IN (?) AND estado != 3 AND (COALESCE(idrepartidor, 0) = 0 OR idrepartidor = ?)`,
 			[idrepartidor, listIdPedido, idrepartidor], 'UPDATE', 'setAsignarPedidoV2');
 
 		const mios = await QueryServiceV1.ejecutarConsulta(
@@ -161,13 +172,23 @@ module.exports.setAsignarPedido = setAsignarPedido;
  */
 const setFinPedidoEntregado = async function (req, res) {
 	const obj = req.body || {};
-	const idrepartidor = managerFilter.getInfoToken(req, 'idrepartidor') || obj.idrepartidor;
-	if (!idrepartidor || !obj.idpedido) return ReE(res, 'idpedido requerido', 400);
-	obj.idrepartidor = idrepartidor;
+	const idrepartidor = managerFilter.getInfoToken(req, 'idrepartidor');
+	if (!idrepartidor) return ReE(res, 'token sin idrepartidor', 401);
+	if (!obj.idpedido) return ReE(res, 'idpedido requerido', 400);
+	obj.idrepartidor = idrepartidor; // nunca el del body
 	if (obj.time_line === undefined) obj.time_line = 0;
+
+	// solo se puede entregar un pedido propio
+	const dueno = await QueryServiceV1.ejecutarConsulta(`SELECT idrepartidor FROM pedido WHERE idpedido = ?`, [obj.idpedido], 'SELECT', 'setFinPedidoEntregadoV2');
+	if (!dueno[0]) return ReE(res, 'El pedido no existe', 404);
+	if (Number(dueno[0].idrepartidor) !== Number(idrepartidor)) {
+		logEvento(idrepartidor, obj.idpedido, 'entregar_rechazado', 'http', { dueno: dueno[0].idrepartidor });
+		return ReE(res, 'El pedido no está asignado a este repartidor', 403);
+	}
 
 	const rows = await QueryServiceV1.ejecutarProcedimiento(
 		`CALL procedure_pwa_delivery_pedido_entregado_v2(?)`, [JSON.stringify(obj)], 'setFinPedidoEntregadoV2');
+	if (!Array.isArray(rows)) return ReE(res, 'No se pudo registrar la entrega, intenta de nuevo', 500);
 	const pedidosActivos = Number(rows?.[0]?.pedidos_activos ?? 1);
 
 	logEvento(idrepartidor, obj.idpedido, 'entregado', 'http', { pedidos_activos: pedidosActivos });
@@ -201,9 +222,10 @@ module.exports.setFinPedidoEntregado = setFinPedidoEntregado;
 
 /** Libera (cancela) un pedido aceptado. Rechaza si ya fue entregado; libera al repartidor si no le quedan pedidos. */
 const setPedidoCanceladoRepartidor = async function (req, res) {
-	const idrepartidor = managerFilter.getInfoToken(req, 'idrepartidor') || req.body.idrepartidor;
+	const idrepartidor = managerFilter.getInfoToken(req, 'idrepartidor');
 	const { idpedido, idsede, motivo } = req.body || {};
-	if (!idrepartidor || !idpedido) return ReE(res, 'idpedido requerido', 400);
+	if (!idrepartidor) return ReE(res, 'token sin idrepartidor', 401);
+	if (!idpedido) return ReE(res, 'idpedido requerido', 400);
 
 	const estadoRows = await QueryServiceV1.ejecutarConsulta(
 		`SELECT pwa_delivery_status FROM pedido WHERE idpedido = ?`, [idpedido], 'SELECT', 'setPedidoCanceladoV2');
@@ -280,7 +302,8 @@ const asignarmePedido = async function (req, res) {
 		inSede: true,
 		isexpress: 0
 	};
-	await QueryServiceV1.ejecutarProcedimiento(`CALL procedure_delivery_set_pedido_repartidor_manual(?)`, [JSON.stringify(objPedido)], 'asignarmePedido');
+	const spRows = await QueryServiceV1.ejecutarProcedimiento(`CALL procedure_delivery_set_pedido_repartidor_manual(?)`, [JSON.stringify(objPedido)], 'asignarmePedido');
+	if (!Array.isArray(spRows)) return ReE(res, 'No se pudo asignar el pedido, intenta de nuevo', 500);
 
 	logEvento(idrepartidor, idpedido, 'asignado_manual', 'http', { pedidos });
 	conOferta.forEach(o => { emitEstadoCambio(o.socketid); logEvento(o.idrepartidor, idpedido, 'oferta_quitada', 'http'); });
@@ -446,7 +469,14 @@ const agruparPedidosPorSede = function (listPedidos) {
  * Diferencias con v1: no reasigna mientras la oferta esté viva (expira_en), no borra la oferta del único
  * candidato (la renueva), espera al SP antes de notificar y registra cada paso en repartidor_evento_log.
  */
+let loopEnCurso = false;
+
 const colocarPedidoEnRepartidor = async function (io, idsede) {
+	if (loopEnCurso) {
+		logger.warn('loopV2: el ciclo anterior sigue corriendo, se omite este tick');
+		return;
+	}
+	loopEnCurso = true;
 	try {
 		let listPedidos = await apiRepartidor.getPedidosEsperaRepartidor(idsede);
 		listPedidos = Array.isArray(listPedidos) ? JSON.parse(JSON.stringify(listPedidos)) : [];
@@ -476,6 +506,8 @@ const colocarPedidoEnRepartidor = async function (io, idsede) {
 		}
 	} catch (err) {
 		logger.error({ err }, 'loopV2 colocarPedidoEnRepartidor');
+	} finally {
+		loopEnCurso = false;
 	}
 };
 module.exports.colocarPedidoEnRepartidor = colocarPedidoEnRepartidor;

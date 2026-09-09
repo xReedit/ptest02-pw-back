@@ -117,7 +117,7 @@ const getEntregados = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req, 'idrepartidor');
 	if (!idrepartidor) return ReE(res, 'token sin idrepartidor', 401);
 	const rows = await QueryServiceV1.ejecutarConsulta(
-		`SELECT p.idpedido, p.idsede, s.nombre AS sede_nombre, p.total, p.total_r, p.json_datos_delivery, e.fecha AS fecha_entrega
+		`SELECT p.idpedido, p.idsede, s.nombre AS sede_nombre, p.total, p.total_r, p.json_datos_delivery, e.fecha AS fecha_entrega, e.operacion
 		   FROM repartidor_pedido_entregado e
 		   JOIN pedido p ON p.idpedido = e.idpedido
 		   JOIN sede s ON s.idsede = p.idsede
@@ -127,6 +127,27 @@ const getEntregados = async function (req, res) {
 	return ReS(res, { data: Array.isArray(rows) ? rows : [], horas: HORAS_ENTREGADOS });
 };
 module.exports.getEntregados = getEntregados;
+
+// ---------------------------------------------------------------------------------------------
+// GET /repartidor2/metodos-pago?idsede=  → métodos de pago que acepta la sede (sede.metodo_pago_aceptados)
+// El repartidor propio los marca al entregar como referencia para caja (se guarda en
+// repartidor_pedido_entregado.operacion; no es el pago definitivo del pedido).
+// ---------------------------------------------------------------------------------------------
+
+const getMetodosPago = async function (req, res) {
+	const idsede = Number(req.query?.idsede) || managerFilter.getInfoToken(req, 'idsede_suscrito');
+	if (!idsede) return ReE(res, 'idsede requerido', 400);
+	const sede = await QueryServiceV1.ejecutarConsulta(`SELECT metodo_pago_aceptados FROM sede WHERE idsede = ?`, [idsede], 'SELECT', 'getMetodosPago');
+	const ids = String(sede?.[0]?.metodo_pago_aceptados || '').split(',').map(Number).filter(n => Number.isInteger(n) && n > 0);
+	// sin configuración en la sede: todos los activos. CREDITO (requiere cliente) nunca aplica a una entrega.
+	const rows = await QueryServiceV1.ejecutarConsulta(
+		`SELECT idtipo_pago, descripcion, img FROM tipo_pago
+		  WHERE estado = 0 AND COALESCE(requiere_cliente, '0') != '1' ${ids.length ? 'AND idtipo_pago IN (?)' : ''}
+		  ORDER BY orden, idtipo_pago`,
+		ids.length ? [ids] : [], 'SELECT', 'getMetodosPago');
+	return ReS(res, { data: Array.isArray(rows) ? rows : [] });
+};
+module.exports.getMetodosPago = getMetodosPago;
 
 // ---------------------------------------------------------------------------------------------
 // POST /repartidor2/set-asignar-pedido  { idpedido: "12,13" }

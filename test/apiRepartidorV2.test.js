@@ -124,6 +124,28 @@ describe('getMiEstado', () => {
     });
 });
 
+describe('getMetodosPago', () => {
+    test('filtra por los ids configurados en la sede del token', async () => {
+        mockRespuestasSelect = [[{ metodo_pago_aceptados: '1,2,3,5,' }], [{ idtipo_pago: 1, descripcion: 'EFECTIVO' }]];
+        const r = res();
+        await v2.getMetodosPago({ query: {}, usuariotoken: { idrepartidor: 13, idsede_suscrito: 13 } }, r);
+        expect(r.body.data).toEqual([{ idtipo_pago: 1, descripcion: 'EFECTIVO' }]);
+        const q = sqlLlamadas('FROM tipo_pago')[0];
+        expect(q.sql).toContain('idtipo_pago IN (?)');
+        expect(q.params).toEqual([[1, 2, 3, 5]]);
+    });
+
+    test('sin configuracion en la sede devuelve todos los activos; sin sede responde 400', async () => {
+        mockRespuestasSelect = [[{ metodo_pago_aceptados: null }], []];
+        const r = res();
+        await v2.getMetodosPago({ query: { idsede: '40' }, usuariotoken: { idrepartidor: 1 } }, r);
+        expect(sqlLlamadas('FROM tipo_pago')[0].sql).not.toContain('IN (?)');
+        const r2 = res();
+        await v2.getMetodosPago({ query: {}, usuariotoken: { idrepartidor: 1 } }, r2);
+        expect(r2.statusCode).toBe(400);
+    });
+});
+
 describe('getEntregados', () => {
     test('devuelve las entregas del repartidor del token de las ultimas 24 horas', async () => {
         mockRespuestasSelect = [[{ idpedido: 1, total_r: '75.00', fecha_entrega: '2026-09-08 21:00:00' }]];

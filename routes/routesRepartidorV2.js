@@ -11,6 +11,7 @@ router.use(auth.verificarToken);
 
 router.get('/mi-estado', v2.getMiEstado);
 router.get('/entregados', v2.getEntregados);
+router.get('/metodos-pago', v2.getMetodosPago);
 router.post('/set-asignar-pedido', v2.setAsignarPedido);
 router.post('/set-fin-pedido-entregado', v2.setFinPedidoEntregado);
 router.post('/set-pedido-delivery-cancelado', v2.setPedidoCanceladoRepartidor);

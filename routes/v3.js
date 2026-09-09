@@ -347,4 +347,7 @@ routerV3.post('/webhook/cobranza', apiWebhook.setWebhookCobranza);
 // mensajeria
 routerV3.get('/mensajeria/get-list-url', apiMensajeria.getLitsUrlMensajeria);
 
+// App repartidor 2.0: archivos nuevos (routesRepartidorV2.js / apiRepartidorV2.js); no toca los endpoints anteriores
+routerV3.use('/repartidor2', require('./routesRepartidorV2'));
+
 module.exports = routerV3;

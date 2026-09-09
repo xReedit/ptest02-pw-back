@@ -1471,8 +1471,10 @@ async function colocarPedidoEnRepartidor(io, idsede) {
 const runLoopSearchRepartidor = async function (io, idsede) {
 	logger.debug('xxxxxxxxxxx-----------runLoopSearchRepartidor', intervalBucaRepartidor)
 	if ( intervalBucaRepartidor === null ) {		
-		colocarPedidoEnRepartidor(io, idsede);
-		intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 60000);
+		// REPARTIDOR_LOOP_V2=1 usa el loop nuevo (apiRepartidorV2.js: oferta con expiracion, sin borrar al unico candidato). Por defecto sigue el actual.
+		const loop = process.env.REPARTIDOR_LOOP_V2 === '1' ? require('./apiRepartidorV2').colocarPedidoEnRepartidor : colocarPedidoEnRepartidor;
+		loop(io, idsede);
+		intervalBucaRepartidor = setInterval(() => loop(io, idsede), 60000);
 		// intervalBucaRepartidor = setInterval(() => colocarPedidoEnRepartidor(io, idsede), 10000); //desarrollo
 	}
 }

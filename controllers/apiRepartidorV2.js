@@ -95,9 +95,38 @@ const getMiEstado = async function (req, res) {
 		}
 	}
 
-	return ReS(res, { data: { oferta, asignados, ocupado: r.ocupado || 0, online: r.online || 0, servidor_hora: Date.now() } });
+	// repartidor propio: nombre de su sede para mostrarlo en la app
+	const idsedeSuscrito = managerFilter.getInfoToken(req, 'idsede_suscrito');
+	let sede = null;
+	if (idsedeSuscrito) {
+		const s = await QueryServiceV1.ejecutarConsulta(`SELECT idsede, nombre FROM sede WHERE idsede = ?`, [idsedeSuscrito], 'SELECT', 'getMiEstado');
+		sede = s[0] || null;
+	}
+
+	return ReS(res, { data: { oferta, asignados, sede, ocupado: r.ocupado || 0, online: r.online || 0, servidor_hora: Date.now() } });
 };
 module.exports.getMiEstado = getMiEstado;
+
+// ---------------------------------------------------------------------------------------------
+// GET /repartidor2/entregados  → pedidos entregados por este repartidor en las últimas 24 h
+// ---------------------------------------------------------------------------------------------
+
+const HORAS_ENTREGADOS = 24;
+
+const getEntregados = async function (req, res) {
+	const idrepartidor = managerFilter.getInfoToken(req, 'idrepartidor');
+	if (!idrepartidor) return ReE(res, 'token sin idrepartidor', 401);
+	const rows = await QueryServiceV1.ejecutarConsulta(
+		`SELECT p.idpedido, p.idsede, s.nombre AS sede_nombre, p.total, p.total_r, p.json_datos_delivery, e.fecha AS fecha_entrega
+		   FROM repartidor_pedido_entregado e
+		   JOIN pedido p ON p.idpedido = e.idpedido
+		   JOIN sede s ON s.idsede = p.idsede
+		  WHERE e.idrepartidor = ? AND e.fecha >= NOW() - INTERVAL ${HORAS_ENTREGADOS} HOUR
+		  ORDER BY e.fecha DESC`,
+		[idrepartidor], 'SELECT', 'getEntregados');
+	return ReS(res, { data: Array.isArray(rows) ? rows : [], horas: HORAS_ENTREGADOS });
+};
+module.exports.getEntregados = getEntregados;
 
 // ---------------------------------------------------------------------------------------------
 // POST /repartidor2/set-asignar-pedido  { idpedido: "12,13" }

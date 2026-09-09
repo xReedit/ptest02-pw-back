@@ -77,6 +77,23 @@ describe('getMiEstado', () => {
         expect(typeof r.body.data.servidor_hora).toBe('number');
     });
 
+    test('repartidor propio recibe el nombre de su sede; global no consulta la sede', async () => {
+        mockRespuestasSelect = [
+            [{ ocupado: 0, online: 1, flag_paso_pedido: 0, pedido_por_aceptar: null }],
+            [],
+            [{ idsede: 13, nombre: 'EL ASADOR' }]
+        ];
+        const r = res();
+        await v2.getMiEstado({ body: {}, usuariotoken: { idrepartidor: 13, idsede_suscrito: 13 } }, r);
+        expect(r.body.data.sede).toEqual({ idsede: 13, nombre: 'EL ASADOR' });
+
+        mockRespuestasSelect = [[{ ocupado: 0, online: 1, flag_paso_pedido: 0, pedido_por_aceptar: null }], []];
+        const r2 = res();
+        await v2.getMiEstado(req(), r2);
+        expect(r2.body.data.sede).toBeNull();
+        expect(sqlLlamadas('FROM sede WHERE idsede')).toHaveLength(1); // solo la del propio
+    });
+
     test('una oferta expirada no se devuelve', async () => {
         const ppa = { pedidos: [10], expira_en: Date.now() - 1000 };
         mockRespuestasSelect = [
@@ -104,6 +121,19 @@ describe('getMiEstado', () => {
         const r = res();
         await v2.getMiEstado(req({}, null), r);
         expect(r.statusCode).toBe(401);
+    });
+});
+
+describe('getEntregados', () => {
+    test('devuelve las entregas del repartidor del token de las ultimas 24 horas', async () => {
+        mockRespuestasSelect = [[{ idpedido: 1, total_r: '75.00', fecha_entrega: '2026-09-08 21:00:00' }]];
+        const r = res();
+        await v2.getEntregados(req({}, 13), r);
+        expect(r.body.data).toHaveLength(1);
+        expect(r.body.horas).toBe(24);
+        const q = sqlLlamadas('repartidor_pedido_entregado e')[0];
+        expect(q.params).toEqual([13]);
+        expect(q.sql).toContain('INTERVAL 24 HOUR');
     });
 });
 

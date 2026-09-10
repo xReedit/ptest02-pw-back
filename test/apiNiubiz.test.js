@@ -68,6 +68,15 @@ describe('apiNiubiz', () => {
 		});
 	});
 
+	it('crearSesion sin clientData manda antifraud null (paridad flujo mesa)', async () => {
+		fetch.mockResolvedValueOnce({ ok: true, status: 200, text: async () => 'TOKEN' })
+			.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ sessionKey: 'SK' }) });
+		const res = mockRes();
+		await crearSesion({ body: { idsede: 1, amount: 12.3, purchaseNumber: '900' }, ip: '1.1.1.1' }, res);
+		const body = JSON.parse(fetch.mock.calls[1][1].body);
+		expect(body).toEqual({ amount: 12.3, antifraud: null, channel: 'web', recurrenceMaxAmount: null });
+	});
+
 	it('autorizar marca success solo con ACTION_CODE 000', async () => {
 		fetch.mockResolvedValueOnce({ ok: true, status: 200, text: async () => 'TOKEN' })
 			.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ dataMap: { ACTION_CODE: '116' } }) });

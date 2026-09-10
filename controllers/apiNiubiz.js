@@ -44,6 +44,7 @@ async function getSecurityToken(cred) {
 }
 
 // Mismos campos MDD que enviaba el frontend (niubiz.service.ts / pago-tarjeta-visanet.service.ts).
+// Sin clientData devuelve null: el flujo de mesa enviaba "antifraud": null en la sesion.
 function buildAntifraud(req) {
 	const cliente = req.body.clientData;
 	if (!cliente) { return null; }

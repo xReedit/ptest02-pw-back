@@ -15,6 +15,8 @@ describe('estado-pedido.service.notificar + push', () => {
   beforeEach(() => {
     QueryServiceV1.ejecutarConsulta.mockReset();
     pushCliente.notificarEstado.mockClear();
+    pushCliente.notificarEstado.mockResolvedValue(undefined);
+    svc._resetDedupe();
   });
 
   it('manda el push con el estado del pedido despues de emitir el socket', async () => {
@@ -46,5 +48,55 @@ describe('estado-pedido.service.notificar + push', () => {
     pushCliente.notificarEstado.mockRejectedValueOnce(new Error('fcm caido'));
     svc.setIo(ioMock());
     await expect(svc.notificar(77)).resolves.toBeUndefined();
+  });
+
+  it('no repite el push si el estado no cambio, pero si repite el socket', async () => {
+    QueryServiceV1.ejecutarConsulta.mockResolvedValue([
+      { idpedido: 77, idcliente: 15, pwa_estado: 'A', pwa_delivery_status: '0', position_now: null }
+    ]);
+    const io = ioMock();
+    svc.setIo(io);
+
+    await svc.notificar(77);
+    await svc.notificar(77);
+
+    expect(pushCliente.notificarEstado).toHaveBeenCalledTimes(1);
+    expect(io.emitted.length).toBe(2);
+  });
+
+  it('manda un push por cada estado distinto', async () => {
+    const io = ioMock();
+    svc.setIo(io);
+
+    QueryServiceV1.ejecutarConsulta.mockResolvedValue([
+      { idpedido: 77, idcliente: 15, pwa_estado: 'P', pwa_delivery_status: '0', position_now: null }
+    ]);
+    await svc.notificar(77);
+
+    QueryServiceV1.ejecutarConsulta.mockResolvedValue([
+      { idpedido: 77, idcliente: 15, pwa_estado: 'A', pwa_delivery_status: '0', position_now: null }
+    ]);
+    await svc.notificar(77);
+
+    expect(pushCliente.notificarEstado).toHaveBeenCalledTimes(2);
+    expect(pushCliente.notificarEstado).toHaveBeenNthCalledWith(1, {
+      idpedido: 77, idcliente: 15, pwa_estado: 'P', pwa_delivery_status: '0'
+    });
+    expect(pushCliente.notificarEstado).toHaveBeenNthCalledWith(2, {
+      idpedido: 77, idcliente: 15, pwa_estado: 'A', pwa_delivery_status: '0'
+    });
+  });
+
+  it('suelta la entrada en un estado final: un aviso posterior igual vuelve a mandarse', async () => {
+    QueryServiceV1.ejecutarConsulta.mockResolvedValue([
+      { idpedido: 77, idcliente: 15, pwa_estado: 'E', pwa_delivery_status: '4', position_now: null }
+    ]);
+    svc.setIo(ioMock());
+
+    await svc.notificar(77);
+    expect(pushCliente.notificarEstado).toHaveBeenCalledTimes(1);
+
+    await svc.notificar(77);
+    expect(pushCliente.notificarEstado).toHaveBeenCalledTimes(2);
   });
 });

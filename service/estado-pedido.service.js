@@ -6,6 +6,28 @@ const pushCliente = require('./push.cliente.service');
 let io = null;
 function setIo(_io) { io = _io; }
 
+// Varios origenes (apiPwa_v1, apiComercio, el print server por lotes) llaman notificar()
+// dos veces para el mismo estado; el socket repetido no molesta, el push repetido si.
+// ponytail: dedupe en memoria por proceso; si hay varios workers, mover a Redis
+const MAX_DEDUPE = 2000;
+const ultimoEstadoPush = new Map();
+
+function claveEstado(est) { return `${est.pwa_estado}|${est.pwa_delivery_status}`; }
+
+function esEstadoFinal(est) {
+	const delivery = Number(est.pwa_delivery_status);
+	return est.pwa_estado === 'E' || est.pwa_estado === 'C' || delivery === 4 || delivery === 5;
+}
+
+function recordarEstado(id, clave) {
+	ultimoEstadoPush.set(id, clave);
+	while (ultimoEstadoPush.size > MAX_DEDUPE) {
+		ultimoEstadoPush.delete(ultimoEstadoPush.keys().next().value);
+	}
+}
+
+function _resetDedupe() { ultimoEstadoPush.clear(); }
+
 function parseJson(v) { if (!v) { return null; } if (typeof v === 'object') { return v; } try { return JSON.parse(v); } catch (e) { return null; } }
 
 async function leerEstado(idpedido) {
@@ -27,16 +49,24 @@ async function notificar(idpedido) {
 		const { idcliente, ...payload } = est;
 		io.to(`cliente_${Number(idcliente)}`).emit('pedido-cambio-estado', payload);
 
+		const id = Number(idpedido);
+		const clave = claveEstado(est);
+		if (ultimoEstadoPush.get(id) === clave) { return; }
+		recordarEstado(id, clave);
+
 		// el socket solo llega si la app esta abierta; el push cubre el resto
 		await pushCliente.notificarEstado({
-			idpedido: Number(idpedido),
+			idpedido: id,
 			idcliente: Number(idcliente),
 			pwa_estado: est.pwa_estado,
 			pwa_delivery_status: est.pwa_delivery_status
 		});
+
+		// el pedido termino: no hay mas cambios que deduplicar, se libera la entrada
+		if (esEstadoFinal(est)) { ultimoEstadoPush.delete(id); }
 	} catch (error) {
 		logger.error({ error: error.message, idpedido }, 'estadoPedido.notificar');
 	}
 }
 
-module.exports = { setIo, notificar, leerEstado };
+module.exports = { setIo, notificar, leerEstado, _resetDedupe };

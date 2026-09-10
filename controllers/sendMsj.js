@@ -261,14 +261,46 @@ module.exports.sendEmailSendAWSSES = sendEmailSendAWSSES;
 
 // notificaciones push
 // guardar suscripcion notificacion push
-const pushSuscripcion = async function (req) {
-	const suscripcion = req.body.suscripcion;
-	const idcliente = req.body.idcliente;
+// body: { idcliente, token, plataforma } (app nativa). Compatibilidad: apps viejas mandan
+// solo { suscripcion } con el token en string o un objeto PushSubscription de web push.
+const pushSuscripcion = async function (req, res) {
+	const idcliente = parseInt(req.body ? req.body.idcliente : null, 10);
+	if (!Number.isFinite(idcliente) || idcliente <= 0) {
+		return ReE(res, 'idcliente invalido', 400);
+	}
 
-	// const read_query = `update cliente_socketid set key_suscripcion_push = '${JSON.stringify(suscripcion)}' where idcliente = ${idcliente}`;
-	// return emitirRespuesta(read_query);
-	const update_query = `update cliente_socketid set key_suscripcion_push = ? where idcliente = ?`;
-	return await QueryServiceV1.ejecutarConsulta(update_query, [JSON.stringify(suscripcion), idcliente], 'UPDATE', 'pushSuscripcion');
+	const suscripcion = req.body.suscripcion;
+	const tokenBody = typeof req.body.token === 'string' ? req.body.token.trim() : '';
+	const tokenCompat = typeof suscripcion === 'string' ? suscripcion.trim() : '';
+	const token = tokenBody || tokenCompat;
+	const plataforma = ['android', 'ios', 'web'].indexOf(req.body.plataforma) !== -1 ? req.body.plataforma : 'android';
+
+	let valor = null;
+	if (token.length >= 20) {
+		valor = JSON.stringify({ tipo: 'fcm', token, plataforma });
+	} else if (suscripcion && typeof suscripcion === 'object') {
+		valor = JSON.stringify(suscripcion); // web push viejo: se guarda tal cual, el emisor lo ignora
+	}
+	if (!valor) {
+		return ReE(res, 'suscripcion invalida', 400);
+	}
+
+	try {
+		// upsert: el cliente puede no tener fila en cliente_socketid todavia
+		const update_query = `INSERT INTO cliente_socketid (idcliente, socketid, conectado, key_suscripcion_push)
+			VALUES (?, '', '0', ?)
+			ON DUPLICATE KEY UPDATE key_suscripcion_push = VALUES(key_suscripcion_push)`;
+		// ejecutarConsulta se traga el error y devuelve false: sin este chequeo responderiamos
+		// ok a un guardado fallido y la app nunca reintentaria
+		const guardado = await QueryServiceV1.ejecutarConsulta(update_query, [idcliente, valor], 'INSERT', 'pushSuscripcion');
+		if (guardado === false) {
+			return ReE(res, 'no se pudo guardar la suscripcion', 500);
+		}
+		return ReS(res, { ok: true });
+	} catch (error) {
+		logger.error({ error: error.message, idcliente }, 'pushSuscripcion');
+		return ReE(res, 'no se pudo guardar la suscripcion', 500);
+	}
 }
 module.exports.pushSuscripcion = pushSuscripcion;
 

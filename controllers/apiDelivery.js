@@ -92,10 +92,12 @@ const getParametrosTiendaLinea = async function(req, res) {
 }
 module.exports.getParametrosTiendaLinea = getParametrosTiendaLinea;
 
-const getEstablecimientosPromociones = async function (req, res) {  
-	const ciudad = req.body.ciudad || ''; // lo cambiamos por ciudad
-    const read_query = `call procedure_pwa_delivery_establecimiento_promo('${ciudad}')`;
-    return await emitirRespuestaSP_RES(read_query, res);        
+const getEstablecimientosPromociones = async function (req, res) {
+	const ciudad = String(req.body.ciudad || ''); // lo cambiamos por ciudad
+    // CALL -> ejecutarProcedimiento para conservar el desempaquetado Object.values(rows[0])
+    const read_query = `call procedure_pwa_delivery_establecimiento_promo(?)`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(read_query, [ciudad], 'getEstablecimientosPromociones');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.getEstablecimientosPromociones = getEstablecimientosPromociones;
 
@@ -161,10 +163,16 @@ const verificarCodigoSMS = async function (req, res) {
 module.exports.verificarCodigoSMS = verificarCodigoSMS;
 
 
-const setCalificarServicio = async function (req, res) {  
-	const dataCalificacion = req.body.dataCalificacion;	
-    const read_query = `call procedure_pwa_delivery_calificacion('${JSON.stringify(dataCalificacion)}')`;
-    return await emitirRespuestaSP_RES(read_query, res);        
+const setCalificarServicio = async function (req, res) {
+	const dataCalificacion = req.body.dataCalificacion;
+	if (dataCalificacion === undefined || dataCalificacion === null) {
+		return ReE(res, 'datos inválidos', 400);
+	}
+    // El JSON viaja como UN solo parámetro preparado: el comentario del cliente puede traer
+    // comillas o backslashes y ya no hace falta mutilarlo antes de mandarlo al procedimiento.
+    const read_query = `call procedure_pwa_delivery_calificacion(?)`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(read_query, [JSON.stringify(dataCalificacion)], 'setCalificarServicio');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.setCalificarServicio = setCalificarServicio;
 
@@ -200,24 +208,32 @@ const getTipoVehiculo = async function (req, res) {
 module.exports.getTipoVehiculo = getTipoVehiculo;
 
 
-const getAllSedesServiceExpress = async function (req, res) {		
-	const ciudad = req.body.ciudad;
-    const read_query = `SELECT * from sede_config_service_delivery where estado = 0 and upper(ciudad) = upper('${ciudad}')`;
-    return await emitirRespuesta_RES(read_query, res);  
+const getAllSedesServiceExpress = async function (req, res) {
+	const ciudad = String(req.body.ciudad || '');
+    const read_query = `SELECT * from sede_config_service_delivery where estado = 0 and upper(ciudad) = upper(?)`;
+    const rows = await QueryServiceV1.ejecutarConsulta(read_query, [ciudad], 'SELECT', 'getAllSedesServiceExpress');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.getAllSedesServiceExpress = getAllSedesServiceExpress;
 
-const getComnisionAtm = async function (req, res) {		
-	const importe = req.body.importe;
-    const read_query = `call procedure_calc_comsion_visa_atm(${importe})`;
-    return await emitirRespuestaSP_RES(read_query, res);  
+const getComnisionAtm = async function (req, res) {
+	// Number() y no parseInt(): parseInt('10 or 1=1') devuelve 10 y aceptaría basura como importe
+	const importe = Number(req.body.importe);
+	if (!Number.isFinite(importe)) {
+		return ReE(res, 'datos inválidos', 400);
+	}
+    const read_query = `call procedure_calc_comsion_visa_atm(?)`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(read_query, [importe], 'getComnisionAtm');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.getComnisionAtm = getComnisionAtm;
 
-const setCashAtm = async function (req, res) {		
+const setCashAtm = async function (req, res) {
 	const obj = req.body;
-    const read_query = `call procedure_set_cash_atm('${JSON.stringify(obj)}')`;
-    return await emitirRespuestaSP_RES(read_query, res);  
+    // El JSON completo viaja como un único parámetro preparado
+    const read_query = `call procedure_set_cash_atm(?)`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(read_query, [JSON.stringify(obj)], 'setCashAtm');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.setCashAtm = setCashAtm;
 
@@ -225,17 +241,14 @@ const setPedidoMandado = async function (req, res) {
 	logger.debug('pedido_mandado === ', req.body.dataInfo);
 
 	const obj = req.body.dataInfo;
-	var _json = JSON.stringify(obj).replace(/\\n/g, ' ')
-                                      .replace(/\\'/g, '')
-                                      .replace(/\\"/g, '')
-                                      .replace(/\\&/g, '')
-                                      .replace(/\\r/g, '')
-                                      .replace(/\\t/g, '')
-                                      .replace(/\\b/g, '')
-                                      .replace(/'/g, '')
-                                      .replace(/\\f/g, '');
-    const read_query = `call procedure_guardar_pedido_mandado('${_json}')`;
-    return await emitirRespuestaSP_RES(read_query, res);       
+	if (obj === undefined || obj === null) {
+		return ReE(res, 'datos inválidos', 400);
+	}
+    // Ya no se recortan comillas ni escapes: el JSON va completo como parámetro preparado,
+    // así la referencia/dirección del mandado llega tal cual la escribió el cliente.
+    const read_query = `call procedure_guardar_pedido_mandado(?)`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(read_query, [JSON.stringify(obj)], 'setPedidoMandado');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.setPedidoMandado = setPedidoMandado;
 
@@ -293,10 +306,16 @@ const SearchClienteByPhonePwaId = async function (req, res) {
 }
 module.exports.SearchClienteByPhonePwaId = SearchClienteByPhonePwaId;
 
-const getTelefonoClienteChatBot = async function (req, res) {			
-	const id = req.body.id;
-    const read_query = `call procedure_delivery_get_cliente_from_bot('${id}')`;
-    return await emitirRespuestaSP_RES(read_query, res); 
+const getTelefonoClienteChatBot = async function (req, res) {
+	// El procedimiento recibía el id entre comillas, así que se conserva como cadena
+	// (los ids del bot no siempre son numéricos); sólo se exige que venga.
+	const id = String(req.body.id || '').trim();
+	if (!id) {
+		return ReE(res, 'datos inválidos', 400);
+	}
+    const read_query = `call procedure_delivery_get_cliente_from_bot(?)`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(read_query, [id], 'getTelefonoClienteChatBot');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.getTelefonoClienteChatBot = getTelefonoClienteChatBot;
 

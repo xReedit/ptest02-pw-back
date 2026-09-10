@@ -184,7 +184,7 @@ routerV3.post('/delivery/get-cliente-telefono-chatbot', apiPwaAppDelivery.getTel
 
 // notificaciones push
 // guardar suscripcion
-routerV3.post('/push/suscripcion', apiPwaSMS.pushSuscripcion);
+routerV3.post('/push/suscripcion', rateLimit(10, 60000), apiPwaSMS.pushSuscripcion);
 routerV3.post('/push/send-notification', apiPwaSMS.sendPushNotificaction);
 // app mozo: token FCM del dispositivo (set/del)
 routerV3.post('/mozo/push-token', auth.verificarToken, pushMozo.setPushToken);

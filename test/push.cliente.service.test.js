@@ -56,10 +56,14 @@ describe('leerTokenFcm', () => {
   it('ignora una suscripcion web push', () => {
     expect(svc.leerTokenFcm(JSON.stringify({ endpoint: 'https://fcm.googleapis.com/x', keys: {} }))).toBeNull();
   });
+  it('acepta un token crudo sin comillas json (filas viejas)', () => {
+    expect(svc.leerTokenFcm(TOKEN)).toEqual({ token: TOKEN, plataforma: 'android' });
+  });
   it('ignora vacio y basura', () => {
     expect(svc.leerTokenFcm(null)).toBeNull();
     expect(svc.leerTokenFcm('')).toBeNull();
     expect(svc.leerTokenFcm('no es json')).toBeNull();
+    expect(svc.leerTokenFcm('x'.repeat(5000))).toBeNull();
   });
 });
 
@@ -113,6 +117,21 @@ describe('notificarEstado', () => {
     expect(ultima[0]).toContain('key_suscripcion_push');
     expect(ultima[0].toUpperCase()).toContain('UPDATE');
     expect(ultima[1]).toEqual([15]);
+  });
+
+  it('NO borra el token si el error es de argumento (un mal deploy vaciaria la base)', async () => {
+    QueryServiceV1.ejecutarConsulta.mockResolvedValue([
+      { key_suscripcion_push: JSON.stringify({ tipo: 'fcm', token: TOKEN, plataforma: 'android' }) }
+    ]);
+    const err = new Error('mensaje mal armado');
+    err.code = 'messaging/invalid-argument';
+    mockSend.mockRejectedValue(err);
+
+    await svc.notificarEstado({ idpedido: 77, idcliente: 15, pwa_estado: 'E', pwa_delivery_status: '4' });
+
+    const consultas = QueryServiceV1.ejecutarConsulta.mock.calls;
+    expect(consultas).toHaveLength(1);
+    expect(consultas[0][0].toUpperCase()).toContain('SELECT');
   });
 
   it('nunca lanza aunque falle la base', async () => {

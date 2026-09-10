@@ -12,6 +12,10 @@ const { sequelize, QueryTypes } = require('../config/database');
 const nodemailer = require("nodemailer");
 const logger = require('../utilitarios/logger');
 
+// limites del token FCM que acepta push/suscripcion (un token real ronda los 160 chars)
+const LARGO_MINIMO_TOKEN_PUSH = 20;
+const LARGO_MAXIMO_TOKEN_PUSH = 4096;
+
 // Usar instancia de Firebase Admin ya inicializada
 const { admin: adminFirebase } = require('../firebase_config');
 // const transporter = nodemailer.createTransport({
@@ -276,9 +280,9 @@ const pushSuscripcion = async function (req, res) {
 	const plataforma = ['android', 'ios', 'web'].indexOf(req.body.plataforma) !== -1 ? req.body.plataforma : 'android';
 
 	let valor = null;
-	if (token.length >= 20) {
+	if (token.length >= LARGO_MINIMO_TOKEN_PUSH && token.length <= LARGO_MAXIMO_TOKEN_PUSH) {
 		valor = JSON.stringify({ tipo: 'fcm', token, plataforma });
-	} else if (suscripcion && typeof suscripcion === 'object') {
+	} else if (!token && suscripcion && typeof suscripcion === 'object') {
 		valor = JSON.stringify(suscripcion); // web push viejo: se guarda tal cual, el emisor lo ignora
 	}
 	if (!valor) {

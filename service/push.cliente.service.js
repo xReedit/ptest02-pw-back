@@ -9,6 +9,11 @@ const logger = require('../utilitarios/logger');
 
 const CANAL_ANDROID = 'pedidos'; // lo crea la app en NotificacionPushService
 const LARGO_MINIMO_TOKEN = 20;
+const LARGO_MAXIMO_TOKEN = 4096;
+
+function esLargoDeToken(valor) {
+	return typeof valor === 'string' && valor.length >= LARGO_MINIMO_TOKEN && valor.length <= LARGO_MAXIMO_TOKEN;
+}
 
 // Mismas etiquetas que ve el cliente en "Mis pedidos" (sprint 2).
 const MENSAJES = {
@@ -21,10 +26,12 @@ const MENSAJES = {
 	cancelado:  { title: 'Cancelado',            body: 'Tu pedido #%s fue cancelado.' }
 };
 
+// Solo codigos que significan "este token concreto ya no existe". A proposito NO estan
+// 'messaging/invalid-argument' ni 'messaging/mismatched-credential': los dispara un mensaje mal
+// armado o un service account equivocado, asi que un mal deploy borraria el token de toda la base.
 const CODIGOS_TOKEN_MUERTO = [
 	'messaging/registration-token-not-registered',
-	'messaging/invalid-argument',
-	'messaging/mismatched-credential',
+	'messaging/invalid-registration-token',
 ];
 
 // Misma tabla de decision que resumirEstadoPedido() en la app (src/app/shared/utils/estado-pedido.ts).
@@ -52,14 +59,15 @@ function leerTokenFcm(valor) {
 	if (!valor) { return null; }
 	let dato = valor;
 	if (typeof dato === 'string') {
-		try { dato = JSON.parse(dato); } catch (error) { return null; }
+		// filas viejas: el token pudo guardarse crudo, sin comillas JSON
+		try { dato = JSON.parse(dato); } catch (error) { return esLargoDeToken(valor) ? { token: valor, plataforma: 'android' } : null; }
 	}
 	if (typeof dato === 'string') {
-		return dato.length >= LARGO_MINIMO_TOKEN ? { token: dato, plataforma: 'android' } : null;
+		return esLargoDeToken(dato) ? { token: dato, plataforma: 'android' } : null;
 	}
 	if (!dato || typeof dato !== 'object') { return null; }
 	if (dato.tipo !== 'fcm') { return null; }
-	if (typeof dato.token !== 'string' || dato.token.length < LARGO_MINIMO_TOKEN) { return null; }
+	if (!esLargoDeToken(dato.token)) { return null; }
 	return { token: dato.token, plataforma: dato.plataforma === 'ios' ? 'ios' : 'android' };
 }
 

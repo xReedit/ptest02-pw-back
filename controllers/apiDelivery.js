@@ -136,9 +136,22 @@ const getMisPedido = async function (req, res) {
 	}
     const query = `call procedure_pwa_delivery_mis_pedidos(?);`;
     const rows = await QueryServiceV1.ejecutarProcedimiento(query, [idcliente], 'getMisPedido');
+    // null es fallo de base; [] es "el cliente no tiene pedidos": no se pueden confundir
+    if (rows === null) { return ReE(res, 'No se pudo consultar los pedidos', 500); }
     return ReS(res, { data: rows || [] });
 }
 module.exports.getMisPedido = getMisPedido;
+
+// Consulta de respaldo del estado del pedido (si el socket se perdió, la app consulta aquí)
+const getEstadoPedido = async function (req, res) {
+	const idpedido = parseInt(req.body.idpedido, 10);
+	const idcliente = parseInt(req.body.idcliente, 10);
+	if (!Number.isFinite(idpedido) || !Number.isFinite(idcliente) || idcliente <= 0) { return ReE(res, 'datos inválidos', 400); }
+	const est = await require('../service/estado-pedido.service').leerEstado(idpedido);
+	if (!est || Number(est.idcliente) !== idcliente) { return ReE(res, 'pedido no encontrado', 404); }
+	return ReS(res, { data: [est] });
+}
+module.exports.getEstadoPedido = getEstadoPedido;
 
 
 // Ruta sin autenticar: el telefono y el codigo llegan del navegador, asi que se validan

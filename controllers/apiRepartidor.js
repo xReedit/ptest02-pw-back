@@ -1720,6 +1720,7 @@ const setPedidoCanceladoRepartidor = async function (req, res) {
 	// marca como que el repartidor marco cancelado
 	const updatePedido = `UPDATE pedido SET pwa_delivery_status = 5, pwa_estado='C' WHERE idpedido = ?`;
 	await QueryServiceV1.ejecutarConsulta(updatePedido, [idpedido], 'UPDATE', 'setUpdateEstadoPedido');
+	require('../service/estado-pedido.service').notificar(idpedido);
 
 	// quitar idpedido del array pedidos y volver a guardar el json
 	const queryRepartidor = `SELECT pedido_por_aceptar FROM repartidor WHERE idrepartidor = ?`;

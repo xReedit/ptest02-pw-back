@@ -1,10 +1,13 @@
 // Evita abrir conexiones reales al cargar el controlador
 jest.mock('../config/database', () => ({ sequelize: {}, Sequelize: {}, QueryTypes: {} }));
 jest.mock('../service/query.service.v1', () => ({ ejecutarProcedimiento: jest.fn() }));
+jest.mock('../service/estado-pedido.service', () => ({ leerEstado: jest.fn() }));
 
 const QueryServiceV1 = require('../service/query.service.v1');
+const estadoPedidoService = require('../service/estado-pedido.service');
 const {
   getMisPedido,
+  getEstadoPedido,
   verificarCodigoSMS,
   setCalificarServicio,
   getComnisionAtm
@@ -48,6 +51,28 @@ describe('getMisPedido', () => {
       'getMisPedido'
     );
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, data: [{ idpedido: 1 }] }));
+  });
+});
+
+describe('getEstadoPedido', () => {
+  beforeEach(() => { estadoPedidoService.leerEstado.mockReset(); });
+
+  it('no entrega el pedido de otro cliente', async () => {
+    estadoPedidoService.leerEstado.mockResolvedValue({ idpedido: 10, idcliente: 7, pwa_estado: 'A' });
+    const res = mockRes();
+    await getEstadoPedido({ body: { idpedido: '10', idcliente: '99' } }, res);
+    expect(res.statusCode).toBe(404);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+  });
+
+  it('devuelve el estado cuando el pedido es del cliente', async () => {
+    estadoPedidoService.leerEstado.mockResolvedValue({ idpedido: 10, idcliente: 7, pwa_estado: 'R', pwa_delivery_status: '3', position_now: { lat: -12, lng: -77 } });
+    const res = mockRes();
+    await getEstadoPedido({ body: { idpedido: '10', idcliente: '7' } }, res);
+    expect(estadoPedidoService.leerEstado).toHaveBeenCalledWith(10);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.data[0].pwa_estado).toBe('R');
   });
 });
 

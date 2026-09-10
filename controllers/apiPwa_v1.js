@@ -1238,7 +1238,8 @@ const setFlagPrinterChangeEstadoPedido = async function (id) {
         //     type: QueryTypes.UPDATE
         // });
 
-        QueryServiceV1.ejecutarConsulta(read_query, [id], 'UPDATE', 'setFlagPrinterChangeEstadoPedido');
+        await QueryServiceV1.ejecutarConsulta(read_query, [id], 'UPDATE', 'setFlagPrinterChangeEstadoPedido');
+        require('../service/estado-pedido.service').notificar(id);
     } catch (error) {
         logger.error({ err: error, id }, 'Error en setFlagPrinterChangeEstadoPedido');
         return false;

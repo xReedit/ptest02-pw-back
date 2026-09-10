@@ -27,6 +27,10 @@ const mockEmitidos = []; // { room, evento, data }
 const mockIo = { to: (room) => ({ emit: (evento, data) => mockEmitidos.push({ room, evento, data }) }) };
 jest.mock('../service/socket.manager', () => ({ getIO: () => mockIo, setIO: () => {}, emitToRoom: () => {} }));
 
+// el aviso de cambio de estado al cliente se prueba en test/estado-pedido.service.test.js:
+// aqui se simula para que su SELECT no consuma la cola de respuestas de estos casos
+jest.mock('../service/estado-pedido.service', () => ({ notificar: jest.fn(), leerEstado: jest.fn(), setIo: jest.fn() }));
+
 jest.mock('../utilitarios/logger', () => ({ debug: () => {}, error: () => {}, warn: () => {}, info: () => {} }));
 jest.mock('../utilitarios/filters', () => ({ getInfoToken: (req, key) => (req.usuariotoken || {})[key] || null }));
 jest.mock('../service/uitl.service', () => ({

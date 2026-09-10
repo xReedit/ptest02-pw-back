@@ -4,6 +4,7 @@ const { to, ReE, ReS }  = require('../service/uitl.service');
 let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 let logger = require('../utilitarios/logger');
+const estadoPedidoService = require('../service/estado-pedido.service');
 
 // let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 const {sequelize, QueryTypes} = require('../config/database');
@@ -135,6 +136,9 @@ function setStatusItem(item) {
 	}
 
 	emitirRespuesta(sql);
+
+	// el local ya vio/imprimió el pedido: avisar al cliente el cambio a 'A'
+	String(item.idp || '').split(',').map(s => parseInt(s, 10)).filter(Number.isFinite).forEach(id => estadoPedidoService.notificar(id));
 }
 
 // todo una lista
@@ -152,7 +156,10 @@ function setStatusListItem(list) {
 	}
 
 	const _sql = sqlPrint+' '+ sqlVisto;
-	emitirRespuesta(_sql);	
+	emitirRespuesta(_sql);
+
+	// el local ya vio/imprimió los pedidos: avisar a cada cliente el cambio a 'A'
+	String(idsPedidos || '').split(',').map(s => parseInt(s, 10)).filter(Number.isFinite).forEach(id => estadoPedidoService.notificar(id));
 }
 
 function getMaxIdPrint(data) {

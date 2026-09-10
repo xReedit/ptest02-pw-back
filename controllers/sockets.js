@@ -13,6 +13,7 @@ const logger = require('../utilitarios/logger');
 const idempotencia = require('../service/idempotencia');
 const socketBot = require('./socketBot.js');
 const pushMozo = require('../service/push.mozo.service');
+const estadoPedidoService = require('../service/estado-pedido.service');
 
 
 
@@ -66,6 +67,9 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 	apiPwaRepartidor.runLoopSearchRepartidor(io, 0);
 
+	// un solo canal de estado hacia el cliente: el servicio emite a la sala cliente_<id>
+	estadoPedidoService.setIo(io);
+
 
 	io.on('connection', async function(socket) {
 		module.exports.elSocket = socket;		
@@ -87,6 +91,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// sala por cliente: los eventos del repartidor llegan aunque cambie el socketid
 		const idClienteSala = Number(dataSocket.idcliente);
 		if (idClienteSala > 0) { socket.join(`cliente_${idClienteSala}`); }
+
+		// el servidor puede asignar otro idcliente al guardar el pedido: la app pide unirse a esa sala
+		socket.on('join-cliente', (idcliente) => {
+			const id = Number(idcliente);
+			if (id > 0) { socket.join(`cliente_${id}`); }
+		});
 
 		// para el bot de mensajeria
 		if (dataCliente.isMensajeria === '1') {
@@ -1370,7 +1380,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// escuchar estado del pedido // reparitor asignado // en camino //  llego
 		socket.on('repartidor-notifica-estado-pedido', async (dataCliente) => {			
 			// update estado del pedido
-			apiPwaRepartidor.setUpdateEstadoPedido(dataCliente.idpedido, dataCliente.estado);
+			await apiPwaRepartidor.setUpdateEstadoPedido(dataCliente.idpedido, dataCliente.estado);
+			await estadoPedidoService.notificar(dataCliente.idpedido);
 			const idc = Number(dataCliente.idcliente);
 			if (idc > 0) { io.to(`cliente_${idc}`).emit('repartidor-notifica-estado-pedido', dataCliente.estado); }
 			try {
@@ -1540,7 +1551,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			logger.debug('repartidor-propio-notifica-fin-pedido', dataPedido);
 			// dataPedido viene vacio =verificar= 221022
 			try {
-				apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
+				await apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
+				await estadoPedidoService.notificar(dataPedido.idpedido);
 				apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
 
 				// para que el comercio actualice el marker
@@ -1558,7 +1570,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('repartidor-notifica-fin-one-pedido', async (dataPedido) => {
 			logger.debug('repartidor-notifica-fin-one-pedido', dataPedido);
 
-			apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
+			await apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
+			await estadoPedidoService.notificar(dataPedido.idpedido);
 			// apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
 
 			// para que el comercio actualice el marker
@@ -1613,7 +1626,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			logger.debug('repartidor-notifica-fin-pedido', socketIdCliente[0].socketid);
 
 			// cerrar pedido
-			apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
+			await apiPwaRepartidor.setUpdateEstadoPedido(dataPedido.idpedido, 4); // fin pedido
+			await estadoPedidoService.notificar(dataPedido.idpedido);
 			// apiPwaRepartidor.setUpdateRepartidorOcupado(dataPedido.idrepartidor, 0);
 
 			// notifica al repartidor para que califique cliente

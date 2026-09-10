@@ -76,21 +76,14 @@ const getLastPedidoUrl = function (req, res) {
 module.exports.getLastPedidoUrl = getLastPedidoUrl;
 
 
-const setEstadoPedido = function (req, res) {  	
-	const estado = req.body.estado;	
-	const idpedido = req.body.idpedido;
-
-	// estado E entrega al cliente // si el cliente recoge en comercio
-	// const savePwaEstado = estado === 'E' ? ", pwa_delivery_status = 4 " : '';
-	// // guarda el tiempo si finaliza el pedido desde el comercio
-	// const saveTimeAtencion = estado === 'E' ? `, pwa_delivery_tiempo_atendido = TIMESTAMPDIFF(MINUTE, fecha_hora, now())` : '';
-
- //    const read_query = `update pedido set pwa_estado = '${estado}' ${savePwaEstado} ${saveTimeAtencion} where idpedido = ${idpedido}`;
-
- //    emitirRespuestaSP_RES(read_query, res);   
-
-    const read_query = `call procedure_delivery_set_estado_set_estado_pedido(${idpedido}, '${estado}')`;
-    emitirRespuestaSP_RES(read_query, res);     
+const setEstadoPedido = async function (req, res) {
+	const estado = String(req.body.estado || '').toUpperCase().slice(0, 1);
+	const idpedido = parseInt(req.body.idpedido, 10);
+	if (!['P', 'A', 'D', 'R', 'E', 'C'].includes(estado) || !Number.isFinite(idpedido)) { return ReE(res, 'estado o idpedido inválido', 400); }
+	const query = `call procedure_delivery_set_estado_set_estado_pedido(?, ?);`;
+	const rows = await QueryServiceV1.ejecutarProcedimiento(query, [idpedido, estado], 'setEstadoPedido');
+	require('../service/estado-pedido.service').notificar(idpedido);
+	return ReS(res, { data: rows || [] });
 }
 module.exports.setEstadoPedido = setEstadoPedido;
 

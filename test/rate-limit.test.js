@@ -53,4 +53,21 @@ describe('rate-limit', () => {
 
 		expect(next).toHaveBeenCalledTimes(2);
 	});
+
+	it('detras del proxy cuenta por el primer salto de x-forwarded-for', () => {
+		const limitar = rateLimit(1, 60000);
+		const next = jest.fn();
+		// misma IP de socket (el proxy), clientes distintos
+		const reqProxy = (xff) => ({ ip: '10.0.0.9', headers: { 'x-forwarded-for': xff } });
+
+		limitar(reqProxy('5.5.5.5, 10.0.0.9'), mockRes(), next);
+		limitar(reqProxy('6.6.6.6, 10.0.0.9'), mockRes(), next);
+		expect(next).toHaveBeenCalledTimes(2);
+
+		// el segundo intento del mismo cliente si se corta
+		const res = mockRes();
+		limitar(reqProxy('5.5.5.5, 10.0.0.9'), res, next);
+		expect(next).toHaveBeenCalledTimes(2);
+		expect(res.statusCode).toBe(429);
+	});
 });

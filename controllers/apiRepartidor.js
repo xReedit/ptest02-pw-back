@@ -792,7 +792,10 @@ module.exports.setPasoVaPedido = setPasoVaPedido;
 
 /// desde el comercio
 const setUpdateEstadoPedido = async function (idpedido, estado, tiempo = null) {	
-	let savePwaEstado = estado === 4 ? ", pwa_estado = 'E' " : '';
+	// 4 = entregado, 5 = cancelado; el resto de estados no toca pwa_estado
+	let savePwaEstado = '';
+	if (Number(estado) === 4) { savePwaEstado = ", pwa_estado = 'E' "; }
+	else if (Number(estado) === 5) { savePwaEstado = ", pwa_estado = 'C' "; }
 	// ✅ SEGURO: Prepared statement
 	// const read_query = `UPDATE pedido SET pwa_delivery_status = ? ${savePwaEstado} WHERE idpedido = ?`;
 	// try {

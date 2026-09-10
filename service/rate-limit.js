@@ -5,9 +5,18 @@ const { ReE } = require('./uitl.service');
 module.exports = (max, windowMs) => {
 	const visitas = new Map();
 
+	// ponytail: cabecera confiable solo detras del proxy propio; app.set('trust proxy') queda para cuando app.js este libre
+	const ipReal = (req) => {
+		const reenviada = req.headers && req.headers['x-forwarded-for'];
+		if (typeof reenviada === 'string' && reenviada.trim() !== '') {
+			return reenviada.split(',')[0].trim();
+		}
+		return req.ip;
+	};
+
 	return (req, res, next) => {
 		const ahora = Date.now();
-		const clave = req.ip;
+		const clave = ipReal(req);
 
 		const previas = (visitas.get(clave) || []).filter((t) => ahora - t < windowMs);
 

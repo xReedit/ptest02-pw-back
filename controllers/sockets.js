@@ -14,6 +14,33 @@ const idempotencia = require('../service/idempotencia');
 const socketBot = require('./socketBot.js');
 const pushMozo = require('../service/push.mozo.service');
 const estadoPedidoService = require('../service/estado-pedido.service');
+const QueryServiceV1 = require('../service/query.service.v1');
+
+// El repartidor emite su posicion cada pocos segundos y no siempre manda el idpedido.
+// Se resuelve con una consulta y se cachea 30 s en el propio socket: 1 consulta por repartidor
+// y por ventana, no una por ping.
+const MS_CACHE_PEDIDO = 30000;
+const resolverIdPedidoRepartidor = async (socket, idrepartidor, idcliente) => {
+	const idr = Number(idrepartidor);
+	const idc = Number(idcliente);
+	if (!(idr > 0) || !(idc > 0)) { return null; }
+
+	const cache = socket._ultimoPedidoPorCliente;
+	if (cache && cache.idcliente === idc && (Date.now() - cache.ts) < MS_CACHE_PEDIDO) {
+		return cache.idpedido;
+	}
+
+	const sql = `SELECT idpedido FROM pedido WHERE idrepartidor = ? AND idcliente = ? AND COALESCE(pwa_delivery_status,'0') IN ('1','3') ORDER BY idpedido DESC LIMIT 1`;
+	try {
+		const filas = await QueryServiceV1.ejecutarConsulta(sql, [idr, idc], 'SELECT', 'resolverIdPedidoRepartidor');
+		const idpedido = filas?.[0]?.idpedido ?? null;
+		socket._ultimoPedidoPorCliente = { idcliente: idc, idpedido, ts: Date.now() };
+		return idpedido;
+	} catch (err) {
+		logger.error({ err }, 'no se pudo resolver el idpedido de la ubicacion del repartidor');
+		return null;
+	}
+};
 
 
 
@@ -1397,7 +1424,11 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			// notifica a cliente
 			if ( datosUbicacion.idcliente ) {
 				// el cliente puede tener varios pedidos abiertos: la posicion viaja con su idpedido para que la app filtre
-				const posicionCliente = { ...datosUbicacion.coordenadas, idpedido: datosUbicacion.idpedido ?? null };
+				let idpedidoUbicacion = datosUbicacion.idpedido ?? null;
+				if (idpedidoUbicacion === null || idpedidoUbicacion === undefined || idpedidoUbicacion === '') {
+					idpedidoUbicacion = await resolverIdPedidoRepartidor(socket, datosUbicacion.idrepartidor, datosUbicacion.idcliente);
+				}
+				const posicionCliente = { ...datosUbicacion.coordenadas, idpedido: idpedidoUbicacion ?? null };
 				const idc = Number(datosUbicacion.idcliente);
 				if (idc > 0) { io.to(`cliente_${idc}`).emit('repartidor-notifica-ubicacion', posicionCliente); }
 				const socketIdCliente = await apiPwa.getSocketIdCliente(datosUbicacion.idcliente);

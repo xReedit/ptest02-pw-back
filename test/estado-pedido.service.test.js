@@ -1,4 +1,5 @@
 jest.mock('../service/query.service.v1', () => ({ ejecutarConsulta: jest.fn() }));
+jest.mock('../service/push.cliente.service', () => ({ notificarEstado: jest.fn().mockResolvedValue(undefined) }));
 const QueryServiceV1 = require('../service/query.service.v1');
 const svc = require('../service/estado-pedido.service');
 

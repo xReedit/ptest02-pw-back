@@ -1,6 +1,7 @@
 // Un solo evento para el cliente cada vez que cambia pwa_estado o pwa_delivery_status.
 const QueryServiceV1 = require('./query.service.v1');
 const logger = require('../utilitarios/logger');
+const pushCliente = require('./push.cliente.service');
 
 let io = null;
 function setIo(_io) { io = _io; }
@@ -25,7 +26,14 @@ async function notificar(idpedido) {
 		if (!est || !io || !(Number(est.idcliente) > 0)) { return; }
 		const { idcliente, ...payload } = est;
 		io.to(`cliente_${Number(idcliente)}`).emit('pedido-cambio-estado', payload);
-		// ponytail: aquí engancha el push por cambio de estado (sprint 3)
+
+		// el socket solo llega si la app esta abierta; el push cubre el resto
+		await pushCliente.notificarEstado({
+			idpedido: Number(idpedido),
+			idcliente: Number(idcliente),
+			pwa_estado: est.pwa_estado,
+			pwa_delivery_status: est.pwa_delivery_status
+		});
 	} catch (error) {
 		logger.error({ error: error.message, idpedido }, 'estadoPedido.notificar');
 	}

@@ -130,15 +130,18 @@ function setStatusItem(item) {
 		if ( item.idp !== '' ) {
 			sql += `update pedido set pwa_estado='A', is_printer = 1 where idpedido in(${item.idp}) and pwa_estado='P';`;
 			// emitirRespuesta(sql);
-		}				
+		}
 	} else {
-		sql = `update print_server_detalle set impreso = 0, error = 1 where idprint_server_detalle = ${item.id};`;			
+		sql = `update print_server_detalle set impreso = 0, error = 1 where idprint_server_detalle = ${item.id};`;
 	}
 
 	emitirRespuesta(sql);
 
-	// el local ya vio/imprimió el pedido: avisar al cliente el cambio a 'A'
-	String(item.idp || '').split(',').map(s => parseInt(s, 10)).filter(Number.isFinite).forEach(id => estadoPedidoService.notificar(id));
+	// solo si se escribio pwa_estado='A': si la impresion fallo el estado no cambio y no hay nada que avisar
+	if ( item.success && item.idp !== '' ) {
+		// el local ya vio/imprimió el pedido: avisar al cliente el cambio a 'A'
+		String(item.idp || '').split(',').map(s => parseInt(s, 10)).filter(Number.isFinite).forEach(id => estadoPedidoService.notificar(id));
+	}
 }
 
 // todo una lista

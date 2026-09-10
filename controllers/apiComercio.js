@@ -82,6 +82,8 @@ const setEstadoPedido = async function (req, res) {
 	if (!['P', 'A', 'D', 'R', 'E', 'C'].includes(estado) || !Number.isFinite(idpedido)) { return ReE(res, 'estado o idpedido inválido', 400); }
 	const query = `call procedure_delivery_set_estado_set_estado_pedido(?, ?);`;
 	const rows = await QueryServiceV1.ejecutarProcedimiento(query, [idpedido, estado], 'setEstadoPedido');
+	// ejecutarProcedimiento devuelve null cuando falla: no se puede responder exito ni notificar un cambio que no ocurrio
+	if (rows === null) { return ReE(res, 'No se pudo actualizar el estado', 500); }
 	require('../service/estado-pedido.service').notificar(idpedido);
 	return ReS(res, { data: rows || [] });
 }

@@ -148,8 +148,9 @@ routerV3.post('/delivery/get-establecimientos', apiPwaAppDelivery.getEstablecimi
 routerV3.post('/delivery/get-parametros-tienda-linea', apiPwaAppDelivery.getParametrosTiendaLinea)
 routerV3.post('/delivery/get-establecimientos-promos', apiPwaAppDelivery.getEstablecimientosPromociones);
 routerV3.post('/delivery/get-direccion-cliente', apiPwaAppDelivery.getDireccionCliente);
-routerV3.post('/delivery/get-mis-pedidos', apiPwaAppDelivery.getMisPedido);
-routerV3.post('/delivery/get-estado-pedido', apiPwaAppDelivery.getEstadoPedido);
+// consultas de seguimiento sin autenticar: la app las repite en cada cambio, se limita el abuso por IP
+routerV3.post('/delivery/get-mis-pedidos', rateLimit(30, 60000), apiPwaAppDelivery.getMisPedido);
+routerV3.post('/delivery/get-estado-pedido', rateLimit(60, 60000), apiPwaAppDelivery.getEstadoPedido);
 routerV3.post('/delivery/calificar-servicio', apiPwaAppDelivery.setCalificarServicio);
 routerV3.get('/delivery/get-categorias', apiPwaAppDelivery.getCategorias);
 routerV3.post('/delivery/get-sede-servicio-express', apiPwaAppDelivery.getAllSedesServiceExpress);

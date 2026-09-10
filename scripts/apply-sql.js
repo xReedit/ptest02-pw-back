@@ -8,6 +8,16 @@ const config = require('../_config');
 
 const HOSTS_DESARROLLO = ['', 'localhost', '127.0.0.1', '192.168.1.65'];
 
+// Los .sql llevan DELIMITER $$ para poder aplicarlos a mano desde el cliente mysql.
+// El driver no entiende DELIMITER: se quitan esas lineas y el terminador $$ vuelve a ser ;
+function normalizarDelimitadores(sql) {
+	return sql
+		.split(/\r?\n/)
+		.filter((linea) => !/^\s*DELIMITER\b/i.test(linea))
+		.join('\n')
+		.replace(/\$\$\s*$/gm, ';');
+}
+
 (async () => {
   const ruta = process.argv[2];
   if (!ruta) { throw new Error('Falta la ruta del archivo .sql'); }
@@ -17,7 +27,7 @@ const HOSTS_DESARROLLO = ['', 'localhost', '127.0.0.1', '192.168.1.65'];
     throw new Error(`Host "${host}" no es de desarrollo: aplicar el SQL manualmente`);
   }
 
-  const sql = fs.readFileSync(ruta, 'utf8').replace(/^﻿/, '');
+  const sql = normalizarDelimitadores(fs.readFileSync(ruta, 'utf8').replace(/^﻿/, ''));
   const conn = await mysql.createConnection({
     host: host || 'localhost',
     port: config.db_port,

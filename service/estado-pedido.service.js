@@ -11,7 +11,7 @@ async function leerEstado(idpedido) {
 	const sql = `SELECT p.idpedido, p.idcliente, p.pwa_estado, p.pwa_delivery_status, p.idrepartidor, p.fecha_hora,
 			r.nombre AS nom_repartidor, r.apellido AS ap_repartidor, r.telefono AS telefono_repartidor, r.position_now,
 			s.pwa_delivery_servicio_propio
-		FROM pedido p LEFT JOIN repartidor r ON r.idrepartidor = p.idrepartidor INNER JOIN sede s ON s.idsede = p.idsede
+		FROM pedido p LEFT JOIN repartidor r ON r.idrepartidor = p.idrepartidor LEFT JOIN sede s ON s.idsede = p.idsede
 		WHERE p.idpedido = ?`;
 	const rows = await QueryServiceV1.ejecutarConsulta(sql, [idpedido], 'SELECT', 'estadoPedido.leer');
 	const row = rows?.[0];

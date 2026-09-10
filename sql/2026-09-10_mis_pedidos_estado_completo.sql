@@ -1,6 +1,10 @@
 -- Mis pedidos devuelve tambien el estado completo del pedido (pwa_estado, fecha_hora, programado)
 -- y la ultima posicion del repartidor, para pintar el seguimiento sin otra consulta.
+-- El cuerpo lleva ';' internos: con DELIMITER el archivo se aplica tal cual desde el cliente mysql.
+-- scripts/apply-sql.js quita las lineas DELIMITER y devuelve '$$' a ';' antes de ejecutar.
 DROP PROCEDURE IF EXISTS procedure_pwa_delivery_mis_pedidos;
+
+DELIMITER $$
 CREATE PROCEDURE `procedure_pwa_delivery_mis_pedidos`(
 	in xidcliente int
 )
@@ -15,4 +19,5 @@ from pedido p
 	LEFT join repartidor as r on p.idrepartidor = r.idrepartidor
 where p.idcliente = xidcliente order by p.idpedido desc limit 5;
 
-END
+END$$
+DELIMITER ;

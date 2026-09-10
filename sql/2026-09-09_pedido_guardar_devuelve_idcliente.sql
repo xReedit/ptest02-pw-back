@@ -1,5 +1,9 @@
 -- Corrige la búsqueda por nombre (devolvía 1/0) y devuelve idcliente al cliente. Aplicar en desarrollo y producción.
+-- El cuerpo lleva ';' internos: con DELIMITER el archivo se aplica tal cual desde el cliente mysql.
+-- scripts/apply-sql.js quita las lineas DELIMITER y devuelve '$$' a ';' antes de ejecutar.
 DROP PROCEDURE IF EXISTS procedure_pwa_pedido_guardar;
+
+DELIMITER $$
 CREATE PROCEDURE `procedure_pwa_pedido_guardar`(
 	IN xidorg int,
 	IN xidsede int,
@@ -551,5 +555,6 @@ BEGIN
 	
    
    -- respuesta , @sqlInsertPd 
-	SELECT cast(@objReturn as json) as data, xIdPedido as idpedido, xIdCliente as idcliente, @iditem_subitem;	
-END
+	SELECT cast(@objReturn as json) as data, xIdPedido as idpedido, xIdCliente as idcliente, @iditem_subitem;
+END$$
+DELIMITER ;

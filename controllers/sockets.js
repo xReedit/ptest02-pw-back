@@ -1396,15 +1396,17 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('repartidor-notifica-ubicacion', async (datosUbicacion) => {
 			// notifica a cliente
 			if ( datosUbicacion.idcliente ) {
+				// el cliente puede tener varios pedidos abiertos: la posicion viaja con su idpedido para que la app filtre
+				const posicionCliente = { ...datosUbicacion.coordenadas, idpedido: datosUbicacion.idpedido ?? null };
 				const idc = Number(datosUbicacion.idcliente);
-				if (idc > 0) { io.to(`cliente_${idc}`).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas); }
+				if (idc > 0) { io.to(`cliente_${idc}`).emit('repartidor-notifica-ubicacion', posicionCliente); }
 				const socketIdCliente = await apiPwa.getSocketIdCliente(datosUbicacion.idcliente);
 				try {
 					if ( socketIdCliente[0].socketid ) { // puede ser un pedido que el comercio llamo repartidor
 						logger.debug('repartidor-notifica-ubicacion ==> al cliente', socketIdCliente[0].socketid + '  -> '+ JSON.stringify(datosUbicacion));
-						io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas);
+						io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-ubicacion', posicionCliente);
 					}
-				}						
+				}
 				catch(err) {logger.error('cliente sin socket id',err)}
 			}			
 

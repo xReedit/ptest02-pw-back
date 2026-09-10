@@ -4,6 +4,7 @@ let routerV3 = express.Router();
 
 const apiPwaAppPedidos = require('../controllers/apiPwa_v1');
 const apiPwaAppPedidosPago = require('../controllers/apiPago');
+const apiNiubiz = require('../controllers/apiNiubiz');
 const apiPwaAppDelivery = require('../controllers/apiDelivery');
 const apiPwaAppRepartidor = require('../controllers/apiRepartidor');
 // const apiPwaPruebas = require('../controllers/apiPruebas');
@@ -187,6 +188,10 @@ routerV3.post('/mozo/push-token', auth.verificarToken, pushMozo.setPushToken);
 	
 // routerV3.post('/pago/set-data-transaction', apiPwaAppPedidos.setDataTransaction); // gurdamos datos de la transacion
 // routerV3.post('/pago/get-data-transaction', apiPwaAppPedidos.getDataTransaction); // obtenemos datos de la transaccion
+
+// Niubiz: el frontend ya no habla con la pasarela ni conoce las credenciales
+routerV3.post('/pago/niubiz/sesion', apiNiubiz.crearSesion);
+routerV3.post('/pago/niubiz/autorizar', apiNiubiz.autorizar);
 
 
 // routerV3.post('/info/getDataSede', apiPwaAppPedidos.getDataSede);

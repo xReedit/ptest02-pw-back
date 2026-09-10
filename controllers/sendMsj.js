@@ -290,6 +290,15 @@ const pushSuscripcion = async function (req, res) {
 	}
 
 	try {
+		// cliente_socketid no tiene FK contra cliente y esta ruta no pide token: sin este
+		// chequeo el upsert crearia una fila por cada entero que alguien mande
+		const existe = await QueryServiceV1.ejecutarConsulta(
+			'SELECT idcliente FROM cliente WHERE idcliente = ? LIMIT 1',
+			[idcliente], 'SELECT', 'pushSuscripcion.cliente');
+		if (!existe || !existe[0]) {
+			return ReE(res, 'cliente no existe', 404);
+		}
+
 		// upsert: el cliente puede no tener fila en cliente_socketid todavia
 		const update_query = `INSERT INTO cliente_socketid (idcliente, socketid, conectado, key_suscripcion_push)
 			VALUES (?, '', '0', ?)
@@ -332,7 +341,19 @@ const sendPushNotificaction = function (req, res) {
  //        }
  //    };
 
-    const where_query = idcliente ? `cs.idcliente = ${idcliente} and` :  codigo_postal  ? `cd.codigo in (${codigo_postal}) and` : '';
+    // el filtro va con placeholders: idcliente y codigo_postal llegan del body
+    const filtro_params = [];
+    let where_query = '';
+    if (idcliente) {
+        where_query = 'cs.idcliente = ? and';
+        filtro_params.push(idcliente);
+    } else if (codigo_postal) {
+        const codigos = String(codigo_postal).split(',').map((c) => c.trim().replace(/^'|'$/g, '')).filter((c) => c !== '');
+        if (codigos.length > 0) {
+            where_query = `cd.codigo in (${codigos.map(() => '?').join(',')}) and`;
+            filtro_params.push(...codigos);
+        }
+    }
 	const read_query = `select DISTINCT cs.idcliente, cs.key_suscripcion_push
 						from cliente_socketid cs
 							inner join cliente_pwa_direccion as cd on cs.idcliente = cd.idcliente
@@ -340,7 +361,7 @@ const sendPushNotificaction = function (req, res) {
 
 
 
-	emitirRespuesta(read_query).then(allSubscriptions => {		
+	QueryServiceV1.ejecutarConsulta(read_query, filtro_params, 'SELECT', 'sendPushNotificaction').then(allSubscriptions => {
 		res.json(allSubscriptions);
 
 		 // Promise.all(

@@ -18,10 +18,10 @@ function esLargoDeToken(valor) {
 // Mismas etiquetas que ve el cliente en "Mis pedidos" (sprint 2).
 const MENSAJES = {
 	recibido:   { title: 'Recibido',             body: 'Recibimos tu pedido #%s. Te avisamos cuando el local lo confirme.' },
-	aceptado:   { title: 'Aceptado',             body: 'El local acepto tu pedido #%s.' },
-	preparando: { title: 'En preparacion',       body: 'Tu pedido #%s ya se esta preparando.' },
+	aceptado:   { title: 'Aceptado',             body: 'El local aceptó tu pedido #%s.' },
+	preparando: { title: 'En preparación',       body: 'Tu pedido #%s ya se está preparando.' },
 	asignado:   { title: 'Repartidor asignado',  body: 'Un repartidor tomo tu pedido #%s.' },
-	camino:     { title: 'En camino',            body: 'Tu pedido #%s ya salio hacia tu direccion.' },
+	camino:     { title: 'En camino',            body: 'Tu pedido #%s ya salió hacia tu dirección.' },
 	entregado:  { title: 'Entregado',            body: 'Tu pedido #%s fue entregado. Buen provecho.' },
 	cancelado:  { title: 'Cancelado',            body: 'Tu pedido #%s fue cancelado.' }
 };

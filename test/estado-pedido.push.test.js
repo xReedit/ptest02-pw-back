@@ -87,7 +87,7 @@ describe('estado-pedido.service.notificar + push', () => {
     });
   });
 
-  it('suelta la entrada en un estado final: un aviso posterior igual vuelve a mandarse', async () => {
+  it('el estado final tampoco se repite: sockets.js avisa entregado desde tres manejadores', async () => {
     QueryServiceV1.ejecutarConsulta.mockResolvedValue([
       { idpedido: 77, idcliente: 15, pwa_estado: 'E', pwa_delivery_status: '4', position_now: null }
     ]);
@@ -97,6 +97,22 @@ describe('estado-pedido.service.notificar + push', () => {
     expect(pushCliente.notificarEstado).toHaveBeenCalledTimes(1);
 
     await svc.notificar(77);
-    expect(pushCliente.notificarEstado).toHaveBeenCalledTimes(2);
+    await svc.notificar(77);
+    expect(pushCliente.notificarEstado).toHaveBeenCalledTimes(1);
+  });
+
+  it('no espera al envio: notificar() resuelve sin que FCM haya respondido', async () => {
+    QueryServiceV1.ejecutarConsulta.mockResolvedValue([
+      { idpedido: 78, idcliente: 15, pwa_estado: 'A', pwa_delivery_status: '1', position_now: null }
+    ]);
+    let liberar;
+    pushCliente.notificarEstado.mockReturnValueOnce(new Promise((resolve) => { liberar = resolve; }));
+    svc.setIo(ioMock());
+
+    await svc.notificar(78);
+
+    expect(pushCliente.notificarEstado).toHaveBeenCalledTimes(1);
+    liberar(undefined);
+    await Promise.resolve();
   });
 });

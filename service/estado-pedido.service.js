@@ -8,16 +8,14 @@ function setIo(_io) { io = _io; }
 
 // Varios origenes (apiPwa_v1, apiComercio, el print server por lotes) llaman notificar()
 // dos veces para el mismo estado; el socket repetido no molesta, el push repetido si.
+// La entrada NO se borra en el estado final: sockets.js tiene tres manejadores que ponen
+// pwa_delivery_status = 4 y llaman notificar(), asi que "Entregado" se avisaba dos veces.
+// La memoria la acota el tope de MAX_DEDUPE entradas.
 // ponytail: dedupe en memoria por proceso; si hay varios workers, mover a Redis
 const MAX_DEDUPE = 2000;
 const ultimoEstadoPush = new Map();
 
 function claveEstado(est) { return `${est.pwa_estado}|${est.pwa_delivery_status}`; }
-
-function esEstadoFinal(est) {
-	const delivery = Number(est.pwa_delivery_status);
-	return est.pwa_estado === 'E' || est.pwa_estado === 'C' || delivery === 4 || delivery === 5;
-}
 
 function recordarEstado(id, clave) {
 	ultimoEstadoPush.set(id, clave);
@@ -54,16 +52,15 @@ async function notificar(idpedido) {
 		if (ultimoEstadoPush.get(id) === clave) { return; }
 		recordarEstado(id, clave);
 
-		// el socket solo llega si la app esta abierta; el push cubre el resto
-		await pushCliente.notificarEstado({
+		// el socket solo llega si la app esta abierta; el push cubre el resto.
+		// Sin await: sockets.js espera notificar() dentro del cierre del pedido y una ida y
+		// vuelta a FCM no puede quedarse ahi. notificarEstado() ya loguea sus propios fallos.
+		pushCliente.notificarEstado({
 			idpedido: id,
 			idcliente: Number(idcliente),
 			pwa_estado: est.pwa_estado,
 			pwa_delivery_status: est.pwa_delivery_status
-		});
-
-		// el pedido termino: no hay mas cambios que deduplicar, se libera la entrada
-		if (esEstadoFinal(est)) { ultimoEstadoPush.delete(id); }
+		}).catch(() => {});
 	} catch (error) {
 		logger.error({ error: error.message, idpedido }, 'estadoPedido.notificar');
 	}

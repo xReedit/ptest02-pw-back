@@ -54,20 +54,51 @@ describe('rate-limit', () => {
 		expect(next).toHaveBeenCalledTimes(2);
 	});
 
-	it('detras del proxy cuenta por el primer salto de x-forwarded-for', () => {
+	it('detras del proxy cuenta por el ultimo salto de x-forwarded-for', () => {
 		const limitar = rateLimit(1, 60000);
 		const next = jest.fn();
-		// misma IP de socket (el proxy), clientes distintos
+		// misma IP de socket (el proxy), clientes distintos; nginx agrega el peer real al final
 		const reqProxy = (xff) => ({ ip: '10.0.0.9', headers: { 'x-forwarded-for': xff } });
 
-		limitar(reqProxy('5.5.5.5, 10.0.0.9'), mockRes(), next);
-		limitar(reqProxy('6.6.6.6, 10.0.0.9'), mockRes(), next);
+		limitar(reqProxy('5.5.5.5'), mockRes(), next);
+		limitar(reqProxy('6.6.6.6'), mockRes(), next);
 		expect(next).toHaveBeenCalledTimes(2);
 
 		// el segundo intento del mismo cliente si se corta
 		const res = mockRes();
-		limitar(reqProxy('5.5.5.5, 10.0.0.9'), res, next);
+		limitar(reqProxy('5.5.5.5'), res, next);
 		expect(next).toHaveBeenCalledTimes(2);
+		expect(res.statusCode).toBe(429);
+	});
+
+	it('un primer salto falsificado no libera cupo: manda el ultimo salto', () => {
+		const limitar = rateLimit(1, 60000);
+		const next = jest.fn();
+		const reqProxy = (xff) => ({ ip: '10.0.0.9', headers: { 'x-forwarded-for': xff } });
+
+		// el mismo cliente (7.7.7.7 lo pone nuestro nginx) cambia el salto que el controla
+		limitar(reqProxy('1.1.1.1, 7.7.7.7'), mockRes(), next);
+		expect(next).toHaveBeenCalledTimes(1);
+
+		const res = mockRes();
+		limitar(reqProxy('2.2.2.2, 7.7.7.7'), res, next);
+		expect(next).toHaveBeenCalledTimes(1);
+		expect(res.statusCode).toBe(429);
+
+		// otro cliente real si tiene su propio cupo
+		limitar(reqProxy('1.1.1.1, 8.8.8.8'), mockRes(), next);
+		expect(next).toHaveBeenCalledTimes(2);
+	});
+
+	it('sin x-forwarded-for usa req.ip', () => {
+		const limitar = rateLimit(1, 60000);
+		const next = jest.fn();
+
+		limitar({ ip: '9.9.9.9', headers: {} }, mockRes(), next);
+		const res = mockRes();
+		limitar({ ip: '9.9.9.9', headers: {} }, res, next);
+
+		expect(next).toHaveBeenCalledTimes(1);
 		expect(res.statusCode).toBe(429);
 	});
 });

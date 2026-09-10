@@ -35,8 +35,13 @@ describe('construirMensaje', () => {
     expect(svc.construirMensaje(77, 'A', '3')).toEqual({
       codigo: 'camino',
       title: 'En camino',
-      body: 'Tu pedido #77 ya salio hacia tu direccion.'
+      body: 'Tu pedido #77 ya salió hacia tu dirección.'
     });
+  });
+  it('las etiquetas llevan tilde igual que en la app', () => {
+    expect(svc.MENSAJES.preparando.title).toBe('En preparación');
+    expect(svc.MENSAJES.preparando.body).toBe('Tu pedido #%s ya se está preparando.');
+    expect(svc.MENSAJES.aceptado.body).toBe('El local aceptó tu pedido #%s.');
   });
   it('cubre los siete estados', () => {
     expect(Object.keys(svc.MENSAJES).sort()).toEqual(

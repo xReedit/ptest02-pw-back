@@ -84,6 +84,10 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		const dataCliente = dataSocket;
 
+		// sala por cliente: los eventos del repartidor llegan aunque cambie el socketid
+		const idClienteSala = Number(dataSocket.idcliente);
+		if (idClienteSala > 0) { socket.join(`cliente_${idClienteSala}`); }
+
 		// para el bot de mensajeria
 		if (dataCliente.isMensajeria === '1') {
 			const roomMensajeria = `mensajeria_${dataCliente.roomId}`;
@@ -1367,17 +1371,20 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('repartidor-notifica-estado-pedido', async (dataCliente) => {			
 			// update estado del pedido
 			apiPwaRepartidor.setUpdateEstadoPedido(dataCliente.idpedido, dataCliente.estado);
-
-			const socketIdCliente = await apiPwa.getSocketIdCliente(dataCliente.idcliente);
-			logger.debug('repartidor-notifica-estado-pedido', socketIdCliente[0].socketid +'  estado: '+dataCliente.estado);
-
-			io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-estado-pedido', dataCliente.estado);	
+			io.to(`cliente_${Number(dataCliente.idcliente)}`).emit('repartidor-notifica-estado-pedido', dataCliente.estado);
+			try {
+				const socketIdCliente = await apiPwa.getSocketIdCliente(dataCliente.idcliente);
+				if (socketIdCliente?.[0]?.socketid) {
+					io.to(socketIdCliente[0].socketid).emit('repartidor-notifica-estado-pedido', dataCliente.estado);
+				}
+			} catch (err) { logger.error({ err }, 'repartidor-notifica-estado-pedido sin socketid'); }
 		});
 
 		// escuchar ubicacion del repartidor al cliente
 		socket.on('repartidor-notifica-ubicacion', async (datosUbicacion) => {
 			// notifica a cliente
 			if ( datosUbicacion.idcliente ) {
+				io.to(`cliente_${Number(datosUbicacion.idcliente)}`).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas);
 				const socketIdCliente = await apiPwa.getSocketIdCliente(datosUbicacion.idcliente);
 				try {
 					if ( socketIdCliente[0].socketid ) { // puede ser un pedido que el comercio llamo repartidor

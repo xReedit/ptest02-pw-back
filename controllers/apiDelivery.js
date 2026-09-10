@@ -122,10 +122,15 @@ const getDireccionCliente = async function (req, res) {
 module.exports.getDireccionCliente = getDireccionCliente;
 
 
-const getMisPedido = async function (req, res) {  
-	const idcliente = req.body.idcliente;	
-    const read_query = `call procedure_pwa_delivery_mis_pedidos(${idcliente})`;
-    return await emitirRespuestaSP_RES(read_query, res);        
+const getMisPedido = async function (req, res) {
+	// Number() y no parseInt(): parseInt('1 or 1=1') devuelve 1 y aceptaría basura como id
+	const idcliente = Number(req.body.idcliente);
+	if (!Number.isInteger(idcliente) || idcliente <= 0) {
+		return ReE(res, 'idcliente inválido', 400);
+	}
+    const query = `call procedure_pwa_delivery_mis_pedidos(?);`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(query, [idcliente], 'getMisPedido');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.getMisPedido = getMisPedido;
 

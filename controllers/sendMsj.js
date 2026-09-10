@@ -362,7 +362,8 @@ const sendPushNotificaction = function (req, res) {
 
 
 	QueryServiceV1.ejecutarConsulta(read_query, filtro_params, 'SELECT', 'sendPushNotificaction').then(allSubscriptions => {
-		res.json(allSubscriptions);
+		// nunca se devuelven las filas: cada una trae el token de suscripcion de un cliente
+		const suscripciones = allSubscriptions || [];
 
 		 // Promise.all(
 		 // allSubscriptions.map(sub => 
@@ -374,13 +375,14 @@ const sendPushNotificaction = function (req, res) {
 	  //           res.sendStatus(500);
    //      });
 
-	    Promise.all(allSubscriptions.map(sub => webpush.sendNotification(
+	    Promise.all(suscripciones.map(sub => webpush.sendNotification(
         sub, JSON.stringify(notificationPayload) )))
-        .then(() => res.status(200).json({message: 'Newsletter sent successfully.'}))
-        .catch(err => {            
-            res.sendStatus(500);
-        });	       
-	});	
+        .then(() => ReS(res, { enviados: suscripciones.length }))
+        .catch(err => {
+            logger.error({ error: err.message }, 'sendPushNotificaction');
+            return ReE(res, 'no se pudo enviar', 500);
+        });
+	});
 }
 module.exports.sendPushNotificaction = sendPushNotificaction;
 

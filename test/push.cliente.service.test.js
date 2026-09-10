@@ -42,6 +42,8 @@ describe('construirMensaje', () => {
     expect(svc.MENSAJES.preparando.title).toBe('En preparación');
     expect(svc.MENSAJES.preparando.body).toBe('Tu pedido #%s ya se está preparando.');
     expect(svc.MENSAJES.aceptado.body).toBe('El local aceptó tu pedido #%s.');
+    expect(svc.MENSAJES.asignado.body).toBe('Un repartidor tomó tu pedido #%s.');
+    expect(svc.MENSAJES.camino.body).toBe('Tu pedido #%s ya salió hacia tu dirección.');
   });
   it('cubre los siete estados', () => {
     expect(Object.keys(svc.MENSAJES).sort()).toEqual(

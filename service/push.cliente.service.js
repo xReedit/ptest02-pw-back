@@ -20,7 +20,7 @@ const MENSAJES = {
 	recibido:   { title: 'Recibido',             body: 'Recibimos tu pedido #%s. Te avisamos cuando el local lo confirme.' },
 	aceptado:   { title: 'Aceptado',             body: 'El local aceptó tu pedido #%s.' },
 	preparando: { title: 'En preparación',       body: 'Tu pedido #%s ya se está preparando.' },
-	asignado:   { title: 'Repartidor asignado',  body: 'Un repartidor tomo tu pedido #%s.' },
+	asignado:   { title: 'Repartidor asignado',  body: 'Un repartidor tomó tu pedido #%s.' },
 	camino:     { title: 'En camino',            body: 'Tu pedido #%s ya salió hacia tu dirección.' },
 	entregado:  { title: 'Entregado',            body: 'Tu pedido #%s fue entregado. Buen provecho.' },
 	cancelado:  { title: 'Cancelado',            body: 'Tu pedido #%s fue cancelado.' }

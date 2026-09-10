@@ -60,6 +60,11 @@ function buildAntifraud(req) {
 	};
 }
 
+function sedeValida(idsede) {
+	const id = Number(idsede);
+	return (Number.isInteger(id) && id > 0) ? id : null;
+}
+
 function montoValido(amount) {
 	const monto = Number(amount);
 	return (Number.isFinite(monto) && monto > 0) ? Number(monto.toFixed(2)) : null;
@@ -70,7 +75,9 @@ const crearSesion = async function (req, res) {
 		const { idsede, amount, purchaseNumber, channel } = req.body;
 		const monto = montoValido(amount);
 		if (monto === null) { return ReE(res, 'amount invalido', 400); }
-		const cred = await getNiubizCredentials(Number(idsede));
+		const sede = sedeValida(idsede);
+		if (sede === null) { return ReE(res, 'idsede invalido', 400); }
+		const cred = await getNiubizCredentials(sede);
 		const token = await getSecurityToken(cred);
 		const pn = purchaseNumber || String(Date.now()).slice(-12);
 		const r = await fetch(`${cred.urls.sesion}${cred.merchantId}`, {
@@ -111,8 +118,10 @@ const autorizar = async function (req, res) {
 		const { idsede, purchaseNumber, amount, transactionToken, channel } = req.body;
 		const monto = montoValido(amount);
 		if (!purchaseNumber || !transactionToken || monto === null) { return ReE(res, 'datos incompletos', 400); }
+		const sede = sedeValida(idsede);
+		if (sede === null) { return ReE(res, 'idsede invalido', 400); }
 		// ponytail: el monto viene del cliente; cuando el pedido se registre antes del cobro, derivarlo del idpedido
-		const cred = await getNiubizCredentials(Number(idsede));
+		const cred = await getNiubizCredentials(sede);
 		const token = await getSecurityToken(cred);
 		const r = await fetch(`${cred.urls.autorizacion}${cred.merchantId}`, {
 			method: 'POST',

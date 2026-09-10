@@ -72,9 +72,12 @@ const getEstablecimientos = async function (req, res) {
 	const idsede_categoria = req.body.idsede_categoria || 0;           
 	const codigo_postal = req.body.codigo_postal || ''; // lo cambiamos por ciudad
 	const idsede = req.body.idsede || 0;	
-	const point_client = req.body.point_client || '';	
-    const read_query = `call procedure_pwa_delivery_establecimientos(${idsede_categoria}, '${codigo_postal}', ${idsede}, '${point_client}')`;
-    return await emitirRespuestaSP_RES(read_query, res);        
+	const point_client = req.body.point_client || '';
+    // ponytail: ejecutarProcedimiento (no ejecutarConsulta) porque es un CALL y hay que
+    // conservar el desempaquetado Object.values(rows[0]) que espera la app
+    const read_query = `call procedure_pwa_delivery_establecimientos(?,?,?,?)`;
+    const rows = await QueryServiceV1.ejecutarProcedimiento(read_query, [idsede_categoria, codigo_postal, idsede, point_client], 'getEstablecimientos');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.getEstablecimientos = getEstablecimientos;
 
@@ -83,8 +86,9 @@ const getParametrosTiendaLinea = async function(req, res) {
     if (!idsede) {
         return ReE(res, 'idsede es requerido');
     }
-    const read_query = `select parametros from sede_costo_delivery where idsede=${idsede}`;
-    return await emitirRespuesta_RES(read_query, res);
+    const read_query = `select parametros from sede_costo_delivery where idsede=?`;
+    const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idsede], 'SELECT', 'getParametrosTiendaLinea');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.getParametrosTiendaLinea = getParametrosTiendaLinea;
 
@@ -135,13 +139,24 @@ const getMisPedido = async function (req, res) {
 module.exports.getMisPedido = getMisPedido;
 
 
-const verificarCodigoSMS = async function (req, res) {	
-	const codigo = req.body.codigo;
-	const idcliente = req.body.idcliente;
-	const numberPhone = req.body.numberphone;
-    // const read_query = `SELECT idcliente from cliente where idcliente=${idcliente} and pwa_code_verification = '${codigo}' and estado = 0`;
-    const read_query = `call porcedure_pwa_update_phono_sms_cliente(${idcliente}, '${numberPhone}', '${codigo}')`;
-    return await emitirRespuestaSP_RES(read_query, res);        
+// Ruta sin autenticar: el telefono y el codigo llegan del navegador, asi que se validan
+// con formato estricto y se mandan como parametros preparados (antes se interpolaban en el SQL).
+const verificarCodigoSMS = async function (req, res) {
+	const idcliente = Number(req.body.idcliente);
+	const numberphone = String(req.body.numberphone || '');
+	const codigo = String(req.body.codigo || '');
+
+	const datosValidos = Number.isInteger(idcliente) && idcliente > 0
+		&& /^[0-9]{6,15}$/.test(numberphone)
+		&& /^[0-9]{4,8}$/.test(codigo);
+
+	if (!datosValidos) {
+		return ReE(res, 'datos inválidos', 400);
+	}
+
+	const query = `call porcedure_pwa_update_phono_sms_cliente(?,?,?);`;
+	const rows = await QueryServiceV1.ejecutarProcedimiento(query, [idcliente, numberphone, codigo], 'verificarCodigoSMS');
+	return ReS(res, { data: rows || [] });
 }
 module.exports.verificarCodigoSMS = verificarCodigoSMS;
 
@@ -170,10 +185,11 @@ const getComercioXCalificar = async function (req, res) {
     const read_query = `SELECT p.idpedido, p.idsede, s.nombre nomestablecimiento
 						from pedido p
 							inner join sede s on s.idsede = p.idsede
-						where p.idcliente = ${idcliente} and p.flag_calificado = 0
-						GROUP by p.idsede					
+						where p.idcliente = ? and p.flag_calificado = 0
+						GROUP by p.idsede
 						ORDER by p.idpedido desc limit 2`;
-    return await emitirRespuesta_RES(read_query, res);        
+    const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idcliente], 'SELECT', 'getComercioXCalificar');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.getComercioXCalificar = getComercioXCalificar;
 
@@ -240,10 +256,11 @@ const getCalificacionSede = async function (req, res) {
 	const idsede = req.body.idsede;
     const read_query = `select SUBSTRING_INDEX(c.nombres, ' ',1) nomcliente, count(sc.idcliente) numpedidos, sc.calificacion, sc.comentario from sede_calificacion sc
 			inner join cliente c on c.idcliente  = sc.idcliente 
-		where sc.idsede = ${idsede} and sc.calificacion >= 2
+		where sc.idsede = ? and sc.calificacion >= 2
 		GROUP by sc.idcliente
 		order by sc.idsede_calificacion desc`;
-    return await emitirRespuesta_RES(read_query, res);  
+    const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idsede], 'SELECT', 'getCalificacionSede');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.getCalificacionSede = getCalificacionSede;
 
@@ -259,18 +276,20 @@ const getSharedUrlCarta = async function (req, res) {
 }
 module.exports.getSharedUrlCarta = getSharedUrlCarta;
 
-const SearchClienteByPhone = async function (req, res) {			
+const SearchClienteByPhone = async function (req, res) {
 	const numTelefono = req.body.telefono;
     // const read_query = `select * from cliente where telefono = '${numTelefono}'  order by idcliente limit 1;`;
-    const read_query = `select * from cliente where pwa_id = 'phone|${numTelefono}'  order by idcliente limit 1;`;
-    return await emitirRespuesta_RES(read_query, res);  
+    const read_query = `select * from cliente where pwa_id = ?  order by idcliente limit 1;`;
+    const rows = await QueryServiceV1.ejecutarConsulta(read_query, [`phone|${numTelefono}`], 'SELECT', 'SearchClienteByPhone');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.SearchClienteByPhone = SearchClienteByPhone;
 
-const SearchClienteByPhonePwaId = async function (req, res) {			
+const SearchClienteByPhonePwaId = async function (req, res) {
 	const numTelefono = req.body.telefono;
-    const read_query = `select * from cliente where pwa_id = 'phone|${numTelefono}'  order by idcliente limit 1;`;
-    return await emitirRespuesta_RES(read_query, res);  
+    const read_query = `select * from cliente where pwa_id = ?  order by idcliente limit 1;`;
+    const rows = await QueryServiceV1.ejecutarConsulta(read_query, [`phone|${numTelefono}`], 'SELECT', 'SearchClienteByPhonePwaId');
+    return ReS(res, { data: rows || [] });
 }
 module.exports.SearchClienteByPhonePwaId = SearchClienteByPhonePwaId;
 

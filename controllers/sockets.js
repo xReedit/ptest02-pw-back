@@ -1371,7 +1371,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('repartidor-notifica-estado-pedido', async (dataCliente) => {			
 			// update estado del pedido
 			apiPwaRepartidor.setUpdateEstadoPedido(dataCliente.idpedido, dataCliente.estado);
-			io.to(`cliente_${Number(dataCliente.idcliente)}`).emit('repartidor-notifica-estado-pedido', dataCliente.estado);
+			const idc = Number(dataCliente.idcliente);
+			if (idc > 0) { io.to(`cliente_${idc}`).emit('repartidor-notifica-estado-pedido', dataCliente.estado); }
 			try {
 				const socketIdCliente = await apiPwa.getSocketIdCliente(dataCliente.idcliente);
 				if (socketIdCliente?.[0]?.socketid) {
@@ -1384,7 +1385,8 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		socket.on('repartidor-notifica-ubicacion', async (datosUbicacion) => {
 			// notifica a cliente
 			if ( datosUbicacion.idcliente ) {
-				io.to(`cliente_${Number(datosUbicacion.idcliente)}`).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas);
+				const idc = Number(datosUbicacion.idcliente);
+				if (idc > 0) { io.to(`cliente_${idc}`).emit('repartidor-notifica-ubicacion', datosUbicacion.coordenadas); }
 				const socketIdCliente = await apiPwa.getSocketIdCliente(datosUbicacion.idcliente);
 				try {
 					if ( socketIdCliente[0].socketid ) { // puede ser un pedido que el comercio llamo repartidor

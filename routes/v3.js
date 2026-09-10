@@ -20,6 +20,7 @@ const apiPwaSMS = require('../controllers/sendMsj');
 const pushMozo = require('../service/push.mozo.service');
 const login = require('../controllers/login');
 const auth = require('../middleware/autentificacion');
+const rateLimit = require('../service/rate-limit');
 
 const apiSpeech = require('../controllers/speech');
 const pedidoBot = require('../controllers/pedidoBot');
@@ -190,8 +191,9 @@ routerV3.post('/mozo/push-token', auth.verificarToken, pushMozo.setPushToken);
 // routerV3.post('/pago/get-data-transaction', apiPwaAppPedidos.getDataTransaction); // obtenemos datos de la transaccion
 
 // Niubiz: el frontend ya no habla con la pasarela ni conoce las credenciales
-routerV3.post('/pago/niubiz/sesion', apiNiubiz.crearSesion);
-routerV3.post('/pago/niubiz/autorizar', apiNiubiz.autorizar);
+// rutas sin autenticar que llaman a la pasarela: se limita el abuso por IP
+routerV3.post('/pago/niubiz/sesion', rateLimit(20, 60000), apiNiubiz.crearSesion);
+routerV3.post('/pago/niubiz/autorizar', rateLimit(20, 60000), apiNiubiz.autorizar);
 
 
 // routerV3.post('/info/getDataSede', apiPwaAppPedidos.getDataSede);

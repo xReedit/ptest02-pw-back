@@ -10,6 +10,7 @@ let logger = require('../utilitarios/logger');
 const { sequelize, QueryTypes } = require('../config/database');
 // const { Sequelize } = require('sequelize');
 const QueryServiceV1 = require('../service/query.service.v1');
+const tokenClienteService = require('../service/token.cliente');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
@@ -873,7 +874,13 @@ const setRegisterClienteLogin = async function (req, res) {
 
     const query = `call procedure_pwa_register_cliente_login(?);`;
     const rows = await QueryServiceV1.ejecutarProcedimiento(query, [JSON.stringify(dataLogin)], 'setRegisterClienteLogin');
-    return ReS(res, {data: rows || [] });
+
+    // Sprint 5: aqui es donde el backend establece la identidad del dispositivo (Auth0,
+    // nativo o invitado). Se emite el token de sesion del cliente en un campo aparte del
+    // envelope: una app vieja lo ignora y sigue leyendo data[0].idcliente como siempre.
+    const tokenCliente = tokenClienteService.emitir(rows && rows[0] ? rows[0].idcliente : 0);
+
+    return ReS(res, { data: rows || [], tokenCliente: tokenCliente || '' });
 }
 module.exports.setRegisterClienteLogin = setRegisterClienteLogin;
 

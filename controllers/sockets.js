@@ -15,6 +15,7 @@ const socketBot = require('./socketBot.js');
 const pushMozo = require('../service/push.mozo.service');
 const estadoPedidoService = require('../service/estado-pedido.service');
 const QueryServiceV1 = require('../service/query.service.v1');
+const tokenClienteService = require('../service/token.cliente');
 
 // El repartidor emite su posicion cada pocos segundos y no siempre manda el idpedido.
 // Se resuelve con una consulta y se cachea 30 s en el propio socket: 1 consulta por repartidor
@@ -679,8 +680,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 			// responde por ack (callback) y por evento; el ack es lo que usa la app mozo
 			const responder = (rpt) => {
-				io.to(socket.id).emit('nuevoPedidoRes', rpt);
-				if ( callback ) { callback(rpt); }
+				// Sprint 5: si el guardado devolvio idcliente (el SP puede reasignarlo), se
+				// adjunta el token de sesion del cliente en esa misma fila. conTokenCliente
+				// devuelve una copia y tolera false / [] / filas sin idcliente.
+				const respuesta = tokenClienteService.conTokenCliente(rpt);
+				io.to(socket.id).emit('nuevoPedidoRes', respuesta);
+				if ( callback ) { callback(respuesta); }
 			};
 
 			// un payload malformado no debe dejar a la app esperando: siempre se responde

@@ -8,6 +8,7 @@ let logger = require('../utilitarios/logger');
 // ✅ SEGURO: Conexión centralizada
 const { sequelize, QueryTypes } = require('../config/database');
 const QueryServiceV1 = require('../service/query.service.v1');
+const tokenClienteService = require('../service/token.cliente');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
@@ -161,7 +162,13 @@ const verificarCodigoSMS = async function (req, res) {
 	const numberphone = String(req.body.numberphone || '');
 	const codigo = String(req.body.codigo || '');
 
-	const datosValidos = Number.isInteger(idcliente) && idcliente > 0
+	// CLIENTE_NUEVO: la app manda -2 cuando el telefono todavia no tiene cliente
+	// (dialog-verificar-telefono.component.ts:129). Es un centinela, no un id: el
+	// procedimiento lo reconoce. Exigir > 0 dejaba ese flujo en 400.
+	const CLIENTE_NUEVO = -2;
+	const idclienteValido = Number.isInteger(idcliente) && (idcliente > 0 || idcliente === CLIENTE_NUEVO);
+
+	const datosValidos = idclienteValido
 		&& /^[0-9]{6,15}$/.test(numberphone)
 		&& /^[0-9]{4,8}$/.test(codigo);
 
@@ -171,7 +178,14 @@ const verificarCodigoSMS = async function (req, res) {
 
 	const query = `call porcedure_pwa_update_phono_sms_cliente(?,?,?);`;
 	const rows = await QueryServiceV1.ejecutarProcedimiento(query, [idcliente, numberphone, codigo], 'verificarCodigoSMS');
-	return ReS(res, { data: rows || [] });
+
+	// Sprint 5: el codigo correcto es la prueba de que el telefono es suyo, asi que aqui
+	// tambien queda establecida la identidad. Solo con response === 1. Con el centinela
+	// -2 todavia no hay cliente al que emitirle nada y emitir() devuelve null.
+	const aprobado = Array.isArray(rows) && rows[0] && Number(rows[0].response) === 1;
+	const tokenCliente = aprobado ? tokenClienteService.emitir(idcliente) : null;
+
+	return ReS(res, { data: rows || [], tokenCliente: tokenCliente || '' });
 }
 module.exports.verificarCodigoSMS = verificarCodigoSMS;
 

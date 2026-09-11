@@ -151,15 +151,55 @@ describe('getMetodosPago', () => {
 });
 
 describe('getEntregados', () => {
-    test('devuelve las entregas del repartidor del token de las ultimas 24 horas', async () => {
+    const fechaLocal = (diasAtras) => {
+        const d = new Date();
+        d.setDate(d.getDate() - diasAtras);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    const pedir = async (query) => {
         mockRespuestasSelect = [[{ idpedido: 1, total_r: '75.00', fecha_entrega: '2026-09-08 21:00:00' }]];
         const r = res();
-        await v2.getEntregados(req({}, 13), r);
+        await v2.getEntregados({ ...req({}, 13), query }, r);
+        return r;
+    };
+
+    test('sin fecha devuelve las ultimas 12 horas del repartidor del token', async () => {
+        const r = await pedir({});
         expect(r.body.data).toHaveLength(1);
-        expect(r.body.horas).toBe(24);
+        expect(r.body.modo).toBe('ultimas_horas');
+        expect(r.body.horas).toBe(12);
+        expect(r.body.dias_atras_max).toBe(15);
         const q = sqlLlamadas('repartidor_pedido_entregado e')[0];
         expect(q.params).toEqual([13]);
-        expect(q.sql).toContain('INTERVAL 24 HOUR');
+        expect(q.sql).toContain('INTERVAL 12 HOUR');
+    });
+
+    test('con fecha devuelve ese dia completo', async () => {
+        const ayer = fechaLocal(1);
+        const r = await pedir({ fecha: ayer });
+        expect(r.body.modo).toBe('dia');
+        expect(r.body.fecha).toBe(ayer);
+        expect(r.body.horas).toBeNull();
+        const q = sqlLlamadas('repartidor_pedido_entregado e')[0];
+        expect(q.sql).toContain('DATE(e.fecha) = ?');
+        expect(q.params).toEqual([13, ayer]);
+    });
+
+    test('acepta el limite de 15 dias y rechaza el dia 16', async () => {
+        expect((await pedir({ fecha: fechaLocal(15) })).body.modo).toBe('dia');
+        const consultasAntes = sqlLlamadas('repartidor_pedido_entregado e').length;
+        const r = await pedir({ fecha: fechaLocal(16) });
+        expect(r.statusCode).toBe(400);
+        expect(r.body.error).toMatch(/15 d/);
+        // el rechazo no llega a la BD
+        expect(sqlLlamadas('repartidor_pedido_entregado e')).toHaveLength(consultasAntes);
+    });
+
+    test('rechaza fecha futura y formato invalido', async () => {
+        expect((await pedir({ fecha: fechaLocal(-1) })).body.error).toMatch(/futura/);
+        expect((await pedir({ fecha: '10-09-2026' })).statusCode).toBe(400);
+        expect((await pedir({ fecha: '2026-02-31' })).body.error).toMatch(/inv/);
+        expect((await pedir({ fecha: "2026-09-10' OR 1=1" })).statusCode).toBe(400);
     });
 });
 

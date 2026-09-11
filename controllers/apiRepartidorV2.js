@@ -108,23 +108,71 @@ const getMiEstado = async function (req, res) {
 module.exports.getMiEstado = getMiEstado;
 
 // ---------------------------------------------------------------------------------------------
-// GET /repartidor2/entregados  → pedidos entregados por este repartidor en las últimas 24 h
+// GET /repartidor2/entregados[?fecha=YYYY-MM-DD]
+//   sin fecha  → entregas de las últimas HORAS_ENTREGADOS horas (turno en curso)
+//   con fecha  → ese día completo (00:00 a 23:59 hora del servidor), hasta DIAS_ATRAS_MAX días atrás
 // ---------------------------------------------------------------------------------------------
 
-const HORAS_ENTREGADOS = 24;
+const HORAS_ENTREGADOS = 12;
+const DIAS_ATRAS_MAX = 15;
+
+/** 'YYYY-MM-DD' en hora local del servidor (no UTC: el repartidor consulta por su día). */
+const fechaLocalISO = function (d) {
+	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+/** Valida ?fecha=YYYY-MM-DD: null si no vino; {error} si no sirve; {fecha} si es consultable. */
+const validarFechaEntregados = function (valor) {
+	if (valor === undefined || valor === null || valor === '') return { fecha: null };
+	const texto = String(valor).trim();
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(texto)) return { error: 'fecha inválida, usa YYYY-MM-DD' };
+
+	const [anio, mes, dia] = texto.split('-').map(Number);
+	const pedida = new Date(anio, mes - 1, dia);
+	// new Date(2026, 1, 31) rueda a marzo: así descartamos días que no existen
+	if (pedida.getFullYear() !== anio || pedida.getMonth() !== mes - 1 || pedida.getDate() !== dia) {
+		return { error: 'fecha inválida, usa YYYY-MM-DD' };
+	}
+
+	const hoy = new Date();
+	hoy.setHours(0, 0, 0, 0);
+	if (pedida > hoy) return { error: 'la fecha no puede ser futura' };
+
+	const diasAtras = Math.round((hoy - pedida) / 86400000);
+	if (diasAtras > DIAS_ATRAS_MAX) return { error: `solo se pueden consultar los últimos ${DIAS_ATRAS_MAX} días` };
+
+	return { fecha: texto };
+};
 
 const getEntregados = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req, 'idrepartidor');
 	if (!idrepartidor) return ReE(res, 'token sin idrepartidor', 401);
-	const rows = await QueryServiceV1.ejecutarConsulta(
-		`SELECT p.idpedido, p.idsede, s.nombre AS sede_nombre, p.total, p.total_r, p.json_datos_delivery, e.fecha AS fecha_entrega, e.operacion
+
+	const v = validarFechaEntregados(req.query ? req.query.fecha : null);
+	if (v.error) return ReE(res, v.error, 400);
+
+	const SELECT = `SELECT p.idpedido, p.idsede, s.nombre AS sede_nombre, p.total, p.total_r, p.json_datos_delivery, e.fecha AS fecha_entrega, e.operacion
 		   FROM repartidor_pedido_entregado e
 		   JOIN pedido p ON p.idpedido = e.idpedido
 		   JOIN sede s ON s.idsede = p.idsede
-		  WHERE e.idrepartidor = ? AND e.fecha >= NOW() - INTERVAL ${HORAS_ENTREGADOS} HOUR
-		  ORDER BY e.fecha DESC`,
-		[idrepartidor], 'SELECT', 'getEntregados');
-	return ReS(res, { data: Array.isArray(rows) ? rows : [], horas: HORAS_ENTREGADOS });
+		  WHERE e.idrepartidor = ?`;
+
+	const rows = v.fecha
+		? await QueryServiceV1.ejecutarConsulta(
+			`${SELECT} AND DATE(e.fecha) = ? ORDER BY e.fecha DESC`,
+			[idrepartidor, v.fecha], 'SELECT', 'getEntregados')
+		: await QueryServiceV1.ejecutarConsulta(
+			`${SELECT} AND e.fecha >= NOW() - INTERVAL ${HORAS_ENTREGADOS} HOUR ORDER BY e.fecha DESC`,
+			[idrepartidor], 'SELECT', 'getEntregados');
+
+	return ReS(res, {
+		data: Array.isArray(rows) ? rows : [],
+		modo: v.fecha ? 'dia' : 'ultimas_horas',
+		fecha: v.fecha,
+		horas: v.fecha ? null : HORAS_ENTREGADOS,
+		dias_atras_max: DIAS_ATRAS_MAX,
+		hoy: fechaLocalISO(new Date())
+	});
 };
 module.exports.getEntregados = getEntregados;
 

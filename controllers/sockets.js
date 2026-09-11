@@ -16,6 +16,7 @@ const pushMozo = require('../service/push.mozo.service');
 const estadoPedidoService = require('../service/estado-pedido.service');
 const QueryServiceV1 = require('../service/query.service.v1');
 const tokenClienteService = require('../service/token.cliente');
+const authCliente = require('../middleware/autentificacion.cliente');
 
 // El repartidor emite su posicion cada pocos segundos y no siempre manda el idpedido.
 // Se resuelve con una consulta y se cachea 30 s en el propio socket: 1 consulta por repartidor
@@ -116,14 +117,46 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 		const dataCliente = dataSocket;
 
-		// sala por cliente: los eventos del repartidor llegan aunque cambie el socketid
+		// sala por cliente: los eventos del repartidor llegan aunque cambie el socketid.
+		// Sprint 5: para los sockets que se declaran cliente, la sala la decide el token del
+		// handshake, no el entero. Los sockets de mozo/comercio/bot siguen igual: su idcliente
+		// es el del pedido que atienden y su autenticacion es la HTTP.
 		const idClienteSala = Number(dataSocket.idcliente);
-		if (idClienteSala > 0) { socket.join(`cliente_${idClienteSala}`); }
+		const declaraCliente = String(dataSocket.iscliente) === 'true';
+		socket.tokenClienteActual = dataSocket.tokenCliente || '';
+		socket.idclienteToken = 0;
 
-		// el servidor puede asignar otro idcliente al guardar el pedido: la app pide unirse a esa sala
-		socket.on('join-cliente', (idcliente) => {
-			const id = Number(idcliente);
-			if (id > 0) { socket.join(`cliente_${id}`); }
+		if (declaraCliente) {
+			const sala = authCliente.salaCliente(socket.tokenClienteActual, idClienteSala);
+			if (sala.motivo) {
+				logger.warn({ socketId: socket.id, motivo: sala.motivo, idcliente: idClienteSala }, 'auth cliente socket handshake');
+			}
+			if (sala.idcliente > 0) {
+				socket.idclienteToken = sala.idcliente;
+				socket.join(`cliente_${sala.idcliente}`);
+			}
+		} else if (idClienteSala > 0) {
+			socket.join(`cliente_${idClienteSala}`);
+		}
+
+		// el servidor puede asignar otro idcliente al guardar el pedido: la app pide unirse a
+		// esa sala mandando { idcliente, tokenCliente } con el token recien emitido. Una app
+		// vieja manda solo el numero y cae al token del handshake (o a ninguno).
+		socket.on('join-cliente', (payload) => {
+			const esObjeto = payload && typeof payload === 'object';
+			const idcliente = esObjeto ? payload.idcliente : payload;
+			const token = (esObjeto && payload.tokenCliente) ? payload.tokenCliente : socket.tokenClienteActual;
+
+			const sala = authCliente.salaCliente(token, idcliente);
+			if (sala.motivo) {
+				logger.warn({ socketId: socket.id, motivo: sala.motivo, idcliente: Number(idcliente) || 0 }, 'auth cliente socket join-cliente');
+			}
+			if (sala.idcliente > 0) {
+				// el token nuevo manda para los join siguientes de esta misma conexion
+				if (esObjeto && payload.tokenCliente) { socket.tokenClienteActual = payload.tokenCliente; }
+				socket.idclienteToken = sala.idcliente;
+				socket.join(`cliente_${sala.idcliente}`);
+			}
 		});
 
 		// para el bot de mensajeria

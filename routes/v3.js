@@ -166,7 +166,7 @@ routerV3.post('/delivery/get-shared-url-carta', apiPwaAppDelivery.getSharedUrlCa
 
 
 // mensajes
-routerV3.post('/delivery/verificar-codigo-sms', apiPwaAppDelivery.verificarCodigoSMS);
+routerV3.post('/delivery/verificar-codigo-sms', rateLimit(10, 60000), apiPwaAppDelivery.verificarCodigoSMS);
 routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepartidorTEST);
 routerV3.post('/delivery/send-push-webpush-test', apiPwaSMS.sendPushWebTest);
 // routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepartidor);

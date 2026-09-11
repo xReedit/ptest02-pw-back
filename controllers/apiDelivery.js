@@ -185,6 +185,25 @@ const verificarCodigoSMS = async function (req, res) {
 	const aprobado = Array.isArray(rows) && rows[0] && Number(rows[0].response) === 1;
 	const tokenCliente = aprobado ? tokenClienteService.emitir(idcliente) : null;
 
+	// El codigo de 4 digitos no lo invalida el procedimiento: si no se limpia aqui,
+	// un centinela viejo pero valido queda utilizable para siempre (fuerza bruta sobre
+	// idcliente). El centinela CLIENTE_NUEVO (-2) no tiene fila de cliente que actualizar.
+	if (aprobado && idcliente > 0) {
+		try {
+			const invalidado = await QueryServiceV1.ejecutarConsulta(
+				'UPDATE cliente SET pwa_code_verification = NULL WHERE idcliente = ?',
+				[idcliente],
+				'UPDATE',
+				'verificarCodigoSMS-invalidar-codigo'
+			);
+			if (!invalidado) {
+				logger.error(`[verificarCodigoSMS] no se pudo invalidar pwa_code_verification para idcliente:${idcliente}`);
+			}
+		} catch (err) {
+			logger.error(err);
+		}
+	}
+
 	return ReS(res, { data: rows || [], tokenCliente: tokenCliente || '' });
 }
 module.exports.verificarCodigoSMS = verificarCodigoSMS;

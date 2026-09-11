@@ -65,6 +65,11 @@ describe('verificar', () => {
     expect(svc.verificar(otroTipo)).toBeNull();
   });
 
+  it('rechaza un token firmado HS512 con la semilla correcta', () => {
+    const otroAlg = jwt.sign({ idcliente: 15, tipo: 'cliente' }, SEMILLA, { expiresIn: '180d', algorithm: 'HS512' });
+    expect(svc.verificar(otroAlg)).toBeNull();
+  });
+
   it('rechaza un token vencido', () => {
     const vencido = jwt.sign({ idcliente: 15, tipo: 'cliente' }, SEMILLA, { expiresIn: '-1s' });
     expect(svc.verificar(vencido)).toBeNull();

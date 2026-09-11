@@ -35,7 +35,9 @@ const verificar = (token) => {
 	if (limpio === '' || !semilla()) { return null; }
 
 	try {
-		const decode = jwt.verify(limpio, semilla());
+		// algorithms fijo: sin esta lista jsonwebtoken acepta cualquier HS* de la cabecera
+		// del propio token, asi que un HS512 firmado con la misma semilla pasaria igual.
+		const decode = jwt.verify(limpio, semilla(), { algorithms: ['HS256'] });
 		if (!decode || decode.tipo !== TIPO) { return null; }
 		if (!esIdValido(decode.idcliente)) { return null; }
 		return { idcliente: Number(decode.idcliente) };

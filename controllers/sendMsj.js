@@ -44,37 +44,8 @@ webpush.setVapidDetails(
 
 // let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 
-// sms mensaje de confirmacion de telefono
-const sendMsjConfirmacion = async function (req, res) {	
-	// const numberPhone = req.body.numberphone;
-	// const idcliente = req.body.idcliente;
-
-	// const codigoVerificacion = Math.round(Math.random()* (9000 - 1)+parseInt(1000));	
-    // // const read_query = `SELECT * from cliente_pwa_direccion where idcliente = ${idcliente} and estado = 0`;
-    // // emitirRespuesta_RES(read_query, res);        
-    // var clientSMS = require('twilio')(config.accountSidSms, config.authTokenSms);
-    // clientSMS.messages.create({
-    // 	body: 'Papaya.com.pe, codigo de verificacion: ' + codigoVerificacion,
-    // 	to: '+51'+numberPhone,  // Text this number
-    // 	from: '+17852279308' // From a valid Twilio number
-	// })
-	// .then((message) => {
-	// 	// genera codigo y guarda
-	// 	const numTelefono = parseInt(idcliente) < 0 ? numberPhone : '';
-	// 	const read_query = `call porcedure_pwa_update_phono_sms_cliente(${idcliente},'${numTelefono}', '${codigoVerificacion}')`;
-    // 	emitirRespuestaSP(read_query);
-	// 	return ReS(res, {
-	// 		msj: true
-	// 	});
-	// })
-	// .catch(err => {
-	// 	return ReS(res, {
-	// 		msj: false
-	// 	});
-	// });
-}
-module.exports.sendMsjConfirmacion = sendMsjConfirmacion;
-
+// sendMsjConfirmacion borrado en el sprint 5: tenia el cuerpo entero comentado, asi que la
+// peticion se colgaba hasta el timeout. El OTP real va por WhatsApp via socket (sockets.js).
 
 const sendMsjWhatsAp = function (numberPhone) {
 	// var client = require('twilio')(config.accountSidSms, config.authTokenSms);
@@ -317,74 +288,8 @@ const pushSuscripcion = async function (req, res) {
 }
 module.exports.pushSuscripcion = pushSuscripcion;
 
-// envia notificacion a los usuario filtrados
-const sendPushNotificaction = function (req, res) {
-	const codigo_postal = req.body.codigo_postal;
-	const idcliente = req.body.idcliente;
-	const notificationPayload = req.body.notification
-	
-
-	// const notificationPayload = {
- //        "notification": {
- //            "title": "Angular News",
- //            "body": "Newsletter Available!",
- //            "icon": "assets/main-page-logo-small-hat.png",
- //            "vibrate": [100, 50, 100],
- //            "data": {
- //                "dateOfArrival": Date.now(),
- //                "primaryKey": 1
- //            },
- //            "actions": [{
- //                "action": "explore",
- //                "title": "Go to the site"
- //            }]
- //        }
- //    };
-
-    // el filtro va con placeholders: idcliente y codigo_postal llegan del body
-    const filtro_params = [];
-    let where_query = '';
-    if (idcliente) {
-        where_query = 'cs.idcliente = ? and';
-        filtro_params.push(idcliente);
-    } else if (codigo_postal) {
-        const codigos = String(codigo_postal).split(',').map((c) => c.trim().replace(/^'|'$/g, '')).filter((c) => c !== '');
-        if (codigos.length > 0) {
-            where_query = `cd.codigo in (${codigos.map(() => '?').join(',')}) and`;
-            filtro_params.push(...codigos);
-        }
-    }
-	const read_query = `select DISTINCT cs.idcliente, cs.key_suscripcion_push
-						from cliente_socketid cs
-							inner join cliente_pwa_direccion as cd on cs.idcliente = cd.idcliente
-						where ${where_query} cs.key_suscripcion_push != ''`;
-
-
-
-	QueryServiceV1.ejecutarConsulta(read_query, filtro_params, 'SELECT', 'sendPushNotificaction').then(allSubscriptions => {
-		// nunca se devuelven las filas: cada una trae el token de suscripcion de un cliente
-		const suscripciones = allSubscriptions || [];
-
-		 // Promise.all(
-		 // allSubscriptions.map(sub => 
-		 // 	webpush.sendNotification
-		 // 	(sub.key_suscripcion_push, JSON.stringify(notificationPayload) )))
-	  //       .then(() => res.status(200).json({message: 'Newsletter sent successfully.'}))
-	  //       .catch(err => {
-	  //           console.error("Error sending notification, reason: ", err);
-	  //           res.sendStatus(500);
-   //      });
-
-	    Promise.all(suscripciones.map(sub => webpush.sendNotification(
-        sub, JSON.stringify(notificationPayload) )))
-        .then(() => ReS(res, { enviados: suscripciones.length }))
-        .catch(err => {
-            logger.error({ error: err.message }, 'sendPushNotificaction');
-            return ReE(res, 'no se pudo enviar', 500);
-        });
-	});
-}
-module.exports.sendPushNotificaction = sendPushNotificaction;
+// sendPushNotificaction borrado en el sprint 5: enviaba req.body.notification arbitrario a un
+// cliente o a codigos postales enteros (phishing con la marca) y ninguna pantalla lo llamaba.
 
 
 // envia notificacion push a repartidor de que tiene un pedido

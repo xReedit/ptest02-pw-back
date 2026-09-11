@@ -221,6 +221,78 @@ describe('modo enforce', () => {
     expect(res.statusCode).toBe(403);
   });
 
+  // Un idcliente presente pero que no es un entero positivo NO puede tratarse como
+  // ausente: seria la forma mas barata de saltarse la comparacion.
+  [
+    ['una cadena que no es numero', '99abc'],
+    ['un arreglo (query repetido)', ['99', '15']],
+    ['un objeto', {}],
+    ['cero', 0],
+    ['cero como texto', '0'],
+    ['negativo', -15],
+    ['decimal', '15.5'],
+    ['cadena vacia', '']
+  ].forEach(([caso, valor]) => {
+    it(`idcliente invalido (${caso}): 403 y no llega al handler`, () => {
+      const auth = cargar('enforce');
+      const res = mockRes();
+      const next = jest.fn();
+
+      auth.verificarTokenCliente(pedir(`Bearer ${tokenCliente(15)}`, { idcliente: valor }), res, next);
+
+      expect(next).not.toHaveBeenCalled();
+      expect(res.statusCode).toBe(403);
+      expect(res.json).toHaveBeenCalledWith({ success: false, error: 'no autorizado' });
+    });
+
+    it(`idcliente invalido (${caso}) en modo log: avisa y deja pasar`, () => {
+      const auth = cargar('log');
+      const next = jest.fn();
+      const req = pedir(`Bearer ${tokenCliente(15)}`, { idcliente: valor });
+
+      auth.verificarTokenCliente(req, mockRes(), next);
+
+      expect(next).toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledTimes(1);
+      expect(logger.warn.mock.calls[0][0].motivo).toBe('idcliente invalido');
+      expect(req.cliente).toBeUndefined();
+    });
+  });
+
+  it('idcliente invalido en el query tambien es 403', () => {
+    const auth = cargar('enforce');
+    const res = mockRes();
+    const req = { headers: { authorization: tokenCliente(15) }, body: {}, query: { idcliente: ['99', '15'] }, originalUrl: '/v3/x' };
+
+    auth.verificarTokenCliente(req, res, jest.fn());
+
+    expect(res.statusCode).toBe(403);
+  });
+
+  // La precedencia es por presencia de la clave: si el body trae idcliente manda el body
+  // aunque su valor no sirva. Si no, bastaria con mandar body {idcliente: 0} y el id real
+  // en el query para que la comparacion pasara por el valor "bueno".
+  it('body con idcliente invalido gana sobre un query valido: 403', () => {
+    const auth = cargar('enforce');
+    const res = mockRes();
+    const req = { headers: { authorization: tokenCliente(15) }, body: { idcliente: 0 }, query: { idcliente: '15' }, originalUrl: '/v3/x' };
+
+    auth.verificarTokenCliente(req, res, jest.fn());
+
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('idcliente null o undefined si cuenta como ausente', () => {
+    const auth = cargar('enforce');
+    [{ idcliente: null }, { idcliente: undefined }].forEach((body) => {
+      const next = jest.fn();
+      const req = pedir(`Bearer ${tokenCliente(15)}`, body);
+      auth.verificarTokenCliente(req, mockRes(), next);
+      expect(next).toHaveBeenCalled();
+      expect(req.cliente).toEqual({ idcliente: 15 });
+    });
+  });
+
   it('acepta el token sin prefijo Bearer', () => {
     const auth = cargar('enforce');
     const next = jest.fn();
@@ -264,6 +336,28 @@ describe('exigirCliente con extractor propio', () => {
     expect(res.statusCode).toBe(403);
   });
 
+  it('si el extractor no encuentra nada (undefined) basta el token valido', () => {
+    const auth = cargar('enforce');
+    const medio = auth.exigirCliente({ idcliente: (req) => (req.body && req.body.user ? req.body.user.idcliente : undefined) });
+    const next = jest.fn();
+    const req = { headers: { authorization: tokenCliente(15) }, body: {}, query: {}, originalUrl: '/v3/ini/user-account-remove' };
+
+    medio(req, mockRes(), next);
+
+    expect(next).toHaveBeenCalled();
+    expect(req.cliente).toEqual({ idcliente: 15 });
+  });
+
+  it('un idcliente invalido dentro de user tambien es 403', () => {
+    const auth = cargar('enforce');
+    const medio = auth.exigirCliente({ idcliente: (req) => (req.body && req.body.user ? req.body.user.idcliente : undefined) });
+    const res = mockRes();
+
+    medio({ headers: { authorization: tokenCliente(15) }, body: { user: { idcliente: '99abc' } }, query: {}, originalUrl: '/v3/ini/user-account-remove' }, res, jest.fn());
+
+    expect(res.statusCode).toBe(403);
+  });
+
   it('lee el idcliente de body.dataCalificacion (calificar-servicio)', () => {
     const auth = cargar('enforce');
     const medio = auth.exigirCliente({ idcliente: (req) => (req.body && req.body.dataCalificacion ? req.body.dataCalificacion.idcliente : 0) });
@@ -300,5 +394,31 @@ describe('salaCliente', () => {
     expect(auth.salaCliente(tokenCliente(15), 15)).toEqual({ idcliente: 15, motivo: null });
     expect(auth.salaCliente(tokenCliente(15), 0)).toEqual({ idcliente: 15, motivo: null });
     expect(auth.salaCliente(`Bearer ${tokenCliente(15)}`, '15')).toEqual({ idcliente: 15, motivo: null });
+  });
+});
+
+// Va al final a proposito: jest.doMock('../_config') se queda en el registro de modulos
+// del archivo y ensuciaria los describes de arriba.
+describe('arranque sin SEED (colaboradores)', () => {
+  afterAll(() => {
+    jest.dontMock('../_config');
+    jest.resetModules();
+  });
+
+  it('avisa en el log, sin lanzar: esColaborador rechazaria a todos', () => {
+    jest.resetModules();
+    jest.doMock('../_config', () => ({ SEED: '', SEED_SMS: 'x' }));
+    process.env.AUTH_CLIENTE_MODO = 'log';
+    process.env.SEED_CLIENTE = SEMILLA_CLIENTE;
+
+    const loggerAislado = require('../utilitarios/logger');
+    loggerAislado.warn.mockReset();
+
+    let authAislado;
+    expect(() => { authAislado = require('../middleware/autentificacion.cliente'); }).not.toThrow();
+
+    expect(loggerAislado.warn).toHaveBeenCalledTimes(1);
+    expect(String(loggerAislado.warn.mock.calls[0][1])).toContain('SEED');
+    expect(authAislado.esColaborador('lo-que-sea')).toBe(false);
   });
 });

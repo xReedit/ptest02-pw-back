@@ -20,6 +20,7 @@ const apiPwaSMS = require('../controllers/sendMsj');
 const pushMozo = require('../service/push.mozo.service');
 const login = require('../controllers/login');
 const auth = require('../middleware/autentificacion');
+const authCliente = require('../middleware/autentificacion.cliente');
 const rateLimit = require('../service/rate-limit');
 
 const apiSpeech = require('../controllers/speech');
@@ -102,14 +103,14 @@ routerV3.post('/ini/login-cliente-dni', apiPwaAppPedidos.getUsuarioClietenByDNI)
 routerV3.post('/ini/carta-virtual', apiPwaAppPedidos.getIdSedeFromNickName);
 routerV3.post('/ini/areas-mesas', apiPwaAppPedidos.getAreasMesas);
 
-routerV3.post('/pedido/lacuenta-cliente', apiPwaAppPedidos.getLaCuentaFromCliente);
-routerV3.post('/pedido/lacuenta-cliente-totales', apiPwaAppPedidos.getLaCuentaFromClienteTotales);
+routerV3.post('/pedido/lacuenta-cliente', authCliente.verificarTokenCliente, apiPwaAppPedidos.getLaCuentaFromCliente);
+routerV3.post('/pedido/lacuenta-cliente-totales', authCliente.verificarTokenCliente, apiPwaAppPedidos.getLaCuentaFromClienteTotales);
 routerV3.post('/pedido/lacuenta-pedido-totales', apiPwaAppPedidos.getLaCuentaFromPedidoTotales);
 routerV3.get('/pedido/get-const-delivery-items-escala', apiPwaAppPedidos.getConsAppDelivery);
 routerV3.post('/pedido/get-last-comsion-entrega-sede', apiPwaAppPedidos.getLastComisionEntrega);
 routerV3.post('/pedido/get-canales-consumo', apiPwaAppPedidos.getCanalesConsumo);
 routerV3.post('/pedido/get-tpc-dato-facturacion', apiPwaAppPedidos.getComprobantesSede);
-routerV3.post('/pedido/set-datos-facturacion-cliente', apiPwaAppPedidos.setDatosFacturacionClientePwa);
+routerV3.post('/pedido/set-datos-facturacion-cliente', authCliente.verificarTokenCliente, apiPwaAppPedidos.setDatosFacturacionClientePwa);
 
 // para buscar todos los clientes
 routerV3.get('/pedido/get-all-clientes', auth.verificarToken, apiPwaAppPedidos.getAllClienteBySearch);
@@ -130,28 +131,32 @@ routerV3.post('/pedido/get-last-pedido-cliente-this-table', apiPwaAppPedidos.get
 // routerV3.post('/pedido/modificar-stock-test', apiPwaAppPedidos.setModificaStockTest);
 
 routerV3.post('/ini/register-cliente-login', apiPwaAppPedidos.setRegisterClienteLogin);
-routerV3.post('/ini/user-account-remove', apiPwaAppPedidos.setUserAccountRemove);
+// el body es { user: {...} }: el idcliente sale de ahi, no de body.idcliente.
+// undefined (y no 0) cuando no viene user: 0 contaria como idcliente invalido.
+routerV3.post('/ini/user-account-remove', authCliente.exigirCliente({ idcliente: (req) => (req.body && req.body.user ? req.body.user.idcliente : undefined) }), apiPwaAppPedidos.setUserAccountRemove);
 
 // cliente profile
-routerV3.post('/cliente/perfil', apiPwaAppPedidos.getClientePerfil);
-routerV3.post('/cliente/perfil-save', apiPwaAppPedidos.setClientePerfil);
-routerV3.post('/cliente/new-direccion', apiPwaAppPedidos.setClienteNewDireccion);
+routerV3.post('/cliente/perfil', authCliente.verificarTokenCliente, apiPwaAppPedidos.getClientePerfil);
+routerV3.post('/cliente/perfil-save', authCliente.verificarTokenCliente, apiPwaAppPedidos.setClientePerfil);
+routerV3.post('/cliente/new-direccion', authCliente.verificarTokenCliente, apiPwaAppPedidos.setClienteNewDireccion);
 
 
 // pago
 routerV3.get('/transaction/get-purchasenumber', apiPwaAppPedidosPago.getPurchasenumber); // gurdamos datos de la transacion
 routerV3.post('/transaction/get-email-client', apiPwaAppPedidosPago.getEmailClient);
-routerV3.post('/transaction/registrar-pago', apiPwaAppPedidosPago.setRegistrarPago);
+routerV3.post('/transaction/registrar-pago', authCliente.verificarTokenCliente, apiPwaAppPedidosPago.setRegistrarPago);
 
 // delivery
 routerV3.post('/delivery/get-establecimientos', apiPwaAppDelivery.getEstablecimientos);
 routerV3.post('/delivery/get-parametros-tienda-linea', apiPwaAppDelivery.getParametrosTiendaLinea)
 routerV3.post('/delivery/get-establecimientos-promos', apiPwaAppDelivery.getEstablecimientosPromociones);
-routerV3.post('/delivery/get-direccion-cliente', apiPwaAppDelivery.getDireccionCliente);
-// consultas de seguimiento sin autenticar: la app las repite en cada cambio, se limita el abuso por IP
-routerV3.post('/delivery/get-mis-pedidos', rateLimit(30, 60000), apiPwaAppDelivery.getMisPedido);
-routerV3.post('/delivery/get-estado-pedido', rateLimit(60, 60000), apiPwaAppDelivery.getEstadoPedido);
-routerV3.post('/delivery/calificar-servicio', apiPwaAppDelivery.setCalificarServicio);
+routerV3.post('/delivery/get-direccion-cliente', authCliente.verificarTokenCliente, apiPwaAppDelivery.getDireccionCliente);
+// consultas de seguimiento: token de cliente (ver AUTH_CLIENTE_MODO) + limite de abuso por IP.
+// El rateLimit va PRIMERO: una avalancha sin token se corta antes de verificar nada.
+routerV3.post('/delivery/get-mis-pedidos', rateLimit(30, 60000), authCliente.verificarTokenCliente, apiPwaAppDelivery.getMisPedido);
+routerV3.post('/delivery/get-estado-pedido', rateLimit(60, 60000), authCliente.verificarTokenCliente, apiPwaAppDelivery.getEstadoPedido);
+// el idcliente viaja dentro de dataCalificacion
+routerV3.post('/delivery/calificar-servicio', authCliente.exigirCliente({ idcliente: (req) => (req.body && req.body.dataCalificacion ? req.body.dataCalificacion.idcliente : undefined) }), apiPwaAppDelivery.setCalificarServicio);
 routerV3.get('/delivery/get-categorias', apiPwaAppDelivery.getCategorias);
 routerV3.post('/delivery/get-sede-servicio-express', apiPwaAppDelivery.getAllSedesServiceExpress);
 routerV3.post('/delivery/set-pedido-mandado', apiPwaAppDelivery.setPedidoMandado);
@@ -162,8 +167,6 @@ routerV3.post('/delivery/get-shared-url-carta', apiPwaAppDelivery.getSharedUrlCa
 
 // mensajes
 routerV3.post('/delivery/verificar-codigo-sms', apiPwaAppDelivery.verificarCodigoSMS);
-// routerV3.post('/delivery/send-sms-confirmation', auth.verificarTokenSms, apiPwaSMS.sendMsjConfirmacion);
-routerV3.post('/delivery/send-sms-confirmation-out', apiPwaSMS.sendMsjConfirmacion);
 routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepartidorTEST);
 routerV3.post('/delivery/send-push-webpush-test', apiPwaSMS.sendPushWebTest);
 // routerV3.post('/delivery/send-push-test', apiPwaSMS.sendPushNotificactionOneRepartidor);
@@ -184,8 +187,10 @@ routerV3.post('/delivery/get-cliente-telefono-chatbot', apiPwaAppDelivery.getTel
 
 // notificaciones push
 // guardar suscripcion
-routerV3.post('/push/suscripcion', rateLimit(10, 60000), apiPwaSMS.pushSuscripcion);
-routerV3.post('/push/send-notification', rateLimit(5, 60000), apiPwaSMS.sendPushNotificaction);
+// el rateLimit va primero para cortar la avalancha antes de verificar el token
+routerV3.post('/push/suscripcion', rateLimit(10, 60000), authCliente.verificarTokenCliente, apiPwaSMS.pushSuscripcion);
+// push/send-notification borrado en el sprint 5: enviaba req.body.notification arbitrario a un
+// cliente o a codigos postales enteros (phishing con la marca) y ninguna pantalla lo llamaba.
 // app mozo: token FCM del dispositivo (set/del)
 routerV3.post('/mozo/push-token', auth.verificarToken, pushMozo.setPushToken);
 	

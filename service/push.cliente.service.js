@@ -18,7 +18,6 @@ function esLargoDeToken(valor) {
 // Mismas etiquetas que ve el cliente en "Mis pedidos" (sprint 2).
 const MENSAJES = {
 	recibido:   { title: 'Recibido',             body: 'Recibimos tu pedido #%s. Te avisamos cuando el local lo confirme.' },
-	aceptado:   { title: 'Aceptado',             body: 'El local aceptó tu pedido #%s.' },
 	preparando: { title: 'En preparación',       body: 'Tu pedido #%s ya se está preparando.' },
 	asignado:   { title: 'Repartidor asignado',  body: 'Un repartidor tomó tu pedido #%s.' },
 	camino:     { title: 'En camino',            body: 'Tu pedido #%s ya salió hacia tu dirección.' },
@@ -35,8 +34,7 @@ const CODIGOS_TOKEN_MUERTO = [
 ];
 
 // Misma tabla de decision que resumirEstadoPedido() en la app (src/app/shared/utils/estado-pedido.ts).
-// ponytail: 'aceptado' no lo produce hoy ningun dato (el local marca 'A' tanto para aceptado
-// como para en preparacion); queda definido para cuando "Mi tienda" confirme manualmente.
+// el local marca 'A' tanto para aceptado como para en preparacion: es un solo paso visible.
 function codigoEstado(pwa_estado, pwa_delivery_status) {
 	const local = String(pwa_estado || 'P').toUpperCase();
 	const reparto = String(pwa_delivery_status === null || pwa_delivery_status === undefined ? '0' : pwa_delivery_status);

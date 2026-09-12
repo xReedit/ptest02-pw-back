@@ -41,13 +41,12 @@ describe('construirMensaje', () => {
   it('las etiquetas llevan tilde igual que en la app', () => {
     expect(svc.MENSAJES.preparando.title).toBe('En preparación');
     expect(svc.MENSAJES.preparando.body).toBe('Tu pedido #%s ya se está preparando.');
-    expect(svc.MENSAJES.aceptado.body).toBe('El local aceptó tu pedido #%s.');
     expect(svc.MENSAJES.asignado.body).toBe('Un repartidor tomó tu pedido #%s.');
     expect(svc.MENSAJES.camino.body).toBe('Tu pedido #%s ya salió hacia tu dirección.');
   });
-  it('cubre los siete estados', () => {
+  it('cubre los seis estados', () => {
     expect(Object.keys(svc.MENSAJES).sort()).toEqual(
-      ['aceptado', 'asignado', 'camino', 'cancelado', 'entregado', 'preparando', 'recibido']
+      ['asignado', 'camino', 'cancelado', 'entregado', 'preparando', 'recibido']
     );
   });
 });

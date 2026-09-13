@@ -780,8 +780,10 @@ const getConsultaDatosClienteNoTk = async function (req, res) {
     // const read_query = `SELECT * FROM cliente where estado=0 and pwa_id='dni|${doc}' and ruc='${doc}' order by pwa_id desc, telefono desc, pwa_code_verification desc limit 1`;    
     // return await emitirRespuesta_RES(read_query, res);
 
-    const query = `SELECT * FROM cliente where estado=0 and pwa_id='dni|${doc}' and ruc=? order by pwa_id desc, telefono desc, pwa_code_verification desc limit 1`;    
-    const rows = await QueryServiceV1.ejecutarConsulta(query, [doc], 'SELECT', 'getConsultaDatosClienteNoTk');
+    // pwa_id iba interpolado crudo: un documento como "' OR estado=0 -- " comentaba
+    // el resto de la consulta y devolvia clientes ajenos. Ahora va parametrizado.
+    const query = `SELECT * FROM cliente where estado=0 and pwa_id=? and ruc=? order by pwa_id desc, telefono desc, pwa_code_verification desc limit 1`;
+    const rows = await QueryServiceV1.ejecutarConsulta(query, [`dni|${doc}`, doc], 'SELECT', 'getConsultaDatosClienteNoTk');
     return ReS(res, {data: rows || [] });
 }
 module.exports.getConsultaDatosClienteNoTk = getConsultaDatosClienteNoTk;

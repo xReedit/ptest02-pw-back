@@ -56,9 +56,9 @@ async function sendPushNotification(token, notification) {
 
   try {
     const response = await messaging.send(message);
-    console.log('Successfully sent message:', response);
+    // console.log('Successfully sent message:', response);
   } catch (error) {
-    console.log('Error sending message:', error);
+    // console.log('Error sending message:', error);
   }
 }
 

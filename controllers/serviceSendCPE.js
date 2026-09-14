@@ -78,16 +78,25 @@ const runSyncCpe = async function (dias = DIAS_VENTANA) {
 		const lista_sedes = await getSedesCPE();
 		for (const sede of lista_sedes) {
 			stats.sedes++;
+			// 2026-09: dos try separados. Antes compartian uno solo y cualquier
+			// fallo subiendo los offline (red, 401, JSON raro) se llevaba puesto
+			// el refresco de estados de esa sede: el POS se quedaba en
+			// "Registrado" aunque el API ya tuviera el documento aceptado.
 			try {
 				const s1 = await syncOfflineSede(sede, dias);
 				stats.offline_ok += s1.ok;
 				stats.offline_error += s1.error;
+			} catch (e) {
+				stats.errores++;
+				logger.error(`syncOffline sede ${sede.idsede}: ${e.message}`);
+			}
 
+			try {
 				const s2 = await syncEstadosSede(sede, dias);
 				stats.estados_actualizados += s2.actualizados;
 			} catch (e) {
 				stats.errores++;
-				logger.error(`syncCpe sede ${sede.idsede}: ${e.message}`);
+				logger.error(`syncEstados sede ${sede.idsede}: ${e.message}`);
 			}
 		}
 	} finally {
@@ -134,6 +143,7 @@ async function syncOfflineSede(sede, dias) {
 }
 
 // B) reflejar en ce el estado real del API, documento por documento
+module.exports.syncEstadosSede = syncEstadosSede; // export solo para test/cpe-sync-estados.test.js
 async function syncEstadosSede(sede, dias) {
 	const rpt = { actualizados: 0 };
 	const hoy = new Date();
@@ -147,9 +157,18 @@ async function syncEstadosSede(sede, dias) {
 		const url = `${URL_COMPROBANTE}/records?date_from=${date_from}&date_to=${date_to}&per_page=${per_page}&page=${page}&include=light`;
 		const res = await fetch(url, {
 			headers: { 'Authorization': 'Bearer ' + sede.authorization_api_comprobante }
-		}).then(r => r.json());
+		}).then(r => r.json()).catch(e => ({ success: false, message: e.message }));
 
-		const registros = res?.data || [];
+		// 2026-09: sin esta validacion cualquier fallo del API (401 por token
+		// vacio, 422 de validacion, 500) se leia como "0 documentos": el sync
+		// terminaba en verde sin actualizar un solo comprobante y sin dejar una
+		// linea de log que lo explicara. Ese era el sintoma en el POS: los CPE
+		// aceptados por SUNAT seguian en "Registrado".
+		if (!res || res.success !== true || !Array.isArray(res.data)) {
+			throw new Error(`GET /records p${page}: ${(res && res.message) || 'respuesta sin data'}`);
+		}
+
+		const registros = res.data;
 		for (const rec of registros) {
 			const n = await updateEstadoCe(sede.idsede, rec);
 			rpt.actualizados += n;
@@ -170,11 +189,14 @@ async function updateEstadoCe(idsede, rec) {
 	const numInt = parseInt(arrNum[1], 10) || 0;
 
 	const matchExternal = rec.external_id ? `external_id = '${sqlEscape(rec.external_id)}' or ` : '';
+	// msj solo si el API trae uno: cuando viene vacio borraba el mensaje que ya
+	// tenia ce ("...ha sido aceptada", el motivo del rechazo) y el cajero se
+	// quedaba sin explicacion en pantalla.
+	const setMsj = rec.msj ? `, msj = '${sqlMsj(rec.msj)}'` : '';
 	const sql = `update ce set
 			estado_api = ${parseInt(rec.estado_api, 10) || 0},
 			estado_sunat = ${parseInt(rec.estado_sunat, 10) || 0},
-			cdr = ${rec.cdr === '1' ? 1 : 0},
-			msj = '${sqlMsj(rec.msj || '')}'
+			cdr = ${rec.cdr === '1' ? 1 : 0}${setMsj}
 		where idsede = ${idsede} and (
 			${matchExternal}(SUBSTRING_INDEX(numero,'-',1) = '${serie}'
 				and CAST(SUBSTRING_INDEX(numero,'-',-1) AS UNSIGNED) = ${numInt}
@@ -236,9 +258,11 @@ module.exports.cocinarRespuestaResumenCPE = cocinarRespuestaResumenCPE;
 // helpers
 // ---------------------------------------------------------------------------
 
+// sin token no hay nada que sincronizar: el API responde 401 y, peor, el
+// syncOffline pisaba ce.msj de cada comprobante con 'No se encuentra autenticado'
 async function getSedesCPE() {
-	const sql_sedes = "select idorg,idsede,nombre,ciudad, authorization_api_comprobante, id_api_comprobante from sede where facturacion_e_activo = 1 and estado=0 order by idsede asc";
-	return await emitirRespuesta(sql_sedes);
+	const sql_sedes = "select idorg,idsede,nombre,ciudad, authorization_api_comprobante, id_api_comprobante from sede where facturacion_e_activo = 1 and estado=0 and authorization_api_comprobante <> '' order by idsede asc";
+	return await emitirRespuesta(sql_sedes) || [];
 }
 
 async function sendOneCpe(json_xml, token) {

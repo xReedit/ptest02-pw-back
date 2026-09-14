@@ -47,6 +47,10 @@ app.use('/v3/holding', routesHolding);
 var routesChatbot = require('./routes/routesChatbot');
 app.use('/chatbot', routesChatbot);
 
+// Integración verificador de pagos Yape/Plin (repo yape-read-notification).
+var routesYape = require('./routes/routesYape');
+app.use('/yape', routesYape);
+
 app.use(function(req, res, next) {    
     var err = new Error('Not Found');
     err.status = 404;

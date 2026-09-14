@@ -26,3 +26,6 @@ find-sql-injection.js
 logs/*.log
 
 serviceAccountKey.json
+
+.superpowers/
+INTEGRACION-YAPE.md

@@ -338,7 +338,8 @@ const setPedidoCanceladoRepartidor = async function (req, res) {
 	await QueryServiceV1.ejecutarConsulta(
 		`UPDATE pedido SET pwa_delivery_status = '5', pwa_estado = 'C' WHERE idpedido = ? AND idrepartidor = ?`,
 		[idpedido, idrepartidor], 'UPDATE', 'setPedidoCanceladoV2');
-	require('../service/estado-pedido.service').notificar(idpedido);
+	// aviso al cliente: opcional y de otra linea de trabajo, no debe tumbar la liberacion del pedido
+	try { require('../service/estado-pedido.service').notificar(idpedido); } catch (e) { logger.debug('estado-pedido.service no disponible', e.message); }
 
 	// quitar el pedido del JSON; si no queda ninguno, liberar al repartidor
 	const rows = await QueryServiceV1.ejecutarConsulta(`SELECT pedido_por_aceptar FROM repartidor WHERE idrepartidor = ?`, [idrepartidor], 'SELECT', 'setPedidoCanceladoV2');

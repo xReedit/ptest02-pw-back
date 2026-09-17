@@ -1,3 +1,4 @@
+-- corrido
 -- Mis pedidos devuelve tambien el estado completo del pedido (pwa_estado, fecha_hora, programado)
 -- y la ultima posicion del repartidor, para pintar el seguimiento sin otra consulta.
 -- El cuerpo lleva ';' internos: con DELIMITER el archivo se aplica tal cual desde el cliente mysql.

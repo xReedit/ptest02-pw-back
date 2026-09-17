@@ -1,3 +1,4 @@
+-- corrido
 -- 2026-09-08 · App de repartidores 2.0 (apiRepartidorV2.js). Solo objetos NUEVOS: no altera tablas ni SP existentes.
 -- Ejecutar en producción antes de desplegar el backend con routes/routesRepartidorV2.js.
 -- Referencia: pwa-app-repartidor-new/docs/superpowers/specs/2026-09-08-propuesta-asignacion-pedidos.md

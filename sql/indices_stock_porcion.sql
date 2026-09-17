@@ -1,3 +1,4 @@
+-- corrido
 -- =====================================================
 -- ÍNDICES OPTIMIZADOS PARA STOCK DE PORCIONES
 -- Para soportar 50+ transacciones/segundo

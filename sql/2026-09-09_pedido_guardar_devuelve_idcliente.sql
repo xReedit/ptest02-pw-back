@@ -1,4 +1,4 @@
--- Corrige la búsqueda por nombre (devolvía 1/0) y devuelve idcliente al cliente. Aplicar en desarrollo y producción.
+-- corrido Corrige la búsqueda por nombre (devolvía 1/0) y devuelve idcliente al cliente. Aplicar en desarrollo y producción.
 -- El cuerpo lleva ';' internos: con DELIMITER el archivo se aplica tal cual desde el cliente mysql.
 -- scripts/apply-sql.js quita las lineas DELIMITER y devuelve '$$' a ';' antes de ejecutar.
 DROP PROCEDURE IF EXISTS procedure_pwa_pedido_guardar;

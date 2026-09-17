@@ -99,6 +99,16 @@ const frasesComprobante = [
 	"¡Listo! Tu comprobante fue generado correctamente ✅"
 ];
 
+// Invitacion a la encuesta de satisfaccion. Solo se agrega si el POS mando el link firmado
+// (dataMsj.url_encuesta): si el local no tiene publicado el canal whatsapp, el mensaje sale como siempre.
+const invitacionesEncuesta = [
+	"⭐ ¿Cómo estuvo todo? Cuéntanos en 30 segundos:",
+	"⭐ Tu opinión nos ayuda a mejorar, son 30 segundos:",
+	"⭐ ¿Nos regalas tu opinión? Toma menos de un minuto:",
+	"⭐ Cuéntanos cómo te fue hoy, es rapidito:",
+	"⭐ Tu opinión importa, contesta la encueta:",
+];
+
 const advertenciasComercio = [
 	"*¡ATENCIÓN!* Este mensaje es automático. No realices pagos ni respondas aquí. Para consultas, contacta directamente al comercio: {comercio} 📞 {comercio_telefono} ⚠️",
 	"*Importante*: No transfieras dinero ni respondas a este número. Si tienes dudas, comunícate con {comercio} al 📞 {comercio_telefono} ❗",
@@ -334,7 +344,12 @@ const sendMsjSocketWsp = function (dataMsj, io, dataSocket) {
 			
 			// mensaje para mensajeria propia
 			const _frasesComprobante = elegirAleatorio(frasesComprobante);
-			const msjMensajeria = `${saludo} desde ${dataMsj.comercio}, ${_frasesComprobante} número ${dataMsj.numero_comprobante}. También puedes consultarlo en: papaya.com.pe`;
+			const _textoComprobante = `${saludo} desde ${dataMsj.comercio}, ${_frasesComprobante} número ${dataMsj.numero_comprobante}. También puedes consultarlo en: papaya.com.pe`;
+			const _invitacionEncuesta = dataMsj.url_encuesta ? `
+
+${elegirAleatorio(invitacionesEncuesta)}
+${dataMsj.url_encuesta}` : '';
+			const msjMensajeria = `${_textoComprobante}${_invitacionEncuesta}`;
 
 			const listMessages = [
 				{ // texto

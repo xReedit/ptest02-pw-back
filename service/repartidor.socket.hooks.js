@@ -22,6 +22,23 @@ const logEvento = (idrepartidor, evento, detalle) => {
 
 const MAX_INTENTOS_ATTACH = 20;
 
+const POSICION_THROTTLE_MS = 30_000;
+const ultimaPosicionGuardada = new Map();
+
+/**
+ * La app emite la ubicación cada 10 s; guardarla en la base cada vez es gasto puro.
+ * Aislada de los sockets para poder probarla.
+ */
+const debeGuardarPosicion = (idrepartidor, ahora = Date.now()) => {
+	if (!idrepartidor) return false;
+	const previo = ultimaPosicionGuardada.get(idrepartidor);
+	if (previo && ahora - previo < POSICION_THROTTLE_MS) return false;
+	ultimaPosicionGuardada.set(idrepartidor, ahora);
+	return true;
+};
+
+const olvidarRepartidor = (idrepartidor) => ultimaPosicionGuardada.delete(idrepartidor);
+
 const attach = function (io, intento = 1) {
 	if (attached) return;
 	io = io || (() => { try { return socketManager.getIO(); } catch (e) { return null; } })();
@@ -42,8 +59,24 @@ const attach = function (io, intento = 1) {
 		setTimeout(() => socket.emit('repartidor-estado-cambio'), 1500);
 		logEvento(idrepartidor, 'socket_conectado', { socketid: socket.id, online: q.online });
 
+		// sella la hora de la última posición conocida; sin esto el tracker del POS no puede
+		// distinguir un repartidor detenido de uno que cerró la app hace horas
+		socket.on('repartidor-notifica-ubicacion', (data) => {
+			const lat = Number(data && data.coordenadas && data.coordenadas.latitude);
+			const lng = Number(data && data.coordenadas && data.coordenadas.longitude);
+			if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+			if (!debeGuardarPosicion(idrepartidor)) return;
+			QueryServiceV1.ejecutarConsulta(
+				`UPDATE repartidor
+				    SET position_now = JSON_SET(COALESCE(position_now, JSON_OBJECT()), '$.latitude', ?, '$.longitude', ?),
+				        position_now_fecha = NOW()
+				  WHERE idrepartidor = ?`,
+				[lat, lng, idrepartidor], 'UPDATE', 'repartidorPosicionSello');
+		});
+
 		socket.on('disconnect', async (reason) => {
 			if (!idrepartidor) return;
+			olvidarRepartidor(idrepartidor);
 			await QueryServiceV1.ejecutarConsulta(
 				`UPDATE repartidor SET socketid = NULL WHERE idrepartidor = ? AND socketid = ?`,
 				[idrepartidor, socket.id], 'UPDATE', 'repartidorDisconnect');
@@ -60,3 +93,6 @@ const attach = function (io, intento = 1) {
 	logger.debug('repartidor.socket.hooks instalados');
 };
 module.exports.attach = attach;
+module.exports.debeGuardarPosicion = debeGuardarPosicion;
+module.exports._olvidarRepartidor = olvidarRepartidor;
+module.exports._limpiarThrottle = () => ultimaPosicionGuardada.clear();

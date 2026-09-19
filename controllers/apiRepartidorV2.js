@@ -380,8 +380,14 @@ const asignarmePedido = async function (req, res) {
 	const pedidos = Array.from(new Set([...(Array.isArray(req.body.pedidos) ? req.body.pedidos.map(Number).filter(Number.isInteger) : []), idpedido]));
 	const importe = Number(req.body.importe) || 0;
 
-	const actual = await QueryServiceV1.ejecutarConsulta(`SELECT idrepartidor, estado FROM pedido WHERE idpedido = ?`, [idpedido], 'SELECT', 'asignarmePedido');
+	// idorg_propio: org del local al que esta suscrito el repartidor (NULL = repartidor global, puede cualquier pedido)
+	const actual = await QueryServiceV1.ejecutarConsulta(
+		`SELECT p.idrepartidor, p.estado, p.idorg,
+			(SELECT s.idorg FROM repartidor r JOIN sede s ON s.idsede = r.idsede_suscrito WHERE r.idrepartidor = ?) AS idorg_propio
+		FROM pedido p WHERE p.idpedido = ?`, [idrepartidor, idpedido], 'SELECT', 'asignarmePedido');
 	if (!actual[0]) return ReE(res, 'El pedido no existe', 404);
+	if (actual[0].idorg_propio && Number(actual[0].idorg_propio) !== Number(actual[0].idorg))
+		return ReE(res, 'Este pedido es de otro comercio. Solo puedes asignarte pedidos de tu local.', 403);
 	if (Number(actual[0].estado) === 3) return ReE(res, 'El pedido está anulado', 409);
 	if (actual[0].idrepartidor && Number(actual[0].idrepartidor) !== Number(idrepartidor)) return ReE(res, 'El pedido ya tiene repartidor asignado', 409);
 

@@ -63,6 +63,8 @@ routerV3.get('/', function (req, res, next) {
 // firebase
 // Conciliacion de stock sincrona: la llama el PHP del cierre de caja ANTES del SP
 routerV3.post('/stock/conciliar-cierre', apiStockConciliacion.conciliarCierre);
+// Push "pedido/plato listo" al mozo: lo llama el PHP de la zona de despacho (bdphp/push_mozo.php)
+routerV3.post('/mozo/push-pedido-listo', pushMozo.setPedidoListo);
 
 routerV3.post('/firebase/add-repartidor', apiFireBase.addRepartidor);
 routerV3.post('/firebase/update-repartidor', apiFireBase.updateRepartidor);

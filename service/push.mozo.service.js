@@ -1,4 +1,4 @@
-// Push FCM a la app mozo: "mesa X solicita atencion".
+// Push FCM a la app mozo: "mesa X solicita atencion" y "pedido / plato listo" desde la zona de despacho.
 // Tabla usuario_push_token (migracion 2026-09-07_027).
 const QueryServiceV1 = require('./query.service.v1');
 const { admin: adminFirebase } = require('../firebase_config');
@@ -46,6 +46,40 @@ const setMozoActivo = (idusuario) => {
 		.catch(err => logger.error({ err, idusuario: id }, 'setMozoActivo'));
 };
 
+// envia a los tokens dados y borra los que FCM reporta como muertos. Devuelve { ok, fail }.
+const enviarATokens = async (tokens, { title, body, data, tag }, ctxLog) => {
+	if (!tokens.length) return { ok: 0, fail: 0 };
+
+	const resp = await adminFirebase.messaging().sendEachForMulticast({
+		tokens,
+		notification: { title, body },
+		data,
+		android: {
+			priority: 'high',
+			notification: { channelId: CANAL_ANDROID, sound: 'default', priority: 'high', tag }
+		},
+		apns: { payload: { aps: { sound: 'default' } } }
+	});
+	logger.debug({ ...ctxLog, ok: resp.successCount, fail: resp.failureCount }, 'push mozo');
+	resp.responses.forEach((r, i) => {
+		if (r.error) logger.error({ token: tokens[i].slice(0, 12), code: r.error.code, msg: r.error.message }, 'push mozo: token fallido');
+	});
+
+	// tokens que ya no sirven se borran: app desinstalada, token corrupto,
+	// o emitido por otro proyecto Firebase (mismatched-credential) que este backend nunca podra usar
+	const CODIGOS_TOKEN_MUERTO = [
+		'messaging/registration-token-not-registered',
+		'messaging/invalid-argument',
+		'messaging/mismatched-credential',
+	];
+	const muertos = tokens.filter((t, i) => CODIGOS_TOKEN_MUERTO.includes(resp.responses[i]?.error?.code));
+	if (muertos.length) {
+		await QueryServiceV1.ejecutarConsulta(
+			'DELETE FROM usuario_push_token WHERE fcm_token IN (?)', [muertos], 'DELETE', 'enviarATokens.limpiar');
+	}
+	return { ok: resp.successCount, fail: resp.failureCount };
+};
+
 // envia el push a todos los dispositivos activos de la sede
 const sendLlamadoMesa = async (idsede, numMesa) => {
 	try {
@@ -53,42 +87,66 @@ const sendLlamadoMesa = async (idsede, numMesa) => {
 			`SELECT fcm_token FROM usuario_push_token
 			 WHERE idsede = ? AND last_seen_at >= NOW() - INTERVAL ? HOUR`,
 			[parseInt(idsede), HORAS_MOZO_ACTIVO], 'SELECT', 'sendLlamadoMesa.tokens');
-		const tokens = (rows || []).map(r => r.fcm_token);
-		if (!tokens.length) return;
-
-		const resp = await adminFirebase.messaging().sendEachForMulticast({
-			tokens,
-			notification: {
-				title: `Mesa ${numMesa} solicita atención`,
-				body: `Un cliente solicita atención en la mesa ${numMesa}`,
-			},
+		await enviarATokens((rows || []).map(r => r.fcm_token), {
+			title: `Mesa ${numMesa} solicita atención`,
+			body: `Un cliente solicita atención en la mesa ${numMesa}`,
 			data: { tipo: 'llamado_mesa', num_mesa: String(numMesa) },
-			android: {
-				priority: 'high',
-				notification: { channelId: CANAL_ANDROID, sound: 'default', priority: 'high', tag: `mesa_${numMesa}` }
-			},
-			apns: { payload: { aps: { sound: 'default' } } }
-		});
-		logger.debug({ idsede, numMesa, ok: resp.successCount, fail: resp.failureCount }, 'push llamado mesa');
-		resp.responses.forEach((r, i) => {
-			if (r.error) logger.error({ token: tokens[i].slice(0, 12), code: r.error.code, msg: r.error.message }, 'push llamado mesa: token fallido');
-		});
-
-		// tokens que ya no sirven se borran: app desinstalada, token corrupto,
-		// o emitido por otro proyecto Firebase (mismatched-credential) que este backend nunca podra usar
-		const CODIGOS_TOKEN_MUERTO = [
-			'messaging/registration-token-not-registered',
-			'messaging/invalid-argument',
-			'messaging/mismatched-credential',
-		];
-		const muertos = tokens.filter((t, i) => CODIGOS_TOKEN_MUERTO.includes(resp.responses[i]?.error?.code));
-		if (muertos.length) {
-			await QueryServiceV1.ejecutarConsulta(
-				'DELETE FROM usuario_push_token WHERE fcm_token IN (?)', [muertos], 'DELETE', 'sendLlamadoMesa.limpiar');
-		}
+			tag: `mesa_${numMesa}`,
+		}, { idsede, numMesa });
 	} catch (err) {
 		logger.error({ err, idsede, numMesa }, 'sendLlamadoMesa');
 	}
 };
 
-module.exports = { setPushToken, setMozoActivo, sendLlamadoMesa };
+// "Pedido de la mesa 10 listo" / "De la mesa 10 - 2 Lomo saltado listo"; sin mesa usa el correlativo del dia
+const textoPedidoListo = (p, idpedidoDetalle) => {
+	const tieneMesa = p.nummesa && String(p.nummesa) !== '0';
+	if (!idpedidoDetalle) {
+		return tieneMesa ? `Pedido de la mesa ${p.nummesa} listo` : `Pedido #${p.correlativo_dia} listo`;
+	}
+	const cant = parseInt(p.cantidad) > 1 ? `${parseInt(p.cantidad)} ` : '';
+	const origen = tieneMesa ? `De la mesa ${p.nummesa}` : `Del pedido #${p.correlativo_dia}`;
+	return `${origen} - ${cant}${p.descripcion} listo`;
+};
+
+// POST mozo/push-pedido-listo  body: { idsede, idpedido, idpedido_detalle? }
+// Lo llama el POS (bdphp/push_mozo.php) cuando la zona de despacho marca el pedido o un plato como listo.
+// Avisa solo al mozo que hizo el pedido (pedido.idusuario), a sus dispositivos de esa sede.
+const setPedidoListo = async (req, res) => {
+	const idsede = parseInt(req.body?.idsede);
+	const idpedido = parseInt(req.body?.idpedido);
+	const idpedidoDetalle = parseInt(req.body?.idpedido_detalle) || 0;
+	if (!idsede || !idpedido) return ReE(res, 'idsede e idpedido requeridos', 400);
+
+	try {
+		const rows = await QueryServiceV1.ejecutarConsulta(
+			`SELECT p.idusuario, p.nummesa, p.correlativo_dia, pd.descripcion, pd.cantidad
+			 FROM pedido p
+			 LEFT JOIN pedido_detalle pd ON pd.idpedido = p.idpedido AND pd.idpedido_detalle = ?
+			 WHERE p.idpedido = ? AND p.idsede = ?`,
+			[idpedidoDetalle, idpedido, idsede], 'SELECT', 'setPedidoListo.pedido');
+		const p = rows?.[0];
+		if (!p) return ReE(res, 'pedido no encontrado', 404);
+		if (idpedidoDetalle && !p.descripcion) return ReE(res, 'detalle no encontrado', 404);
+		if (!p.idusuario) return ReS(res, { ok: 0, motivo: 'pedido sin usuario' });
+
+		const tokens = await QueryServiceV1.ejecutarConsulta(
+			`SELECT fcm_token FROM usuario_push_token
+			 WHERE idusuario = ? AND idsede = ? AND last_seen_at >= NOW() - INTERVAL ? HOUR`,
+			[p.idusuario, idsede, HORAS_MOZO_ACTIVO], 'SELECT', 'setPedidoListo.tokens');
+
+		const title = textoPedidoListo(p, idpedidoDetalle);
+		const r = await enviarATokens((tokens || []).map(t => t.fcm_token), {
+			title,
+			body: idpedidoDetalle ? 'Cocina ya tiene el plato listo' : 'Cocina ya tiene el pedido completo',
+			data: { tipo: 'pedido_listo', idpedido: String(idpedido), idpedido_detalle: String(idpedidoDetalle), num_mesa: String(p.nummesa || '') },
+			tag: idpedidoDetalle ? `pd_${idpedidoDetalle}` : `pedido_${idpedido}`,
+		}, { idsede, idpedido, idpedidoDetalle, idusuario: p.idusuario });
+		return ReS(res, { ...r, title });
+	} catch (err) {
+		logger.error({ err, idsede, idpedido, idpedidoDetalle }, 'setPedidoListo');
+		return ReE(res, 'error enviando push', 500);
+	}
+};
+
+module.exports = { setPushToken, setMozoActivo, sendLlamadoMesa, setPedidoListo, textoPedidoListo };

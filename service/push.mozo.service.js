@@ -109,6 +109,19 @@ const textoPedidoListo = (p, idpedidoDetalle) => {
 	return `${origen} - ${cant}${p.descripcion} listo`;
 };
 
+// sede_opciones.mozo_aviso_plato_listo (migracion restobar 2026-09-20_022): '0' = la sede no quiere el aviso.
+// Sin fila, o si la columna aun no existe en esa BD, se avisa (es el valor por defecto).
+const sedeAvisaPlatoListo = async (idsede) => {
+	try {
+		const op = await QueryServiceV1.ejecutarConsulta(
+			'SELECT mozo_aviso_plato_listo FROM sede_opciones WHERE idsede = ?', [idsede], 'SELECT', 'sedeAvisaPlatoListo');
+		return !(op && op[0] && String(op[0].mozo_aviso_plato_listo) === '0');
+	} catch (err) {
+		logger.warn({ err: err.message, idsede }, 'sedeAvisaPlatoListo: no se pudo leer la opcion, se avisa igual');
+		return true;
+	}
+};
+
 // POST mozo/push-pedido-listo  body: { idsede, idpedido, idpedido_detalle? }
 // Lo llama el POS (bdphp/push_mozo.php) cuando la zona de despacho marca el pedido o un plato como listo.
 // Avisa solo al mozo que hizo el pedido (pedido.idusuario), a sus dispositivos de esa sede.
@@ -119,6 +132,10 @@ const setPedidoListo = async (req, res) => {
 	if (!idsede || !idpedido) return ReE(res, 'idsede e idpedido requeridos', 400);
 
 	try {
+		if (!(await sedeAvisaPlatoListo(idsede))) {
+			return ReS(res, { ok: 0, motivo: 'aviso desactivado en la sede' });
+		}
+
 		const rows = await QueryServiceV1.ejecutarConsulta(
 			`SELECT p.idusuario, p.nummesa, p.correlativo_dia, pd.descripcion, pd.cantidad
 			 FROM pedido p
@@ -136,12 +153,21 @@ const setPedidoListo = async (req, res) => {
 			[p.idusuario, idsede, HORAS_MOZO_ACTIVO], 'SELECT', 'setPedidoListo.tokens');
 
 		const title = textoPedidoListo(p, idpedidoDetalle);
+		const tieneMesa = p.nummesa && String(p.nummesa) !== '0';
+		const cant = parseInt(p.cantidad) > 1 ? `${parseInt(p.cantidad)} ` : '';
 		const r = await enviarATokens((tokens || []).map(t => t.fcm_token), {
 			title,
 			body: idpedidoDetalle ? 'Cocina ya tiene el plato listo' : 'Cocina ya tiene el pedido completo',
-			data: { tipo: 'pedido_listo', idpedido: String(idpedido), idpedido_detalle: String(idpedidoDetalle), num_mesa: String(p.nummesa || '') },
+			// ref y plato los usa la app para la tarjeta "Pedido Listo" cuando esta abierta
+			data: {
+				tipo: 'pedido_listo', idpedido: String(idpedido), idpedido_detalle: String(idpedidoDetalle),
+				ref: tieneMesa ? `Mesa ${p.nummesa}` : `Pedido #${p.correlativo_dia}`,
+				plato: idpedidoDetalle ? `${cant}${p.descripcion}` : '',
+			},
 			tag: idpedidoDetalle ? `pd_${idpedidoDetalle}` : `pedido_${idpedido}`,
 		}, { idsede, idpedido, idpedidoDetalle, idusuario: p.idusuario });
+		// info siempre: si el mozo del pedido no tiene token, que quede rastro de por que no llego
+		logger.info({ idsede, idpedido, idpedidoDetalle, idusuario: p.idusuario, tokens: (tokens || []).length, ...r, title }, 'push pedido listo');
 		return ReS(res, { ...r, title });
 	} catch (err) {
 		logger.error({ err, idsede, idpedido, idpedidoDetalle }, 'setPedidoListo');

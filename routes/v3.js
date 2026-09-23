@@ -195,6 +195,8 @@ routerV3.post('/push/suscripcion', rateLimit(10, 60000), authCliente.verificarTo
 // cliente o a codigos postales enteros (phishing con la marca) y ninguna pantalla lo llamaba.
 // app mozo: token FCM del dispositivo (set/del)
 routerV3.post('/mozo/push-token', auth.verificarToken, pushMozo.setPushToken);
+// punto de toma de pedidos: sin token (valida usuario + clave actual); el rateLimit frena el probar claves
+routerV3.post('/mozo/cambiar-clave', rateLimit(10, 60000), login.cambiarClaveMozo);
 	
 // routerV3.post('/pago/set-data-transaction', apiPwaAppPedidos.setDataTransaction); // gurdamos datos de la transacion
 // routerV3.post('/pago/get-data-transaction', apiPwaAppPedidos.getDataTransaction); // obtenemos datos de la transaccion

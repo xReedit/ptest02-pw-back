@@ -517,8 +517,24 @@ const sendPushNotificactionOneRepartidor = async function (
 	user_repartidor = null
 ) {
 	// Fuente real ahora: user_repartidor
-	const pwa_code_verification = user_repartidor?.pwa_code_verification || null;
-	const fcm_token = user_repartidor?.fcm_token || null;
+	let pwa_code_verification = user_repartidor?.pwa_code_verification || null;
+	let fcm_token = user_repartidor?.fcm_token || null;
+
+	// El repartidor solo recibe push si sigue en linea. El dato que llega aqui puede venir de un SP
+	// resuelto hace segundos (o del token viejo de una sesion cerrada), asi que se relee al momento de enviar.
+	const idrepartidor = user_repartidor?.idrepartidor || null;
+	if (idrepartidor) {
+		const rows = await QueryServiceV1.ejecutarConsulta(
+			'SELECT online, pwa_code_verification, fcm_token FROM repartidor WHERE idrepartidor = ?',
+			[idrepartidor], 'SELECT', 'estadoPushRepartidor');
+		const fila = rows && rows[0];
+		if (!fila || Number(fila.online) !== 1) {
+			logger.debug('Repartidor fuera de linea, no se envia push.', { idrepartidor });
+			return;
+		}
+		pwa_code_verification = fila.pwa_code_verification || null;
+		fcm_token = fila.fcm_token || null;
+	}
 
 	// 1) WEB PUSH
 	const subscription = parseWebSubscription(pwa_code_verification);

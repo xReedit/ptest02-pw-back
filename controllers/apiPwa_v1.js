@@ -1437,7 +1437,9 @@ const getAllMozosChangeUser = async function (req, res) {
     // return await emitirRespuesta_RES(read_query, res);    
 
 
-    const read_query = `select idusuario, nombres, usuario from usuario where idsede=? and estado=0 and acc like '%A2%'`;
+    // sin el usuario interno de soporte ("SISTEMA", cargo IMPLEMENTADOR)
+    const read_query = `select idusuario, nombres, usuario from usuario where idsede=? and estado=0 and acc like '%A2%'
+        and ifnull(cargo, '') <> 'IMPLEMENTADOR' order by nombres`;
     const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idsede], 'SELECT', 'getAllMozosChangeUser');
     return ReS(res, { data: rows });
 }

@@ -112,6 +112,37 @@ const loggerUsAutorizado = async function (req, res) {
 
 module.exports.loggerUsAutorizado = loggerUsAutorizado;
 
+// Punto de toma de pedidos (app mozo): el mozo cambia su clave por una de 4 numeros.
+// Sin token (el mozo aun no entro): valida usuario + clave actual, igual que el login; la ruta lleva rateLimit.
+const cambiarClaveMozo = async function (req, res) {
+        try {
+                const { usuario, clave_actual, clave_nueva } = req.body || {};
+                if (typeof usuario !== 'string' || typeof clave_actual !== 'string' || typeof clave_nueva !== 'string') {
+                        return ReE(res, 'Datos incompletos.');
+                }
+                if (!/^\d{4}$/.test(clave_nueva)) {
+                        return ReE(res, 'La clave nueva debe tener 4 números.');
+                }
+
+                const read_query = `SELECT idusuario, pass FROM usuario
+                        WHERE usuario = ? AND POSITION('A2' IN acc) > 0 AND estado = 0`;
+                const rows = await QueryServiceV1.ejecutarConsulta(read_query, [usuario], 'SELECT', 'cambiarClaveMozo');
+                if (!rows || rows.length === 0 || rows[0].pass !== clave_actual) {
+                        return ReE(res, 'La clave actual no es correcta.');
+                }
+
+                const update_query = `UPDATE usuario SET pass = ? WHERE idusuario = ?`;
+                await QueryServiceV1.ejecutarConsulta(update_query, [clave_nueva, rows[0].idusuario], 'UPDATE', 'cambiarClaveMozo');
+                loggerPino.info({ idusuario: rows[0].idusuario }, 'Mozo cambio su clave (punto de toma de pedidos)');
+
+                return ReS(res, { ok: true });
+        } catch (err) {
+                loggerPino.error({ err }, 'Error al cambiar clave del mozo');
+                return ReE(res, 'Error al cambiar la clave', 500);
+        }
+}
+module.exports.cambiarClaveMozo = cambiarClaveMozo;
+
 
 
 const loggerUsAutorizadoRepartidor = async function (req, res) {

@@ -167,6 +167,11 @@ stockCleanupJob.iniciarJob();
 const stockConciliacionJob = require('./service/stock.conciliacion.job');
 stockConciliacionJob.iniciarJob();
 
+// Purga diaria de print_server_detalle / pedido_preview / detalle_cierre (4:00 AM).
+// APAGADA: sin PURGA_DIARIA en el entorno no programa nada ni toca la base. Ver service/purga.job.js
+const purgaJob = require('./service/purga.job');
+purgaJob.iniciarJob();
+
 // Los recordatorios de confirmación se movieron al chatbot (repo chatbot-go,
 // internal/nudge) y se encienden desde el switch de su dashboard. Vivían aquí
 // como controllers/recordatorioPedido.js, pero solo perseguían filas de

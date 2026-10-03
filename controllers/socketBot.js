@@ -7,6 +7,41 @@ const fetch = require("node-fetch");
 const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/whatsapp-pedidos';
 
 /**
+ * Envía al cliente de Mensajería el estado del bot y la lista de números pausados.
+ * ORDEN OBLIGATORIO: primero bot-init-variables y después la lista. El cliente
+ * descarta la lista si en ese instante cree que el bot está apagado; mandándola
+ * antes del estado, a veces llegaba "sin bot activo" y se perdían todas las pausas.
+ * `target` es el socket recién conectado o io.to(room) al reactivar el bot.
+ */
+const enviarEstadoYBloqueados = async (target, idsede) => {
+    const sedeRows = await QueryServiceV1.ejecutarConsulta(
+        'SELECT show_chatbot, chatbot_run FROM sede WHERE idsede = ?',
+        [idsede], 'SELECT', 'socketBot-showChatbot'
+    );
+    const showChatbot = sedeRows?.[0]?.show_chatbot;
+    const chatbotRun = sedeRows?.[0]?.chatbot_run;
+    logger.debug({ idsede, showChatbot, chatbotRun }, '🤖 [Bot] show_chatbot de la sede');
+    if (parseInt(showChatbot) !== 1) return;
+
+    // Debounce de entrantes centralizado: si el server define
+    // CHATBOT_INCOMING_DEBOUNCE_MS, todos los clientes Baileys lo
+    // adoptan al conectarse (la env local de cada PC tiene prioridad).
+    const incomingDebounceMs = Number.parseInt(process.env.CHATBOT_INCOMING_DEBOUNCE_MS || '', 10);
+    target.emit('bot-init-variables', {
+        showChatbot,
+        chatbotRun,
+        ...(Number.isFinite(incomingDebounceMs) && incomingDebounceMs > 0 ? { incomingDebounceMs } : {})
+    });
+
+    const bloqueados = await QueryServiceV1.ejecutarConsulta(
+        'SELECT telefono, info FROM chatbot_num_bloqueados WHERE idsede = ? AND estado = 0',
+        [idsede], 'SELECT', 'socketBot-numBloqueados'
+    );
+    logger.debug({ idsede, total: bloqueados.length }, '🤖 [Bot] Números bloqueados enviados al cliente');
+    target.emit('bot-list-number-blocked', { idsede, bloqueados });
+};
+
+/**
  * socketBot - Puente entre cliente WhatsApp y n8n
  * 
  * Eventos:
@@ -22,36 +57,9 @@ const connection = async function (dataCliente, socket, io) {
 
     // El socket ya fue unido al room en sockets.js
 
-    // Verificar si la sede tiene chatbot habilitado y enviar números bloqueados
+    // Verificar si la sede tiene chatbot habilitado y enviar estado + números bloqueados
     try {
-        const sedeRows = await QueryServiceV1.ejecutarConsulta(
-            'SELECT show_chatbot, chatbot_run FROM sede WHERE idsede = ?',
-            [idsede], 'SELECT', 'socketBot-showChatbot'
-        );
-
-        const showChatbot = sedeRows?.[0]?.show_chatbot;
-        const chatbotRun = sedeRows?.[0]?.chatbot_run;
-        logger.debug({ idsede, showChatbot, chatbotRun }, '🤖 [Bot] show_chatbot de la sede');
-
-        if (parseInt(showChatbot) === 1) {
-            const bloqueados = await QueryServiceV1.ejecutarConsulta(
-                'SELECT telefono, info FROM chatbot_num_bloqueados WHERE idsede = ? AND estado = 0',
-                [idsede], 'SELECT', 'socketBot-numBloqueados'
-            );
-
-            logger.debug({ idsede, total: bloqueados.length }, '🤖 [Bot] Números bloqueados enviados al cliente');
-            socket.emit('bot-list-number-blocked', { idsede, bloqueados });
-
-            // Debounce de entrantes centralizado: si el server define
-            // CHATBOT_INCOMING_DEBOUNCE_MS, todos los clientes Baileys lo
-            // adoptan al conectarse (la env local de cada PC tiene prioridad).
-            const incomingDebounceMs = Number.parseInt(process.env.CHATBOT_INCOMING_DEBOUNCE_MS || '', 10);
-            socket.emit('bot-init-variables', {
-                showChatbot,
-                chatbotRun,
-                ...(Number.isFinite(incomingDebounceMs) && incomingDebounceMs > 0 ? { incomingDebounceMs } : {})
-            });
-        }
+        await enviarEstadoYBloqueados(socket, idsede);
     } catch (error) {
         logger.error({ error: error.message, idsede }, '🤖 [Bot] Error consultando chatbot/bloqueados');
     }
@@ -215,14 +223,24 @@ const connection = async function (dataCliente, socket, io) {
     });
 
     // ecuchar cuando se pone run o stop al chatbot
-    socket.on('run-chatbot', (data) => {
+    socket.on('run-chatbot', async (data) => {
         const roomMensajeria = `mensajeria_${data.roomId}`;
         logger.debug({ data, roomMensajeria }, '🤖 [Bot] Frontend envió comando para ejecutar chatbot');
         io.to(roomMensajeria).emit('run-chatbot', data);
-        // socket.emit('run-chatbot', data);
+        // El cliente de Mensajería vacía su lista de pausados al detener el bot y no la
+        // recargaba al prenderlo: tras un apagar/prender, los pausados volvían a recibir
+        // respuestas hasta reiniciar la app. Al prender se le reenvía estado + lista.
+        if (Number(data?.run) === 1 && data?.idsede) {
+            try {
+                await enviarEstadoYBloqueados(io.to(roomMensajeria), data.idsede);
+            } catch (error) {
+                logger.error({ error: error.message, idsede: data.idsede }, '🤖 [Bot] Error reenviando bloqueados al activar');
+            }
+        }
     });
 };
 
 module.exports = {
-    connection
+    connection,
+    enviarEstadoYBloqueados
 };

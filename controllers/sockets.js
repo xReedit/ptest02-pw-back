@@ -17,6 +17,7 @@ const estadoPedidoService = require('../service/estado-pedido.service');
 const QueryServiceV1 = require('../service/query.service.v1');
 const tokenClienteService = require('../service/token.cliente');
 const authCliente = require('../middleware/autentificacion.cliente');
+const { sedeHabilitada, MENSAJE_SEDE_BLOQUEADA } = require('../service/sede-estado.service');
 
 // El repartidor emite su posicion cada pocos segundos y no siempre manda el idpedido.
 // Se resuelve con una consulta y se cachea 30 s en el propio socket: 1 consulta por repartidor
@@ -98,6 +99,27 @@ module.exports.socketsOn = function(io){ // Success Web Response
 
 	// un solo canal de estado hacia el cliente: el servicio emite a la sala cliente_<id>
 	estadoPedidoService.setIo(io);
+
+	// Sede bloqueada o dada de baja: cada 60 s se desconectan los sockets de esa sede que ya estaban abiertos.
+	// ponytail: recorre solo los sockets de ESTA instancia (con el adapter redis, cada instancia barre los suyos).
+	setInterval(async () => {
+		try {
+			const porSede = new Map();
+			for (const s of io.sockets.sockets.values()) {
+				if (s.idsedeConexion > 0) (porSede.get(s.idsedeConexion) || porSede.set(s.idsedeConexion, []).get(s.idsedeConexion)).push(s);
+			}
+			for (const [idsede, sockets] of porSede) {
+				if (await sedeHabilitada(idsede)) continue;
+				logger.info({ idsede, sockets: sockets.length }, 'Sede bloqueada: desconectando sockets');
+				for (const s of sockets) {
+					s.emit('sede-bloqueada', { mensaje: MENSAJE_SEDE_BLOQUEADA });
+					s.disconnect(true);
+				}
+			}
+		} catch (err) {
+			logger.error({ err }, 'Error en barrido de sedes bloqueadas');
+		}
+	}, 60 * 1000).unref();
 
 
 	io.on('connection', async function(socket) {
@@ -363,6 +385,15 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// 1 is from pwa 0 is web // si es 0 web no da carta
 		const isFromPwa = dataSocket.isFromApp ? parseInt(dataSocket.isFromApp) : 1;
 		logger.debug({ isFromPwa }, 'IsFromPwa');
+
+		// Sede bloqueada o dada de baja: nadie se conecta a ella (mozo, comercio, print server, carta del cliente).
+		const idsedeConexion = Number(dataSocket.idsede) || 0;
+		if (idsedeConexion > 0 && !(await sedeHabilitada(idsedeConexion))) {
+			socket.emit('sede-bloqueada', { mensaje: MENSAJE_SEDE_BLOQUEADA });
+			socket.disconnect(true);
+			return;
+		}
+		socket.idsedeConexion = idsedeConexion;
 
 		// nos conectamos al canal idorg+idsede
 		const chanelConect = 'room'+dataSocket.idorg + dataSocket.idsede;

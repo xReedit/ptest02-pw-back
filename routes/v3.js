@@ -89,6 +89,7 @@ routerV3.post('/verificarToken', auth.verificarToken);
 routerV3.get('/validar-token', auth.validarTokenExperidado);
 routerV3.post('/pedido/lacuenta', auth.verificarToken, apiPwaAppPedidos.getLaCuenta);
 routerV3.post('/pedido/printer-precuenta', auth.verificarToken, apiPwaAppPedidos.setPrinterOtherDocs);
+routerV3.post('/pedido/reglas-impresora-area', auth.verificarToken, apiPwaAppPedidos.getReglasImpresoraArea);
 routerV3.post('/pedido/lacuenta-zona-delivery', apiPwaAppPedidos.getLaCuenta);
 routerV3.post('/pedido/register-scan', apiPwaAppPedidos.setRegisterScanQr);
 routerV3.post('/pedido/get-list-mesas', apiPwaAppPedidos.getListMesas);

@@ -8,6 +8,7 @@ const loggerPino = require('../utilitarios/logger');
 // const sequelize = require('../config/database');
 // const { Sequelize } = require('sequelize');
 const QueryServiceV1 = require('../service/query.service.v1');
+const { sedeHabilitada, MENSAJE_SEDE_BLOQUEADA } = require('../service/sede-estado.service');
 
 const init = async function (req, res) {
         return ReS(res, { message: 'hello desde LA API GENERAL 2 INIT version 1' });
@@ -69,14 +70,13 @@ const loggerUsAutorizado = async function (req, res) {
                 const pass = req.body.pass;
 
                 // ✅ SEGURO: Prepared statement previene SQL Injection
+                // El bloqueo/baja de la sede se valida DESPUÉS de la clave (sedeHabilitada), con mensaje propio.
                 const read_query = `SELECT u.*, s.is_holding, s.is_mozo_accept_payments 
                         FROM usuario u 
                         INNER JOIN sede s ON u.idsede = s.idsede 
-                        LEFT JOIN sede_estado se ON s.idsede = se.idsede 
                         WHERE u.usuario = ? 
                         AND POSITION('A2' IN u.acc) > 0 
-                        AND u.estado = 0 
-                        AND (se.idsede IS NULL OR (se.is_bloqueado = 0 AND se.is_baja = 0))`;
+                        AND u.estado = 0`;
 
                 // const rows = await sequelize.query(read_query, { 
                 //         replacements: [usuario],
@@ -94,6 +94,10 @@ const loggerUsAutorizado = async function (req, res) {
                 const result = pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
                 if (!result) {
                         return ReE(res, 'Credenciales Incorrectas.');
+                }
+
+                if (!(await sedeHabilitada(rows[0].idsede))) {
+                        return ReE(res, MENSAJE_SEDE_BLOQUEADA); // 200 + success:false, igual que las demás respuestas del login (las apps ya muestran `error`)
                 }
 
                 var p = rows[0].pass;
@@ -124,11 +128,14 @@ const cambiarClaveMozo = async function (req, res) {
                         return ReE(res, 'La clave nueva debe tener 4 números.');
                 }
 
-                const read_query = `SELECT idusuario, pass FROM usuario
+                const read_query = `SELECT idusuario, idsede, pass FROM usuario
                         WHERE usuario = ? AND POSITION('A2' IN acc) > 0 AND estado = 0`;
                 const rows = await QueryServiceV1.ejecutarConsulta(read_query, [usuario], 'SELECT', 'cambiarClaveMozo');
                 if (!rows || rows.length === 0 || rows[0].pass !== clave_actual) {
                         return ReE(res, 'La clave actual no es correcta.');
+                }
+                if (!(await sedeHabilitada(rows[0].idsede))) {
+                        return ReE(res, MENSAJE_SEDE_BLOQUEADA);
                 }
 
                 const update_query = `UPDATE usuario SET pass = ? WHERE idusuario = ?`;
@@ -226,6 +233,10 @@ const loggerUsAutorizadoPacman = async function (req, res) {
                         return ReE(res, 'Credenciales Incorrectas.');
                 }
 
+                if (!(await sedeHabilitada(rows[0].idsede))) {
+                        return ReE(res, MENSAJE_SEDE_BLOQUEADA); // 200 + success:false, igual que las demás respuestas del login (las apps ya muestran `error`)
+                }
+
                 var p = rows[0].pass;
                 p = Buffer.from(p).toString('base64');                        
                 rows[0].pass = p;
@@ -262,6 +273,10 @@ const loggerUsPrintServer = async function (req, res) {
         const result = pass === rows[0].pass; //bcrypt.compareSync(pass, rows[0].password);                        
         if (!result) {
                 return ReE(res, 'Credenciales Incorrectas.');
+        }
+
+        if (!(await sedeHabilitada(rows[0].idsede))) {
+                return ReE(res, MENSAJE_SEDE_BLOQUEADA); // 200 + success:false, igual que las demás respuestas del login (las apps ya muestran `error`)
         }
 
         var p = rows[0].pass;

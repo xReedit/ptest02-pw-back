@@ -5,6 +5,7 @@ let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 let logger = require('../utilitarios/logger');
 const estadoPedidoService = require('../service/estado-pedido.service');
+const { sedeHabilitada } = require('../service/sede-estado.service');
 
 // let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 const {sequelize, QueryTypes} = require('../config/database');
@@ -96,7 +97,7 @@ async function loginUserPrintServer(payload) {
 	const query = `
 		SELECT idorg o, idsede s
 		FROM usuario 
-		WHERE usuario = :username AND pass = :password
+		WHERE usuario = :username AND pass = :password AND estado = 0
 	`;
 
 	const replacements = { username, password };
@@ -107,6 +108,10 @@ async function loginUserPrintServer(payload) {
 	});
 
 	if (!result || result.length === 0) {
+		return false;
+	}
+	// Sede bloqueada o dada de baja: no entra (el cliente ya trata false como login fallido).
+	if (!(await sedeHabilitada(result[0].s))) {
 		return false;
 	}
 

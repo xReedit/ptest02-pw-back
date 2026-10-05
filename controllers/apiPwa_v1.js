@@ -11,6 +11,7 @@ const { sequelize, QueryTypes } = require('../config/database');
 // const { Sequelize } = require('sequelize');
 const QueryServiceV1 = require('../service/query.service.v1');
 const tokenClienteService = require('../service/token.cliente');
+const reglaImpresoraArea = require('../service/regla-impresora-area.service');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
@@ -457,6 +458,9 @@ const setNuevoPedido = async (dataCliente, dataPedido) => {
     const { idorg, idsede, idusuario } = dataPedido.dataUsuario ? dataPedido.dataUsuario : dataCliente;
     logger.debug({ idorg, idsede, idusuario }, 'Datos usuario pedido');
 
+    // impresión por área de mesas: cambia la impresora según el área de la mesa (nunca lanza)
+    await reglaImpresoraArea.aplicarReglaPayload(idsede, dataPedido);
+
 
 
 
@@ -546,6 +550,9 @@ const setNuevoPedido2 = async (req, res) => {
     const dataPedido = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const _dataCliente = dataPedido.dataUsuario;
     const { idorg, idsede, idusuario } = _dataCliente;
+
+    // impresión por área de mesas: cambia la impresora según el área de la mesa (nunca lanza)
+    await reglaImpresoraArea.aplicarReglaPayload(idsede, dataPedido);
     
     // Enfoque simplificado para sanitizar JSON
     // 1. Primero limpiamos el objeto para eliminar caracteres problemáticos
@@ -845,6 +852,20 @@ const getAreasMesas = async function (req, res) {
     return ReS(res, {data: rows || [] });
 }
 module.exports.getAreasMesas = getAreasMesas;
+
+// impresión por área de mesas: áreas vigentes con reglas_impresora + impresoras activas de la sede (app mozo, precuenta)
+const getReglasImpresoraArea = async function (req, res) {
+    try {
+        const idsede = managerFilter.getInfoToken(req, 'idsede');
+        if (!idsede) { return ReS(res, { data: { areas: [], impresoras: [] } }); }
+        const data = await reglaImpresoraArea.getReglasSede(idsede);
+        return ReS(res, { data });
+    } catch (error) {
+        logger.error({ error: error.message }, 'getReglasImpresoraArea');
+        return ReS(res, { data: { areas: [], impresoras: [] } });
+    }
+}
+module.exports.getReglasImpresoraArea = getReglasImpresoraArea;
 
 const getReglasApp = async function (req, res) {	
 	// const read_query = `SELECT * from pwa_reglas_app where estado=0`;	

@@ -22,7 +22,7 @@ const CONFIG = {
     CRON_SCHEDULE: '*/30 * * * *',  // cada 5 minutos (pruebas)
     
     // Minutos sin actividad para considerar reserva huérfana
-    MINUTOS_INACTIVIDAD: 30,
+    MINUTOS_INACTIVIDAD: 30,p
     
     // Habilitar/deshabilitar el job
     ENABLED: true

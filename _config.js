@@ -63,5 +63,12 @@ config.SEED_EMAIL = process.env.SEED_EMAIL || _config.SEED_EMAIL;
 config.SEED_SES_USER = process.env.SEED_SES_USER || _config.SEED_SES_USER;
 config.SEED_SES_PASS = process.env.SEED_SES_PASS || _config.SEED_SES_PASS;
 
+// Facturación electrónica (apifac). serviceFacturacion y botComprobante leen
+// ESTE archivo: si no se reexportan aquí quedan undefined y toda emisión
+// revienta antes de llegar a apifac (caso real 08/10: el bot nunca entregó
+// una boleta).
+config.URL_COMPROBANTE = process.env.URL_COMPROBANTE || _config?.URL_COMPROBANTE || 'https://apifac.papaya.com.pe/api';
+config.HEADERS_COMPROBANTE = _config?.HEADERS_COMPROBANTE || { 'Content-Type': 'application/json', 'Authorization': '' };
+
 
 module.exports = config;

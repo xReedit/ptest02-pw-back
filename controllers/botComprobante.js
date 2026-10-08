@@ -281,7 +281,7 @@ const generarComprobanteBot = async function (req, res) {
         if (!data || !data.external_id) {
             // apifac caído: el CPE quedó en cola de reenvío nocturno con
             // correlativo consumido — un reintento DUPLICARÍA el documento.
-            logger.error('botComprobante: emision sin external_id', JSON.stringify(rpt || {}));
+            logger.error(`botComprobante: emision sin external_id pedido ${idpedido} (status ${respuesta.status}):`, (data && data.error_api) || JSON.stringify(rpt || {}));
             return fallo(res, 'la facturación no está disponible en este momento; tu comprobante quedó en proceso y también puedes pedirlo en caja', false);
         }
 

@@ -36,10 +36,17 @@ const cocinarFactura = async function (req, res) {
     const xArrayCliente = req.body.cliente;
     const xArraySede = req.body.sede;
 
-    const xjsonXml = await xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComprobante, xArrayCliente, xArraySede);
-    return ReS(res, {
-                data: xjsonXml
-            });
+    // Siempre responde: una excepción aquí (async sin catch) dejaba el request
+    // colgado y el que llama solo se enteraba por su propio timeout.
+    try {
+        const xjsonXml = await xJsonSunatCocinarDatos(xArrayCuerpo, xArraySubTotales, xArrayComprobante, xArrayCliente, xArraySede);
+        return ReS(res, {
+                    data: xjsonXml
+                });
+    } catch (error) {
+        logger.error('facturacion-e: error cocinando/enviando el CPE:', error && error.message);
+        return ReE(res, 'no se pudo emitir el comprobante', 500);
+    }
     
 }
 module.exports.cocinarFactura = cocinarFactura;
@@ -348,8 +355,9 @@ async function xSendApiSunat(authorization_api_comprobante, json_xml, idtipo_com
     // const url_api_fac_sede = dtSede.url_api_fac || '';
     // const URL_COMPROBANTE = url_api_fac_sede === '' ?  xm_log_get('app3_sys_const')[0].value : url_api_fac_sede;
     const _url = config.URL_COMPROBANTE+'/documents';
-    let _headers = config.HEADERS_COMPROBANTE;
-    _headers.Authorization = "Bearer " + authorization_api_comprobante;
+    // Copia por request: mutar el objeto compartido del config cruzaba el token
+    // de una sede con la emisión concurrente de otra.
+    const _headers = { ...config.HEADERS_COMPROBANTE, Authorization: "Bearer " + authorization_api_comprobante };
 
     var rpt = {};
     const numero_comp = json_xml.serie_documento + "-" + json_xml.numero_documento;
@@ -371,9 +379,17 @@ async function xSendApiSunat(authorization_api_comprobante, json_xml, idtipo_com
         method: 'POST',
         headers: _headers,
         body: JSON.stringify(json_xml),
+        timeout: 25000, // apifac colgado no debe colgar al que emite
     }).then(function (response) {
         return response.json();
     }).then(function (res) {         
+        if (!res || !res.success || !res.data) {
+            // Rechazo de apifac/SUNAT (validación, token, serie): sin esto
+            // `res.data.qr` reventaba y el motivo real se perdía.
+            const motivo = (res && (res.message || res.error)) || 'respuesta sin datos';
+            logger.error('facturacion-e: apifac rechazó el CPE ' + numero_comp + ':', JSON.stringify(res || {}).slice(0, 1000));
+            throw new Error('apifac: ' + motivo);
+        }
         const errSoap = res.response ? res.response.error_soap : false;
         // if (res.success || !errSoap) { // respuesta ok
             rpt.ok = true; 
@@ -397,6 +413,7 @@ async function xSendApiSunat(authorization_api_comprobante, json_xml, idtipo_com
 
             return rpt;
     }).catch(async function (error) { // error de conexion o algo pero imprime
+        logger.error('facturacion-e: CPE ' + numero_comp + ' sin emitir, queda para reenvío:', error && error.message);
 
         const data = {
                 pdf:'0',
@@ -419,9 +436,13 @@ async function xSendApiSunat(authorization_api_comprobante, json_xml, idtipo_com
         rpt.qr = '';
         rpt.hash = "www.papaya.com.pe";
         rpt.external_id = '';
-        const correlativo_error = await CpeInterno_Error(data, _idregistro_p, _viene_facturador, idtipo_comprobante_serie);        
-        rpt.correlativo_comprobante = correlativo_error.correlativo;
-        rpt.facturacion_correlativo_api = correlativo_error.facturacion_correlativo_api;
+        rpt.error_api = String((error && error.message) || 'error de conexión con apifac').replace(/^apifac: /, '');
+        // El SP puede no devolver fila (o fallar → false): sin guarda, este
+        // catch volvía a reventar y el request quedaba colgado.
+        const correlativo_error = await CpeInterno_Error(data, _idregistro_p, _viene_facturador, idtipo_comprobante_serie);
+        const filaCorrelativo = Array.isArray(correlativo_error) ? correlativo_error[0] : correlativo_error;
+        rpt.correlativo_comprobante = filaCorrelativo && filaCorrelativo.correlativo;
+        rpt.facturacion_correlativo_api = filaCorrelativo && filaCorrelativo.facturacion_correlativo_api;
         
         return rpt;
     });
@@ -529,8 +550,9 @@ function CpeInterno_ErrorValidacionSunat(_idregistro_p, dataSave) {
 // guardar en la base de datos el comprobante
 async function CpeInterno_SaveBD(dataSave) {
 
-    const read_query = `call procedure_cpe_registro(${f_idorg}, ${f_idsede}, ${f_idusuario}, '${JSON.stringify(dataSave)}')`;
-    emitirRespuestaSP(read_query);     
+    // Escapado: un nombre con apóstrofo (O'Neil, de RENIEC) rompía el SQL.
+    const read_query = `call procedure_cpe_registro(${f_idorg}, ${f_idsede}, ${f_idusuario}, ${sequelize.escape(JSON.stringify(dataSave))})`;
+    return emitirRespuestaSP(read_query);
 }
 
 

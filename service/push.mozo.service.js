@@ -175,4 +175,4 @@ const setPedidoListo = async (req, res) => {
 	}
 };
 
-module.exports = { setPushToken, setMozoActivo, sendLlamadoMesa, setPedidoListo, textoPedidoListo };
+module.exports = { setPushToken, setMozoActivo, sendLlamadoMesa, setPedidoListo, textoPedidoListo, enviarATokens };

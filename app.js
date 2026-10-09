@@ -42,6 +42,9 @@ app.use('/pinpad', routesPinPad);
 var routesHolding = require('./routes/routesHolding');
 app.use('/v3/holding', routesHolding);
 
+// Pedido por confirmar (carta QR, sede unica). Plan: restobar/plan/PEDIDO-POR-CONFIRMAR-PLAN.md
+app.use('/v3/pedido-por-confirmar', require('./routes/routesPedidoPorConfirmar'));
+
 // Canal de salida del chatbot (chatbot-go no puede iniciar conversación por su
 // cuenta; nos pide que emitamos por el socket del gateway de WhatsApp).
 var routesChatbot = require('./routes/routesChatbot');
@@ -171,6 +174,9 @@ stockConciliacionJob.iniciarJob();
 // APAGADA: sin PURGA_DIARIA en el entorno no programa nada ni toca la base. Ver service/purga.job.js
 const purgaJob = require('./service/purga.job');
 purgaJob.iniciarJob();
+
+// Caduca pedidos por confirmar (30 min). Apagar con PEDIDO_CONFIRMAR_JOB=0
+require('./service/pedido.por.confirmar.job').iniciarJob();
 
 // Los recordatorios de confirmación se movieron al chatbot (repo chatbot-go,
 // internal/nudge) y se encienden desde el switch de su dashboard. Vivían aquí

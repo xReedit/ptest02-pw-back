@@ -1043,6 +1043,12 @@ module.exports.socketsOn = function(io){ // Success Web Response
 			socket.broadcast.to(chanelConect).emit('notifica-impresion-precuenta', 1);
 		});
 
+		// una mesa se libero o cambio (cobro, anulacion, cambio de mesa) en control de pedidos
+		// lo escucha la vista de anfitrion (/anfitrion) para repintar sin consultar cada X segundos
+		socket.on('mesa-cambio', (dataSend) => {
+			socket.broadcast.to(chanelConect).emit('mesa-cambio', dataSend || 1);
+		});
+
 		// cuando cancela la cuenta // para usuario cliente
 		// en front-end busca si la cuenta ha sido cancelada en su totalidad y actualiza la cuenta
 		// la notificacion debe ser enviada solo a ese usuario de la cuenta

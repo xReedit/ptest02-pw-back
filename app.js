@@ -178,6 +178,9 @@ purgaJob.iniciarJob();
 // Caduca pedidos por confirmar (30 min). Apagar con PEDIDO_CONFIRMAR_JOB=0
 require('./service/pedido.por.confirmar.job').iniciarJob();
 
+// Logistica: resumen del dia por WhatsApp (cada hora le avisa al POS). Apagado sin LOGISTICA_RESUMEN_URL
+require('./service/logistica.resumen.job').iniciarJob();
+
 // Los recordatorios de confirmación se movieron al chatbot (repo chatbot-go,
 // internal/nudge) y se encienden desde el switch de su dashboard. Vivían aquí
 // como controllers/recordatorioPedido.js, pero solo perseguían filas de

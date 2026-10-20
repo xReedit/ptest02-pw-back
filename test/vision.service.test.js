@@ -38,10 +38,12 @@ function tipoDe(sql) {
 // Responde según el texto del SQL, como pedido.por.confirmar.service.test.js.
 // falla: nombre de la consulta que lanza un error de MySQL.
 // cuelga: nombre de la consulta que nunca responde (lock, MySQL saturado).
-function bd({ bandera = BANDERA, cuentas = [cuenta()], ppc = [], corte = [{ hora_cierre_dia: '0' }], pedidos = [], falla = null, cuelga = null } = {}) {
+// demora: { consulta: ms } que tarda cada una en responder (MySQL lento).
+function bd({ bandera = BANDERA, cuentas = [cuenta()], ppc = [], corte = [{ hora_cierre_dia: '0' }], pedidos = [], falla = null, cuelga = null, demora = {} } = {}) {
     mockQuery.mockImplementation(async (sql) => {
         const tipo = tipoDe(sql);
         if (tipo === cuelga) return new Promise(() => {});
+        if (demora[tipo]) await new Promise((r) => setTimeout(r, demora[tipo]));
         if (tipo === falla) throw new Error(`ER_LOCK_WAIT_TIMEOUT simulado en ${tipo}`);
         switch (tipo) {
             // Forma real de Sequelize para un CALL: [{"0": fila}, OkPacket]
@@ -382,6 +384,63 @@ describe('tope de 5 s por consulta (falla cerrado)', () => {
     test('una respuesta a tiempo no deja timers colgados', async () => {
         bd();
         await vision.leerCuentas(IDSEDE);
+        expect(jest.getTimerCount()).toBe(0);
+    });
+});
+
+// --- I4: plazo total de 5 s para toda la lectura de cuentas (4 consultas en serie) ---
+// Con MySQL lento el Go abandona a los 5 s: Node no lanza más consultas sobre la BD
+// ya lenta y responde lo mismo que el tope por consulta (500 error_interno).
+describe('plazo total de 5 s en leerCuentas', () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    // Pide las cuentas y avanza ms; res.en es la hora (falsa) en que respondió.
+    async function pedirCuentas(ms) {
+        const res = fakeRes();
+        const json = res.json;
+        res.json = function (payload) { this.en = Date.now(); return json.call(this, payload); };
+        const enCurso = controller.cuentas({ query: { idsede: '13' } }, res);
+        await jest.advanceTimersByTimeAsync(ms);
+        return { res, enCurso };
+    }
+
+    test('bandera 3 s + cuentas 3 s → a los 5 s responde 500 sin lanzar las demás', async () => {
+        bd({ demora: { bandera: 3000, cuentas: 3000 } });
+        const t0 = Date.now();
+        const { res, enCurso } = await pedirCuentas(4999);
+        expect(res.body).toBeNull(); // todavía esperando
+        await jest.advanceTimersByTimeAsync(2001); // de sobra: sin plazo total respondería a los 6 s
+        await enCurso;
+        expect(res.en - t0).toBe(5000);
+        expect(res.statusCode).toBe(500);
+        expect(res.body).toEqual({ success: false, error: 'error_interno' });
+        expect(llamadasA('por_confirmar')).toHaveLength(0);
+        expect(llamadasA('corte')).toHaveLength(0);
+        expect(jest.getTimerCount()).toBe(0);
+    });
+
+    test('pasado el plazo no lanza la consulta siguiente', async () => {
+        bd();
+        const base = mockQuery.getMockImplementation();
+        mockQuery.mockImplementation(async (sql, o) => {
+            const r = await base(sql, o);
+            if (tipoDe(sql) === 'bandera') jest.setSystemTime(Date.now() + 5000); // el event loop se trabó 5 s
+            return r;
+        });
+        const { res, enCurso } = await pedirCuentas(0);
+        await enCurso;
+        expect(res.statusCode).toBe(500);
+        expect(res.body).toEqual({ success: false, error: 'error_interno' });
+        expect(llamadasA('cuentas')).toHaveLength(0);
+    });
+
+    test('cuatro consultas de 1 s → 200 con las cuentas', async () => {
+        bd({ demora: { bandera: 1000, cuentas: 1000, por_confirmar: 1000, corte: 1000 } });
+        const { res, enCurso } = await pedirCuentas(4000);
+        await enCurso;
+        expect(res.statusCode).toBe(200);
+        expect(res.body.data.cuentas).toHaveLength(1);
         expect(jest.getTimerCount()).toBe(0);
     });
 });

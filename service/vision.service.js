@@ -22,24 +22,38 @@ const logger = require('../utilitarios/logger');
 // a mysql2, así que se corta aquí; MySQL puede seguir con la consulta, pero el puente
 // responde 500 (falla cerrado) en vez de contestar tarde.
 const TOPE_MS = 5000;
+// Plazo total de leerCuentas (4 consultas en serie), el mismo que el del Go: cada
+// consulta tiene a lo más lo que queda y, vencido, la siguiente no se lanza (I4: con
+// MySQL lento no se le apilan lecturas que nadie va a esperar). Mismo error → 500.
+const PLAZO_TOTAL_MS = TOPE_MS;
 
-function conTope(promesa, sql) {
+const sinRespuesta = (sql) => new Error(`consulta sin respuesta en ${TOPE_MS} ms: ${sql.trim().slice(0, 60)}`);
+
+function conTope(promesa, sql, ms = TOPE_MS) {
     let reloj;
     const tope = new Promise((_, rechazar) => {
-        reloj = setTimeout(() => rechazar(new Error(`consulta sin respuesta en ${TOPE_MS} ms: ${sql.trim().slice(0, 60)}`)), TOPE_MS);
+        reloj = setTimeout(() => rechazar(sinRespuesta(sql)), ms);
     });
     return Promise.race([promesa, tope]).finally(() => clearTimeout(reloj));
 }
 
-// SELECT estricto: lanza si MySQL falla o tarda más de 5 s; [] solo si de verdad no hay filas.
-function seleccionar(sql, replacements) {
-    return conTope(sequelize.query(sql, { replacements, type: QueryTypes.SELECT }), sql);
+// Tope de la consulta sql si la lectura vence en fin: lo que queda (a lo más TOPE_MS).
+// Ya vencida, lanza el mismo error del tope sin lanzar la consulta.
+function restante(fin, sql) {
+    const ms = Math.min(TOPE_MS, fin - Date.now());
+    if (ms <= 0) throw sinRespuesta(sql);
+    return ms;
+}
+
+// SELECT estricto: lanza si MySQL falla o tarda más de ms (5 s); [] solo si de verdad no hay filas.
+function seleccionar(sql, replacements, ms) {
+    return conTope(sequelize.query(sql, { replacements, type: QueryTypes.SELECT }), sql, ms);
 }
 
 // CALL estricto. Sequelize devuelve [{"0": fila, "1": fila…}, OkPacket]; mismo
 // desempaquetado que QueryServiceV1.ejecutarProcedimiento, pero sin tragarse el error.
-async function llamar(sql, replacements) {
-    const r = await conTope(sequelize.query(sql, { replacements, type: QueryTypes.SELECT }), sql);
+async function llamar(sql, replacements, ms) {
+    const r = await conTope(sequelize.query(sql, { replacements, type: QueryTypes.SELECT }), sql, ms);
     return r && r[0] && typeof r[0] === 'object' ? Object.values(r[0]) : [];
 }
 
@@ -129,8 +143,8 @@ function limaLocal(fecha) {
     return new Date(fecha.getTime() + LIMA_MS).toISOString().slice(0, 19).replace('T', ' ');
 }
 
-async function leerBandera(idsede) {
-    const filas = await llamar(SQL.bandera, [idsede]);
+async function leerBandera(idsede, ms) {
+    const filas = await llamar(SQL.bandera, [idsede], ms);
     const bandera = filas[0] ? Number(filas[0].idpedido) : NaN;
     // Sin bandera no se puede responder: un "sin cuentas" falso haría alertar al Go.
     if (!Number.isInteger(bandera) || bandera < 0) {
@@ -140,10 +154,11 @@ async function leerBandera(idsede) {
 }
 
 async function leerCuentas(idsede) {
-    const bandera = await leerBandera(idsede);
-    const filas = await seleccionar(SQL.cuentas, [bandera, idsede]);
-    const ppc = await seleccionar(SQL.porConfirmar, [idsede]);
-    const corte = await seleccionar(SQL.corte, [idsede]);
+    const fin = Date.now() + PLAZO_TOTAL_MS;
+    const bandera = await leerBandera(idsede, restante(fin, SQL.bandera));
+    const filas = await seleccionar(SQL.cuentas, [bandera, idsede], restante(fin, SQL.cuentas));
+    const ppc = await seleccionar(SQL.porConfirmar, [idsede], restante(fin, SQL.porConfirmar));
+    const corte = await seleccionar(SQL.corte, [idsede], restante(fin, SQL.corte));
 
     const cuentas = filas
         .filter((f) => !SIN_MESA.has(claveMesa(f.nummesa)))

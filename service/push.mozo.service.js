@@ -98,6 +98,27 @@ const sendLlamadoMesa = async (idsede, numMesa) => {
 	}
 };
 
+// Aviso de Camaras IA (POST /vision/v1/alerta) a los mismos dispositivos que sendLlamadoMesa.
+// tag por mesa_clave: el recordatorio (o la alerta siguiente) de esa mesa reemplaza la notificacion.
+// No lanza: devuelve { ok, fail } o null si fallo (al log solo mensaje y codigo, nunca el error entero).
+const sendAlertaVision = async (idsede, { tipo, mesa, mesa_clave, texto, alerta_id }) => {
+	try {
+		const rows = await QueryServiceV1.ejecutarConsulta(
+			`SELECT fcm_token FROM usuario_push_token
+			 WHERE idsede = ? AND last_seen_at >= NOW() - INTERVAL ? HOUR`,
+			[parseInt(idsede), HORAS_MOZO_ACTIVO], 'SELECT', 'sendAlertaVision.tokens');
+		return await enviarATokens((rows || []).map(r => r.fcm_token), {
+			title: texto,
+			body: 'Aviso de Cámaras IA',
+			data: { tipo: 'vision_' + tipo, num_mesa: String(mesa), alerta_id: String(alerta_id) },
+			tag: 'vision_' + mesa_clave,
+		}, { idsede, alerta_id, tipo, mesa_clave });
+	} catch (err) {
+		logger.error({ err: err.message, code: err.code, idsede, alerta_id }, 'sendAlertaVision');
+		return null;
+	}
+};
+
 // "Pedido de la mesa 10 listo" / "De la mesa 10 - 2 Lomo saltado listo"; sin mesa usa el correlativo del dia
 const textoPedidoListo = (p, idpedidoDetalle) => {
 	const tieneMesa = p.nummesa && String(p.nummesa) !== '0';
@@ -175,4 +196,4 @@ const setPedidoListo = async (req, res) => {
 	}
 };
 
-module.exports = { setPushToken, setMozoActivo, sendLlamadoMesa, setPedidoListo, textoPedidoListo, enviarATokens };
+module.exports = { setPushToken, setMozoActivo, sendLlamadoMesa, sendAlertaVision, setPedidoListo, textoPedidoListo, enviarATokens };

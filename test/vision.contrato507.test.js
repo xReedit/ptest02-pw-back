@@ -77,6 +77,8 @@ function contrato507(textoCrudo) {
     exige(lineaExacta("$condicion='p.nummesa='.$nummesa;").test(c507), "case 507: $condicion='p.nummesa='.$nummesa;");
     // Ningún filtro pegado después a la SQL.
     exige(!/\$sql\s*\.=/.test(c507), 'case 507: sin $sql .= después de armar la SQL');
+    // Ni pegado a las piezas del WHERE: un `.=` deja intactas las líneas que se fijan arriba.
+    exige(!/\$(condicion|isQyueryConfirmar)\s*\.=/.test(c507), 'case 507: sin $condicion .= ni $isQyueryConfirmar .=');
     return faltas;
 }
 
@@ -98,6 +100,12 @@ const MUTANTES = [
         (t) => mutarEn507(t, "$condicion='p.nummesa='.$nummesa;", "$condicion='p.nummesa='.$nummesa.' and p.idusuario>0';")],
     ['filtro agregado después con $sql .=',
         (t) => mutarEn507(t, LINEA_WHERE, `${LINEA_WHERE}\n\t\t\t$sql .= " and p.cierre=0";`)],
+    ['filtro agregado después con $condicion .=',
+        (t) => mutarEn507(t, "$condicion='p.nummesa='.$nummesa;",
+            "$condicion='p.nummesa='.$nummesa;\n\t\t\t$condicion .= ' and p.idusuario>0';")],
+    ['filtro agregado después con $isQyueryConfirmar .=',
+        (t) => mutarEn507(t, "$isQyueryConfirmar = 'p.estado IN(0,1)';",
+            "$isQyueryConfirmar = 'p.estado IN(0,1)';\n\t\t\t\t$isQyueryConfirmar .= ' and p.cierre=0';")],
     ['SQL vieja comentada con /* */ y otra nueva con filtro',
         (t) => {
             const inicio = t.search(/^[ \t]*case\s+507\s*:/m);

@@ -18,15 +18,28 @@
 const { sequelize, QueryTypes } = require('../config/database');
 const logger = require('../utilitarios/logger');
 
-// SELECT estricto: lanza si MySQL falla; [] solo si de verdad no hay filas.
+// Tope por consulta: el cliente Go abandona a los 5 s. Sequelize 6 no pasa `timeout`
+// a mysql2, así que se corta aquí; MySQL puede seguir con la consulta, pero el puente
+// responde 500 (falla cerrado) en vez de contestar tarde.
+const TOPE_MS = 5000;
+
+function conTope(promesa, sql) {
+    let reloj;
+    const tope = new Promise((_, rechazar) => {
+        reloj = setTimeout(() => rechazar(new Error(`consulta sin respuesta en ${TOPE_MS} ms: ${sql.trim().slice(0, 60)}`)), TOPE_MS);
+    });
+    return Promise.race([promesa, tope]).finally(() => clearTimeout(reloj));
+}
+
+// SELECT estricto: lanza si MySQL falla o tarda más de 5 s; [] solo si de verdad no hay filas.
 function seleccionar(sql, replacements) {
-    return sequelize.query(sql, { replacements, type: QueryTypes.SELECT });
+    return conTope(sequelize.query(sql, { replacements, type: QueryTypes.SELECT }), sql);
 }
 
 // CALL estricto. Sequelize devuelve [{"0": fila, "1": fila…}, OkPacket]; mismo
 // desempaquetado que QueryServiceV1.ejecutarProcedimiento, pero sin tragarse el error.
 async function llamar(sql, replacements) {
-    const r = await sequelize.query(sql, { replacements, type: QueryTypes.SELECT });
+    const r = await conTope(sequelize.query(sql, { replacements, type: QueryTypes.SELECT }), sql);
     return r && r[0] && typeof r[0] === 'object' ? Object.values(r[0]) : [];
 }
 

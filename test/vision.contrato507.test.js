@@ -35,10 +35,15 @@ function leerLogPhp() {
     }
 }
 
-/** Quita comentarios PHP de una sola línea (// ...) conservando las líneas. */
+/** Quita comentarios PHP: bloques (/* ... *\/) y líneas que empiezan con //. */
 function phpSinComentarios(php) {
-    return php.split('\n').map((l) => l.replace(/^\s*\/\/.*$/, '')).join('\n');
+    return php.replace(/\/\*[\s\S]*?\*\//g, '')
+        .split('\n').map((l) => l.replace(/^\s*\/\/.*$/, '')).join('\n');
 }
+
+const escaparRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** La línea completa, sola en su renglón (solo espacios o tabs alrededor). */
+const lineaExacta = (s) => new RegExp(`^[ \\t]*${escaparRe(s)}[ \\t]*\\r?$`, 'm');
 
 /** Cuerpo del `case <num>:` hasta la siguiente etiqueta `case <n>:` del archivo. */
 function extraerCase(php, num) {
@@ -50,34 +55,82 @@ function extraerCase(php, num) {
     return php.slice(desde, hasta);
 }
 
-let php;
+/**
+ * Definición de "cuenta abierta" de Control de pedidos que el puente copia. Recibe el
+ * TEXTO CRUDO de log.php y devuelve la lista de lo que falta (vacía = el puente sigue
+ * valiendo). Los mutantes de abajo prueban que un filtro agregado no pasa en silencio.
+ */
+function contrato507(textoCrudo) {
+    const sin = phpSinComentarios(textoCrudo);
+    const c507 = extraerCase(sin, 507);
+    const c50701 = extraerCase(sin, 50701);
+    const faltas = [];
+    const exige = (ok, que) => { if (!ok) faltas.push(que); };
+
+    exige(c50701.includes('call lastIdPedidoSede($g_idsede, 1)'), 'case 50701: call lastIdPedidoSede($g_idsede, 1)');
+    exige(c507.includes('call lastIdPedidoSede($g_idsede, 1)'), 'case 507: call lastIdPedidoSede($g_idsede, 1)');
+    exige(/if\s*\(\s*\$isConfirmarPago\s*==\s*0\s*\)\s*\{\s*\$isQyueryConfirmar = 'p\.estado IN\(0,1\)';/.test(c507),
+        "case 507: $isQyueryConfirmar = 'p.estado IN(0,1)' cuando confirmar_pago = 0");
+    // log.php:2109 completo: un AND agregado al final o en medio cambia la línea.
+    exige(lineaExacta(LINEA_WHERE).test(c507), `case 507: línea WHERE completa ${LINEA_WHERE}`);
+    // log.php:2076: la condición de mesa no suma filtros.
+    exige(lineaExacta("$condicion='p.nummesa='.$nummesa;").test(c507), "case 507: $condicion='p.nummesa='.$nummesa;");
+    // Ningún filtro pegado después a la SQL.
+    exige(!/\$sql\s*\.=/.test(c507), 'case 507: sin $sql .= después de armar la SQL');
+    return faltas;
+}
+
+// Copia del texto con un cambio DENTRO del case 507 (log.php no se toca). Falla si el
+// texto a cambiar no está: un mutante igual al original no probaría nada.
+function mutarEn507(texto, de, a) {
+    const inicio = texto.search(/^[ \t]*case\s+507\s*:/m);
+    const i = inicio === -1 ? -1 : texto.indexOf(de, inicio);
+    if (i === -1) throw new Error(`mutante inválido: no está ${JSON.stringify(de)} en case 507`);
+    return texto.slice(0, i) + a + texto.slice(i + de.length);
+}
+
+const LINEA_WHERE = 'WHERE p.idpedido >= $lastIdPedido and (p.idsede=".$g_idsede." and ".$condicion.") and ".$isQyueryConfirmar;';
+
+const MUTANTES = [
+    ['filtro extra al final del WHERE (and p.cierre=0)',
+        (t) => mutarEn507(t, LINEA_WHERE, LINEA_WHERE.replace(/;$/, '." and p.cierre=0";'))],
+    ['filtro extra en $condicion',
+        (t) => mutarEn507(t, "$condicion='p.nummesa='.$nummesa;", "$condicion='p.nummesa='.$nummesa.' and p.idusuario>0';")],
+    ['filtro agregado después con $sql .=',
+        (t) => mutarEn507(t, LINEA_WHERE, `${LINEA_WHERE}\n\t\t\t$sql .= " and p.cierre=0";`)],
+    ['SQL vieja comentada con /* */ y otra nueva con filtro',
+        (t) => {
+            const inicio = t.search(/^[ \t]*case\s+507\s*:/m);
+            const fin = t.indexOf(LINEA_WHERE, inicio) + LINEA_WHERE.length;
+            const sql = t.lastIndexOf('$sql="', fin);
+            const nueva = '$sql="SELECT p.* FROM pedido AS p WHERE p.idpedido >= $lastIdPedido and p.cierre=0 and (p.idsede=".$g_idsede." and ".$condicion.") and ".$isQyueryConfirmar;';
+            return `${t.slice(0, sql)}/* ${t.slice(sql, fin)} */\n\t\t\t${nueva}${t.slice(fin)}`;
+        }],
+];
+
+let crudo;
 let case507;
-let case50701;
 
 beforeAll(() => {
-    php = phpSinComentarios(leerLogPhp());
-    case507 = extraerCase(php, 507);
-    case50701 = extraerCase(php, 50701);
+    crudo = leerLogPhp();
+    case507 = extraerCase(phpSinComentarios(crudo), 507);
 });
 
 describe('Control de pedidos sigue definiendo "cuenta abierta" como el puente', () => {
-    test('case 50701: la bandera sale de call lastIdPedidoSede($g_idsede, 1)', () => {
-        expect(case50701).toContain('call lastIdPedidoSede($g_idsede, 1)');
+    test('log.php real cumple el contrato (bandera, estado IN(0,1), WHERE completo, $condicion)', () => {
+        expect(contrato507(crudo)).toEqual([]);
+    });
+
+    test.each(MUTANTES)('el contrato detecta el mutante: %s', (_nombre, mutar) => {
+        const mutado = mutar(crudo);
+        expect(mutado).not.toBe(crudo);
+        expect(contrato507(mutado)).not.toEqual([]);
+    });
+
+    test('el puente usa el mismo procedimiento, estado y cota que el 507', () => {
         expect(vision.SQL.bandera).toBe('call lastIdPedidoSede(?, 1)');
-    });
-
-    test('case 507: sin bandera de la tarjeta usa el mismo procedimiento y modo', () => {
-        expect(case507).toContain('call lastIdPedidoSede($g_idsede, 1)');
-    });
-
-    test("case 507: sin confirmar_pago, abierta = p.estado IN(0,1)", () => {
-        expect(case507).toMatch(/if\s*\(\s*\$isConfirmarPago\s*==\s*0\s*\)\s*\{\s*\$isQyueryConfirmar = 'p\.estado IN\(0,1\)';/);
         expect(vision.SQL.cuentas).toMatch(/p\.estado IN \(0,1\)/);
-    });
-
-    test('case 507: cota por bandera y sede: WHERE p.idpedido >= $lastIdPedido and (p.idsede=', () => {
-        expect(case507).toContain('WHERE p.idpedido >= $lastIdPedido and (p.idsede=');
-        expect(vision.SQL.cuentas).toMatch(/WHERE p\.idpedido >= \? AND p\.idsede = \?/);
+        expect(vision.SQL.cuentas).toMatch(/WHERE p\.idpedido >= \? AND p\.idsede = \? AND p\.estado IN \(0,1\)\s*$/);
         expect(vision.SQL.cuentas).toMatch(/FROM pedido AS p\b/);
     });
 

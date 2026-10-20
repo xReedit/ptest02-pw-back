@@ -37,9 +37,11 @@ function tipoDe(sql) {
 
 // Responde según el texto del SQL, como pedido.por.confirmar.service.test.js.
 // falla: nombre de la consulta que lanza un error de MySQL.
-function bd({ bandera = BANDERA, cuentas = [cuenta()], ppc = [], corte = [{ hora_cierre_dia: '0' }], pedidos = [], falla = null } = {}) {
+// cuelga: nombre de la consulta que nunca responde (lock, MySQL saturado).
+function bd({ bandera = BANDERA, cuentas = [cuenta()], ppc = [], corte = [{ hora_cierre_dia: '0' }], pedidos = [], falla = null, cuelga = null } = {}) {
     mockQuery.mockImplementation(async (sql) => {
         const tipo = tipoDe(sql);
+        if (tipo === cuelga) return new Promise(() => {});
         if (tipo === falla) throw new Error(`ER_LOCK_WAIT_TIMEOUT simulado en ${tipo}`);
         switch (tipo) {
             // Forma real de Sequelize para un CALL: [{"0": fila}, OkPacket]
@@ -345,5 +347,41 @@ describe('GET /vision/v1/pedidos', () => {
         expect(res.statusCode).toBe(400);
         expect(res.body.error).toBe('pedido_invalido');
         expect(mockQuery).not.toHaveBeenCalled();
+    });
+});
+
+// --- tope de 5 s por consulta: el Go abandona a los 5 s; Node no debe quedarse ----
+// esperando con una conexión del pool ocupada ni responder tarde con datos.
+describe('tope de 5 s por consulta (falla cerrado)', () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    test.each(['bandera', 'cuentas', 'por_confirmar', 'corte'])('cuentas: %s colgada → a los 5 s responde 500', async (cuelga) => {
+        bd({ cuelga });
+        const res = fakeRes();
+        const enCurso = controller.cuentas({ query: { idsede: '13' } }, res);
+        await jest.advanceTimersByTimeAsync(4999);
+        expect(res.body).toBeNull(); // todavía esperando
+        await jest.advanceTimersByTimeAsync(1);
+        await enCurso;
+        expect(res.statusCode).toBe(500);
+        expect(res.body).toEqual({ success: false, error: 'error_interno' });
+    });
+
+    test('pedidos colgada → a los 5 s responde 500, nunca lista vacía', async () => {
+        bd({ cuelga: 'pedidos' });
+        const res = fakeRes();
+        const desde = new Date(Date.now() - 3600 * 1000).toISOString();
+        const enCurso = controller.pedidos({ query: { idsede: '13', mesa: '5', desde } }, res);
+        await jest.advanceTimersByTimeAsync(5000);
+        await enCurso;
+        expect(res.statusCode).toBe(500);
+        expect(res.body).toEqual({ success: false, error: 'error_interno' });
+    });
+
+    test('una respuesta a tiempo no deja timers colgados', async () => {
+        bd();
+        await vision.leerCuentas(IDSEDE);
+        expect(jest.getTimerCount()).toBe(0);
     });
 });

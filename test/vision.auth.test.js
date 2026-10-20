@@ -5,6 +5,10 @@
 jest.mock('../utilitarios/logger', () => ({
     info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
 }));
+// El router carga el servicio; sin BD real en esta suite.
+jest.mock('../config/database', () => ({
+    sequelize: { query: jest.fn() }, QueryTypes: { SELECT: 'SELECT' },
+}));
 
 const { verificarVision, ipDe } = require('../middleware/vision.auth');
 
@@ -137,5 +141,51 @@ describe('ipDe', () => {
 
     test('172.32.x no es privada (fuera de 172.16/12)', () => {
         expect(ipDe(req({ peer: '172.32.0.1', xff: '10.0.0.5' }))).toBe('172.32.0.1');
+    });
+});
+
+// --- router /vision/v1 montado de verdad (express + http, sin BD) --------------------
+describe('router /vision/v1', () => {
+    const http = require('http');
+    const express = require('express');
+    let server;
+    let puerto;
+
+    beforeAll((listo) => {
+        const app = express();
+        app.use('/vision/v1', require('../routes/routesVision'));
+        server = app.listen(0, '127.0.0.1', () => { puerto = server.address().port; listo(); });
+    });
+    afterAll((listo) => { server.close(listo); });
+
+    function pedir(ruta, { metodo = 'GET', clave } = {}) {
+        return new Promise((resolver, rechazar) => {
+            const headers = clave ? { 'x-api-key': clave } : {};
+            const r = http.request({ host: '127.0.0.1', port: puerto, path: ruta, method: metodo, headers }, (res) => {
+                let cuerpo = '';
+                res.on('data', (d) => { cuerpo += d; });
+                res.on('end', () => resolver({ status: res.statusCode, body: JSON.parse(cuerpo) }));
+            });
+            r.on('error', rechazar);
+            r.end();
+        });
+    }
+
+    test('ruta desconocida con clave válida → 404 {success:false, error:"no_encontrado"}', async () => {
+        const r = await pedir('/vision/v1/no-existe', { clave: CLAVE });
+        expect(r.status).toBe(404);
+        expect(r.body).toEqual({ success: false, error: 'no_encontrado' });
+    });
+
+    test('método no soportado en ruta conocida con clave válida → 404 del contrato', async () => {
+        const r = await pedir('/vision/v1/cuentas', { metodo: 'DELETE', clave: CLAVE });
+        expect(r.status).toBe(404);
+        expect(r.body).toEqual({ success: false, error: 'no_encontrado' });
+    });
+
+    test('ruta desconocida sin clave → 401 (no se pueden enumerar rutas)', async () => {
+        const r = await pedir('/vision/v1/no-existe');
+        expect(r.status).toBe(401);
+        expect(r.body).toEqual({ success: false, error: 'clave_invalida' });
     });
 });

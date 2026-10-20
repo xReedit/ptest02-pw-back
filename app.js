@@ -54,6 +54,8 @@ app.use('/chatbot', routesChatbot);
 var routesYape = require('./routes/routesYape');
 app.use('/yape', routesYape);
 
+app.use('/vision/v1', require('./routes/routesVision')); // Cámaras IA (papaya-vision): puente de cuentas; x-api-key + IPs del Go
+
 app.use(function(req, res, next) {    
     var err = new Error('Not Found');
     err.status = 404;

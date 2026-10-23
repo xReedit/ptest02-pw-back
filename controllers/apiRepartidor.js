@@ -12,6 +12,7 @@ const { sequelize, QueryTypes} = require('../config/database');
 // const { Sequelize } = require('sequelize');
 
 const QueryServiceV1 = require('../service/query.service.v1');
+const repartidorSedes = require('../service/repartidor-sedes.service');
 
 let mysql_clean = function (string) {
         return sequelize.getQueryInterface().escape(string);
@@ -890,7 +891,6 @@ const getListPedidosPendientesComercio = async function(req, res) {
 // order by p.idpedido desc`;
 // 	return await emitirRespuesta_RES(read_query, res);
 
-	const idsede = managerFilter.getInfoToken(req,'idsede_suscrito');	
 	// ✅ SEGURO: Prepared statement
 	// const read_query = `SELECT * FROM pedido p
 	// INNER JOIN tipo_consumo tc ON p.idtipo_consumo = tc.idtipo_consumo 
@@ -910,13 +910,19 @@ const getListPedidosPendientesComercio = async function(req, res) {
 	// 	return ReE(res, error);
 	// }
 
-	const read_query = `SELECT * FROM pedido p
+	// sedes que atiende: casa ∪ repartidor_sede_atiende (con una sola sede = solo la casa, como antes)
+	const sedes = await repartidorSedes.sedesQueAtiende(managerFilter.getInfoToken(req, 'idrepartidor'));
+	if (sedes.length === 0) return ReS(res, { data: [] });
+
+	// p.*, tc.* = el mismo SELECT * de antes; fecha sargable para usar idx_idsede_fecha_hora
+	const read_query = `SELECT p.*, tc.*, p.idsede, s.nombre AS sede_nombre FROM pedido p
 	INNER JOIN tipo_consumo tc ON p.idtipo_consumo = tc.idtipo_consumo 
-	WHERE CAST(p.fecha_hora as date) >= date_add(curdate(), INTERVAL -1 day) 
-	AND p.idsede = ? AND IFNULL(p.idrepartidor, 0) = 0  
+	INNER JOIN sede s ON s.idsede = p.idsede
+	WHERE p.idsede IN (?) AND p.fecha_hora >= CURDATE() - INTERVAL 1 DAY
+	AND IFNULL(p.idrepartidor, 0) = 0  
 	AND tc.descripcion = 'DELIVERY'
 	ORDER BY p.idpedido desc`;
-	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [idsede], 'SELECT', 'getListPedidosPendientesComercio');
+	const rows = await QueryServiceV1.ejecutarConsulta(read_query, [sedes], 'SELECT', 'getListPedidosPendientesComercio');
 
 	// console.log('rows', rows)
 

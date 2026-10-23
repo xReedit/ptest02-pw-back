@@ -98,6 +98,27 @@ describe('getMiEstado', () => {
         expect(sqlLlamadas('FROM sede WHERE idsede')).toHaveLength(1); // solo la del propio
     });
 
+    test('devuelve sedes_atiende: cantidad para el propio, 0 para el global', async () => {
+        mockRespuestasSelect = [
+            [{ ocupado: 0, online: 1, flag_paso_pedido: 0, pedido_por_aceptar: null }],
+            [],
+            [{ idsede: 13, nombre: 'EL ASADOR' }],
+            [{ idsede: 13 }, { idsede: 26 }] // sedesQueAtiende
+        ];
+        const r = res();
+        await v2.getMiEstado({ body: {}, usuariotoken: { idrepartidor: 13, idsede_suscrito: 13 } }, r);
+        expect(r.body.data.sedes_atiende).toBe(2);
+        const asig = sqlLlamadas('pedido_time_line_entrega')[0].sql;
+        expect(asig).toContain('s.nombre AS sede_nombre');
+        expect(asig).toContain('LEFT JOIN sede s ON s.idsede = p.idsede');
+
+        mockRespuestasSelect = [[{ ocupado: 0, online: 1, flag_paso_pedido: 0, pedido_por_aceptar: null }], []];
+        const r2 = res();
+        await v2.getMiEstado(req(), r2);
+        expect(r2.body.data.sedes_atiende).toBe(0);
+        expect(sqlLlamadas('repartidor_sede_atiende')).toHaveLength(1); // el global no consulta
+    });
+
     test('una oferta expirada no se devuelve', async () => {
         const ppa = { pedidos: [10], expira_en: Date.now() - 1000 };
         mockRespuestasSelect = [
@@ -376,6 +397,40 @@ describe('asignarmePedido', () => {
         expect(obj).toMatchObject({ pedidos: [5, 10], pedido_asignado_manual: 10, idrepartidor: 7, importe_pagar: 45.5, inSede: true, isexpress: 0 });
         expect(mockEmitidos).toContainEqual({ room: 'sock-otro', evento: 'repartidor-estado-cambio', data: undefined });
         expect(logs('asignado_manual')).toHaveLength(1);
+    });
+});
+
+describe('asignarmePedido: sedes que atiende', () => {
+    test('propio con pedido de una sede que no atiende (30) → 403 sin llamar al SP', async () => {
+        mockRespuestasSelect = [
+            [{ idrepartidor: null, estado: 1, idorg: 5, idsede: 30, idorg_propio: 5 }],
+            [{ idsede: 13 }, { idsede: 26 }]
+        ];
+        const r = res();
+        await v2.asignarmePedido(req({ idpedido: 10, pedidos: [10], importe: 20, idsede: 30 }), r);
+        expect(r.statusCode).toBe(403);
+        expect(r.body.error).toBe('Este pedido es de una sede que no atiendes.');
+        expect(sqlLlamadas('procedure_delivery_set_pedido_repartidor_manual')).toHaveLength(0);
+    });
+
+    test('propio con pedido de una sede que atiende (26) → llama al SP', async () => {
+        mockRespuestasSelect = [
+            [{ idrepartidor: null, estado: 1, idorg: 5, idsede: 26, idorg_propio: 5 }],
+            [{ idsede: 13 }, { idsede: 26 }],
+            [] // nadie con oferta
+        ];
+        const r = res();
+        await v2.asignarmePedido(req({ idpedido: 10, pedidos: [10], importe: 20, idsede: 26 }), r);
+        expect(r.body.success).toBe(true);
+        expect(sqlLlamadas('procedure_delivery_set_pedido_repartidor_manual')).toHaveLength(1);
+    });
+
+    test('global no consulta sedes', async () => {
+        mockRespuestasSelect = [[{ idrepartidor: null, estado: 1, idorg: 5, idsede: 30, idorg_propio: null }], []];
+        const r = res();
+        await v2.asignarmePedido(req({ idpedido: 10, pedidos: [10], importe: 20, idsede: 30 }), r);
+        expect(r.body.success).toBe(true);
+        expect(sqlLlamadas('repartidor_sede_atiende')).toHaveLength(0);
     });
 });
 

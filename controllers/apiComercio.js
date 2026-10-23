@@ -6,6 +6,7 @@ let config = require('../_config');
 let managerFilter = require('../utilitarios/filters');
 let logger = require('../utilitarios/logger');
 const QueryServiceV1 = require('../service/query.service.v1');
+const repartidorSedes = require('../service/repartidor-sedes.service');
 
 // let sequelize = new Sequelize(config.database, config.username, config.password, config.sequelizeOption);
 const { sequelize, QueryTypes } = require('../config/database');
@@ -120,10 +121,10 @@ const pushSuscripcion = async function (req, res) {
 }
 module.exports.pushSuscripcion = pushSuscripcion;
 
-const getComercioRepartidorSuscrito = function (req, res) {  
+// repartidores de la sede: de casa o que la atienden (repartidor_sede_atiende)
+const getComercioRepartidorSuscrito = async function (req, res) {  
 	const idsede = managerFilter.getInfoToken(req,'idsede');
-    const read_query = `SELECT * from repartidor where idsede_suscrito = ${idsede} and estado = 0`;
-    emitirRespuesta_RES(read_query, res);        
+	return ReS(res, { data: await repartidorSedes.repartidoresDeSede(idsede) });
 }
 module.exports.getComercioRepartidorSuscrito = getComercioRepartidorSuscrito;
 
@@ -228,10 +229,9 @@ const getDataCierreCaja = function (req, res) {
 module.exports.getDataCierreCaja = getDataCierreCaja;
 
 
-const getMisRepartidores = function (req, res) {
+const getMisRepartidores = async function (req, res) {
 	const idsede = managerFilter.getInfoToken(req,'idsede');
-    const read_query = `SELECT * from repartidor WHERE idsede_suscrito = ${idsede} and estado=0`;
-    emitirRespuesta_RES(read_query, res);        
+	return ReS(res, { data: await repartidorSedes.repartidoresDeSede(idsede) });
 }
 module.exports.getMisRepartidores = getMisRepartidores;
 

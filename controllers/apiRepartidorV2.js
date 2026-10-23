@@ -17,6 +17,7 @@ const socketManager = require('../service/socket.manager');
 const apiRepartidor = require('./apiRepartidor.js');
 const apiComercio = require('./apiComercio.js');
 const sendMsjsService = require('./sendMsj.js');
+const repartidorSedes = require('../service/repartidor-sedes.service');
 
 /** Cuánto vive una oferta antes de pasar al siguiente repartidor. El push tarda 5-40 s en llegar y la app 10 s en abrir. */
 const OFERTA_VENTANA_MS = 120000;
@@ -62,7 +63,7 @@ const socketidDeRepartidor = async function (idrepartidor) {
 
 /**
  * Estado completo del repartidor calculado desde las tablas (no desde el JSON pedido_por_aceptar).
- * { oferta: null | { pedidos, detalle, importe_pagar, expira_en, ... }, asignados: [...], ocupado, online, servidor_hora }
+ * { oferta: null | { pedidos, detalle, importe_pagar, expira_en, ... }, asignados: [...], sede, sedes_atiende, ocupado, online, servidor_hora }
  */
 const getMiEstado = async function (req, res) {
 	const idrepartidor = managerFilter.getInfoToken(req, 'idrepartidor');
@@ -74,8 +75,9 @@ const getMiEstado = async function (req, res) {
 	const r = rep[0] || {};
 
 	const asignados = await QueryServiceV1.ejecutarConsulta(
-		`SELECT p.*, ptle.time_line
+		`SELECT p.*, ptle.time_line, s.nombre AS sede_nombre
 		   FROM pedido p LEFT JOIN pedido_time_line_entrega ptle USING (idpedido)
+		   LEFT JOIN sede s ON s.idsede = p.idsede
 		  WHERE p.idrepartidor = ? AND p.estado != 3
 		    AND COALESCE(p.pwa_delivery_status, '0') NOT IN ('4', '5')
 		    AND p.fecha_hora >= NOW() - INTERVAL ${DIAS_PEDIDO_ACTIVO} DAY
@@ -102,8 +104,10 @@ const getMiEstado = async function (req, res) {
 		const s = await QueryServiceV1.ejecutarConsulta(`SELECT idsede, nombre FROM sede WHERE idsede = ?`, [idsedeSuscrito], 'SELECT', 'getMiEstado');
 		sede = s[0] || null;
 	}
+	// cuántas sedes atiende (la app solo cambia con 2 o más); global = 0
+	const sedes_atiende = idsedeSuscrito ? (await repartidorSedes.sedesQueAtiende(idrepartidor)).length : 0;
 
-	return ReS(res, { data: { oferta, asignados, sede, ocupado: r.ocupado || 0, online: r.online || 0, servidor_hora: Date.now() } });
+	return ReS(res, { data: { oferta, asignados, sede, sedes_atiende, ocupado: r.ocupado || 0, online: r.online || 0, servidor_hora: Date.now() } });
 };
 module.exports.getMiEstado = getMiEstado;
 
@@ -382,12 +386,14 @@ const asignarmePedido = async function (req, res) {
 
 	// idorg_propio: org del local al que esta suscrito el repartidor (NULL = repartidor global, puede cualquier pedido)
 	const actual = await QueryServiceV1.ejecutarConsulta(
-		`SELECT p.idrepartidor, p.estado, p.idorg,
+		`SELECT p.idrepartidor, p.estado, p.idorg, p.idsede,
 			(SELECT s.idorg FROM repartidor r JOIN sede s ON s.idsede = r.idsede_suscrito WHERE r.idrepartidor = ?) AS idorg_propio
 		FROM pedido p WHERE p.idpedido = ?`, [idrepartidor, idpedido], 'SELECT', 'asignarmePedido');
 	if (!actual[0]) return ReE(res, 'El pedido no existe', 404);
 	if (actual[0].idorg_propio && Number(actual[0].idorg_propio) !== Number(actual[0].idorg))
 		return ReE(res, 'Este pedido es de otro comercio. Solo puedes asignarte pedidos de tu local.', 403);
+	if (actual[0].idorg_propio && !(await repartidorSedes.sedesQueAtiende(idrepartidor)).includes(Number(actual[0].idsede)))
+		return ReE(res, 'Este pedido es de una sede que no atiendes.', 403);
 	if (Number(actual[0].estado) === 3) return ReE(res, 'El pedido está anulado', 409);
 	if (actual[0].idrepartidor && Number(actual[0].idrepartidor) !== Number(idrepartidor)) return ReE(res, 'El pedido ya tiene repartidor asignado', 409);
 

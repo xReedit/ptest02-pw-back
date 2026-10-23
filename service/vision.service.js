@@ -4,6 +4,7 @@
 // cuenta abierta es EXACTAMENTE la de Control de pedidos (bdphp/log.php):
 //   bandera = call lastIdPedidoSede(idsede, 1)          (case 50701)
 //   abierta = p.idpedido >= bandera AND p.idsede = ? AND p.estado IN (0,1)   (case 507)
+//             y con algún ítem vivo, como el mapa de mesas (procedure_refresh_mesas_501)
 // Diferencias a propósito (test/vision.contrato507.test.js las fija):
 //   - sin filtro de mesa: trae la sede entera y el Go agrupa con ClaveMesa (choque 2:
 //     507 arma p.nummesa=<m> sin comillas y una mesa alfanumérica rompe su SQL);
@@ -59,12 +60,17 @@ async function llamar(sql, replacements, ms) {
 
 const SQL = {
     bandera: 'call lastIdPedidoSede(?, 1)',
-    // case 507 (log.php:2101-2110) sin filtro de mesa ni joins (son LEFT JOIN por PK:
+    // case 507 (log.php:2101-2110) sin filtro de mesa ni sus joins (son LEFT JOIN por PK:
     // no cambian el conjunto de filas) y, como 507, sin ORDER BY (no empuja al optimizador
-    // hacia PRIMARY). Índice esperado en prod: pedido_idsede_IDX (idsede[, idpedido]).
-    cuentas: `SELECT p.idpedido, p.nummesa, p.fecha, p.hora, p.is_from_client_pwa, p.total
+    // hacia PRIMARY). Además, como el mapa de mesas (procedure_refresh_mesas_501), solo con
+    // algún ítem vivo (pagado=0, estado=0) y el total es lo que falta cobrar de esos ítems:
+    // un pedido sin ítems vivos se ve libre en Control de Mesas y caja no lo puede cobrar.
+    // Índices (EXPLAIN dev): pedido_idsede_IDX (range) + pedido_detalle_idpedido_IDX (ref).
+    cuentas: `SELECT p.idpedido, p.nummesa, p.fecha, p.hora, p.is_from_client_pwa, SUM(pd.ptotal) AS total
         FROM pedido AS p
-        WHERE p.idpedido >= ? AND p.idsede = ? AND p.estado IN (0,1)`,
+        INNER JOIN pedido_detalle AS pd ON pd.idpedido = p.idpedido AND pd.pagado = 0 AND pd.estado = 0
+        WHERE p.idpedido >= ? AND p.idsede = ? AND p.estado IN (0,1)
+        GROUP BY p.idpedido`,
     // Pendientes de confirmar (carta QR). idx_ppc_sede_estado_fecha; caducan a los 30 min,
     // el tope de 1 día solo acota el rango si el job de caducidad está apagado.
     porConfirmar: `SELECT mesa, DATE_FORMAT(fecha_registro, '%Y-%m-%dT%H:%i:%s-05:00') AS creado

@@ -138,8 +138,15 @@ describe('Control de pedidos sigue definiendo "cuenta abierta" como el puente', 
     test('el puente usa el mismo procedimiento, estado y cota que el 507', () => {
         expect(vision.SQL.bandera).toBe('call lastIdPedidoSede(?, 1)');
         expect(vision.SQL.cuentas).toMatch(/p\.estado IN \(0,1\)/);
-        expect(vision.SQL.cuentas).toMatch(/WHERE p\.idpedido >= \? AND p\.idsede = \? AND p\.estado IN \(0,1\)\s*$/);
+        expect(vision.SQL.cuentas).toMatch(/WHERE p\.idpedido >= \? AND p\.idsede = \? AND p\.estado IN \(0,1\)\s*GROUP BY p\.idpedido\s*$/);
         expect(vision.SQL.cuentas).toMatch(/FROM pedido AS p\b/);
+    });
+
+    test('como el mapa de mesas (501): solo con un ítem vivo, y el total es lo que falta cobrar', () => {
+        // procedure_refresh_mesas_501: INNER JOIN pedido_detalle ... pdt.pagado=0 and pdt.estado=0, importe = sum(pd.ptotal)
+        expect(vision.SQL.cuentas).toMatch(/INNER JOIN pedido_detalle AS pd ON pd\.idpedido = p\.idpedido AND pd\.pagado = 0 AND pd\.estado = 0/);
+        expect(vision.SQL.cuentas).toMatch(/SUM\(pd\.ptotal\) AS total/);
+        expect(vision.SQL.cuentas).not.toMatch(/p\.total/);
     });
 
     test('case 507: los LEFT JOIN son por PK (usuario, cliente, repartidor): no cambian el conjunto de filas', () => {

@@ -4,7 +4,8 @@
  *   VISION_TEST_MYSQL=1 VISION_TEST_IDSEDE=13 npx jest test/vision.integracion
  *
  * Verifica que leerCuentas ve, mesa por mesa, el mismo conjunto de idpedido que
- * Control de pedidos (log.php case 507 con m=<mesa>, confirmar_pago=0).
+ * Control de pedidos (log.php case 507 con m=<mesa>, confirmar_pago=0), quitando los
+ * que el mapa de mesas no muestra por no tener ningún ítem vivo (procedure_refresh_mesas_501).
  *
  * Solo SELECT. OJO: lastIdPedidoSede(idsede, 1) puede recalcular y escribir
  * pedido_correlativos de ESA sede, igual que abrir Control de pedidos.
@@ -46,6 +47,14 @@ describeMysql(`puente contra MySQL dev (sede ${IDSEDE})`, () => {
 
     const select = (sql, replacements = []) => sequelize.query(sql, { replacements, type: QueryTypes.SELECT });
 
+    // De esos idpedido, los que el mapa de mesas (procedure_refresh_mesas_501) ve: con algún ítem vivo.
+    async function conItemVivo(ids) {
+        if (ids.length === 0) return [];
+        const filas = await select(
+            'SELECT DISTINCT idpedido FROM pedido_detalle WHERE idpedido IN (?) AND pagado = 0 AND estado = 0', [ids]);
+        return filas.map((f) => f.idpedido);
+    }
+
     // Segunda llamada a la bandera: devuelve lo que ya guardó la de leerCuentas (mismo valor).
     async function banderaDeSede() {
         const filas = await require('../service/query.service.v1')
@@ -84,8 +93,8 @@ describeMysql(`puente contra MySQL dev (sede ${IDSEDE})`, () => {
             // PHP arma p.nummesa=<m> sin comillas (log.php:2076). Con una mesa alfanumérica esa
             // SQL revienta en Control de pedidos (choque 2); aquí se compara con comillas.
             const condicion = /^\d+$/.test(k) ? `p.nummesa=${k}` : `p.nummesa='${k.replace(/'/g, "''")}'`;
-            const ref = await select(sql507(Number(bandera), IDSEDE, condicion));
-            expect({ mesa: k, ids: ordenar(ids) }).toEqual({ mesa: k, ids: ordenar(ref.map((f) => f.idpedido)) });
+            const ref = await conItemVivo((await select(sql507(Number(bandera), IDSEDE, condicion))).map((f) => f.idpedido));
+            expect({ mesa: k, ids: ordenar(ids) }).toEqual({ mesa: k, ids: ordenar(ref) });
         }
     });
 
@@ -97,7 +106,7 @@ describeMysql(`puente contra MySQL dev (sede ${IDSEDE})`, () => {
             [Number(bandera), IDSEDE]
         );
         const conMesa = todas.filter((f) => !['', '0'].includes(vision.claveMesa(f.nummesa)));
-        expect(ordenar(data.cuentas.map((c) => c.idpedido))).toEqual(ordenar(conMesa.map((f) => f.idpedido)));
+        expect(ordenar(data.cuentas.map((c) => c.idpedido))).toEqual(ordenar(await conItemVivo(conMesa.map((f) => f.idpedido))));
         for (const c of data.cuentas) {
             expect(c.creado).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-05:00$/);
             expect(c.total).toMatch(/^-?\d+\.\d{2}$/);

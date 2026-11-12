@@ -193,10 +193,15 @@ async function updateEstadoCe(idsede, rec) {
 	// tenia ce ("...ha sido aceptada", el motivo del rechazo) y el cajero se
 	// quedaba sin explicacion en pantalla.
 	const setMsj = rec.msj ? `, msj = '${sqlMsj(rec.msj)}'` : '';
+	// 2026-11: ce sin external_id (el reenvio respondio "ya se encuentra registrado",
+	// sin data) se recupera aca; nunca pisa uno existente. Caso sede 268 B001-839..842.
+	const setExternal = rec.external_id
+		? `, external_id = IF(IFNULL(external_id, '') = '', '${sqlEscape(rec.external_id)}', external_id)`
+		: '';
 	const sql = `update ce set
 			estado_api = ${parseInt(rec.estado_api, 10) || 0},
 			estado_sunat = ${parseInt(rec.estado_sunat, 10) || 0},
-			cdr = ${rec.cdr === '1' ? 1 : 0}${setMsj}
+			cdr = ${rec.cdr === '1' ? 1 : 0}${setMsj}${setExternal}
 		where idsede = ${idsede} and (
 			${matchExternal}(SUBSTRING_INDEX(numero,'-',1) = '${serie}'
 				and CAST(SUBSTRING_INDEX(numero,'-',-1) AS UNSIGNED) = ${numInt}

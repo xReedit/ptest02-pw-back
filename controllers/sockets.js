@@ -60,9 +60,6 @@ const resolverIdPedidoRepartidor = async (socket, idrepartidor, idcliente) => {
 
 // dataCliente = {};
 
-// hora
-var d = new Date();
-var n = d.toLocaleTimeString();
 const nameRoomMozo = 'MOZO';
 
 /**
@@ -993,7 +990,7 @@ module.exports.socketsOn = function(io){ // Success Web Response
 		// no guarda lo que envia el cliente solo notifica que hay un nuevo pedido, para imprimir en patalla o ticketera
 		// para imprmir solo la comanda desde control pedidos, venta rapida, zona despacho
 		socket.on('printerOnly', (dataSend) => {			
-			dataSend.hora = n;			
+			dataSend.hora = new Date().toLocaleTimeString('en-US', { timeZone: 'America/Lima' }); // hora de cada impresion, no la del arranque del servidor			
 			socket.broadcast.to(chanelConect).emit('printerOnly', dataSend);
 			socket.broadcast.to(chanelConect).emit('nuevoPedido-for-list-mesas', dataSend); // app mozo
 
